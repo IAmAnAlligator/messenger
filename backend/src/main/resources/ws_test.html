@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket JWT Messenger</title>
+
+    <!-- SockJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+
+    <!-- STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        input {
+            padding: 8px;
+            width: 300px;
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin-top: 10px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+        }
+
+        #messages {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .message {
+            margin-bottom: 8px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h2>WebSocket JWT Messenger</h2>
+
+<!-- LOGIN -->
+<div class="section">
+
+    <h3>Login</h3>
+
+    <input id="usernameInput" placeholder="Username">
+    <br><br>
+
+    <input
+            id="passwordInput"
+            type="password"
+            placeholder="Password"
+    >
+    <br><br>
+
+    <button onclick="login()">
+        Login
+    </button>
+
+</div>
+
+<!-- CONNECTION -->
+<div class="section">
+
+    <h3>Connection</h3>
+
+    <button onclick="connect()">
+        Connect
+    </button>
+
+    <button onclick="disconnect()">
+        Disconnect
+    </button>
+
+</div>
+
+<!-- SEND MESSAGE -->
+<div class="section">
+
+    <h3>Send Message</h3>
+
+    <input
+            id="sendChatIdInput"
+            placeholder="Chat ID"
+    >
+    <br><br>
+
+    <input
+            id="messageInput"
+            placeholder="Message"
+    >
+    <br><br>
+
+    <button onclick="sendMessage()">
+        Send
+    </button>
+
+</div>
+
+<!-- READ MESSAGE -->
+<div class="section">
+
+    <h3>Read Message</h3>
+
+    <input
+            id="chatIdInput"
+            placeholder="Chat ID"
+    >
+    <br><br>
+
+    <input
+            id="readMessageIdInput"
+            placeholder="Message ID"
+    >
+    <br><br>
+
+    <button onclick="readMessage()">
+        Mark as read
+    </button>
+
+</div>
+
+<!-- LOGS -->
+<div id="messages"></div>
+
+<script>
+
+    let stompClient = null;
+    let socket = null;
+    let accessToken = null;
+
+    /* ---------------- LOG ---------------- */
+
+    function logMessage(text) {
+
+        const messages = document.getElementById("messages");
+
+        const div = document.createElement("div");
+
+        div.className = "message";
+
+        div.innerText = text;
+
+        messages.appendChild(div);
+
+        messages.scrollTop = messages.scrollHeight;
+
+        console.log(text);
+    }
+
+    /* ---------------- LOGIN ---------------- */
+
+    async function login() {
+
+        try {
+
+            const username =
+                document.getElementById("usernameInput").value;
+
+            const password =
+                document.getElementById("passwordInput").value;
+
+            const response = await fetch(
+                "http://localhost:8080/api/auth/login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                }
+            );
+
+            if (!response.ok) {
+
+                logMessage("LOGIN FAILED");
+
+                return;
+            }
+
+            const data = await response.json();
+
+            accessToken = data.accessToken;
+
+            logMessage("LOGIN SUCCESS");
+
+        } catch (e) {
+
+            console.error(e);
+
+            logMessage("LOGIN ERROR: " + e.message);
+        }
+    }
+
+    /* ---------------- CONNECT ---------------- */
+
+    function connect() {
+
+        if (!accessToken) {
+
+            alert("Login first");
+
+            return;
+        }
+
+        if (stompClient?.connected) {
+
+            logMessage("ALREADY CONNECTED");
+
+            return;
+        }
+
+        socket = new WebSocket(
+            "ws://localhost:8080/ws"
+        );
+
+        stompClient = Stomp.over(socket);
+
+        stompClient.debug = function () {};
+
+        stompClient.connect(
+
+            {
+                Authorization:
+                    "Bearer " + accessToken
+            },
+
+            function () {
+
+                logMessage("CONNECTED");
+            },
+
+            function (error) {
+
+                console.error(error);
+
+                logMessage(
+                    "STOMP ERROR: " + error
+                );
+            }
+        );
+    }
+
+    /* ---------------- DISCONNECT ---------------- */
+
+    function disconnect() {
+
+        if (stompClient) {
+
+            stompClient.disconnect(function () {
+
+                logMessage("DISCONNECTED");
+            });
+
+            stompClient = null;
+        }
+
+        if (socket) {
+
+            socket.close();
+
+            socket = null;
+        }
+    }
+
+    /* ---------------- SEND MESSAGE ---------------- */
+
+    function sendMessage() {
+
+        if (!stompClient?.connected) {
+
+            alert("Connect first");
+
+            return;
+        }
+
+        const chatId =
+            document.getElementById(
+                "sendChatIdInput"
+            ).value;
+
+        const content =
+            document.getElementById(
+                "messageInput"
+            ).value;
+
+        if (!chatId.trim()) {
+
+            alert("Enter chatId");
+
+            return;
+        }
+
+        if (!content.trim()) {
+
+            alert("Enter message");
+
+            return;
+        }
+
+        stompClient.send(
+
+            "/app/chat.send",
+
+            {},
+
+            JSON.stringify({
+
+                chatId: Number(chatId),
+
+                content: content
+            })
+        );
+
+        logMessage(
+            "MESSAGE SENT to chat " + chatId
+        );
+
+        document.getElementById(
+            "messageInput"
+        ).value = "";
+    }
+
+    /* ---------------- READ MESSAGE ---------------- */
+
+    function readMessage() {
+
+        if (!stompClient?.connected) {
+
+            alert("Connect first");
+
+            return;
+        }
+
+        const chatId =
+            document.getElementById(
+                "chatIdInput"
+            ).value;
+
+        const messageId =
+            document.getElementById(
+                "readMessageIdInput"
+            ).value;
+
+        if (
+            !chatId.trim()
+            || !messageId.trim()
+        ) {
+
+            alert(
+                "Enter chatId and messageId"
+            );
+
+            return;
+        }
+
+        stompClient.send(
+
+            "/app/chat.read",
+
+            {},
+
+            JSON.stringify({
+
+                chatId: Number(chatId),
+
+                id: Number(messageId)
+            })
+        );
+
+        logMessage(
+
+            "READ SENT: message "
+            + messageId
+            + " in chat "
+            + chatId
+        );
+
+        document.getElementById(
+            "readMessageIdInput"
+        ).value = "";
+    }
+
+</script>
+
+</body>
+</html>

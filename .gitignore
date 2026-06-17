@@ -1,0 +1,61 @@
+# =====================
+# Backend (Spring Boot)
+# =====================
+
+backend/target/
+backend/.idea/
+backend/*.iml
+backend/.classpath
+backend/.project
+backend/.settings/
+
+# Maven Wrapper binaries
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+backend/*.log
+backend/logs/
+
+# Environment
+backend/.env
+backend/application-local.yml
+
+# =====================
+# Frontend (React/Vite)
+# =====================
+
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Env
+frontend/.env
+frontend/.env.local
+
+# IDE
+frontend/.idea/
+frontend/*.iml
+
+# =====================
+# Common
+# =====================
+
+.idea/
+.vscode/
+
+.DS_Store
+Thumbs.db
+
+*.swp
+*.tmp
+
+# =====================
+# Git
+# =====================
+
+.git
+
+# Secrets
+backend/src/main/resources/application-secrets.yml
+backend/docker/.env
