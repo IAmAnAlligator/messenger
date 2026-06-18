@@ -62,6 +62,10 @@ public class AuthService {
 
   public AuthResponse refresh(String refreshToken) {
 
+    if (refreshToken == null) {
+      throw new UnauthorizedException("No refresh token");
+    }
+
     // 1. проверка валидности токена
     if (!jwtService.isTokenValid(refreshToken)) {
       throw new UnauthorizedException("Invalid or expired refresh token");

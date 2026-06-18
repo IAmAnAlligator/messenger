@@ -10,7 +10,7 @@ backend/.project
 backend/.settings/
 
 # Maven Wrapper binaries
-backend/.mvn/wrapper/maven-wrapper.jar
+#backend/.mvn/wrapper/maven-wrapper.jar
 
 # Logs
 backend/*.log

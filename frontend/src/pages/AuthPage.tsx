@@ -1,44 +1,69 @@
 import { useState } from "react";
-import { login, register } from "../services/authService";
+import { login as loginRequest, register } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
+/**
+ * 🔐 Страница авторизации
+ *
+ * RESPONSIBILITY:
+ * - собрать username/password
+ * - вызвать API
+ * - передать accessToken в AuthContext
+ * - перейти в защищённую зону
+ *
+ * ❌ НЕ должна:
+ * - напрямую управлять localStorage
+ * - дублировать auth state
+ */
 export default function AuthPage() {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+
     const navigate = useNavigate();
+
+    /**
+     * 🔐 login из AuthContext (НЕ authService)
+     * это важно — единая точка управления auth
+     */
     const { login: setAuth } = useAuth();
 
+    // =========================
+    // 🔑 LOGIN
+    // =========================
     async function handleLogin() {
-
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-
         try {
-            const auth = await login({
+            /**
+             * 🌐 запрос на backend
+             */
+            const auth = await loginRequest({
                 username,
                 password
             });
 
-            setAuth(auth.accessToken, auth.refreshToken);
+            /**
+             * 🔐 сохраняем токен через AuthContext
+             * (внутри он вызовет fetchMe и обновит user)
+             */
+            await setAuth(auth.accessToken);
 
-            localStorage.setItem("accessToken", auth.accessToken);
-            localStorage.setItem("refreshToken", auth.refreshToken);
-
-            navigate("/chats");
+            /**
+             * 🚀 переход в защищённую часть
+             */
+            navigate("/chats", { replace: true });
 
             alert("Login success");
+
         } catch (e) {
             alert("Login error");
         }
     }
 
+    // =========================
+    // 📝 REGISTER
+    // =========================
     async function handleRegister() {
-
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-
         try {
             await register({
                 username,
@@ -46,6 +71,7 @@ export default function AuthPage() {
             });
 
             alert("Register success (now you can login)");
+
         } catch (e) {
             alert("Register error");
         }
@@ -56,31 +82,52 @@ export default function AuthPage() {
 
             <h2>Auth</h2>
 
+            {/* 👤 username */}
             <input
                 placeholder="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={{ display: "block", width: "100%", marginBottom: 10 }}
+                onChange={(e) =>
+                    setUsername(e.target.value)
+                }
+                style={{
+                    display: "block",
+                    width: "100%",
+                    marginBottom: 10
+                }}
             />
 
+            {/* 🔒 password */}
             <input
                 type="password"
                 placeholder="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ display: "block", width: "100%", marginBottom: 10 }}
+                onChange={(e) =>
+                    setPassword(e.target.value)
+                }
+                style={{
+                    display: "block",
+                    width: "100%",
+                    marginBottom: 10
+                }}
             />
 
+            {/* 🔑 login */}
             <button
                 onClick={handleLogin}
-                style={{ width: "100%", marginBottom: 10 }}
+                style={{
+                    width: "100%",
+                    marginBottom: 10
+                }}
             >
                 Login
             </button>
 
+            {/* 📝 register */}
             <button
                 onClick={handleRegister}
-                style={{ width: "100%" }}
+                style={{
+                    width: "100%"
+                }}
             >
                 Register
             </button>
