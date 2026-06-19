@@ -25,17 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MessageController {
 
-  //  private final ChatMessageProducer producer;
-  //
-  //  @PostMapping("/api/messages")
-  //  public void send(@RequestBody ChatMessageDto dto) {
-  //    log.info("Incoming message: {}", dto);
-  //
-  //    producer.send(dto);
-  //
-  //    log.info("Message successfully sent to Kafka");
-  //  }
-
   private final MessageService messageService;
 
   @PostMapping
