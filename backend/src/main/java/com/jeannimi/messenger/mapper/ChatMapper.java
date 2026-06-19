@@ -48,7 +48,7 @@ public class ChatMapper {
                             .user(
                                 UserDto.builder()
                                     .id(cm.getUser().getId())
-                                    .username(cm.getUser().getUsername())
+                                    .username(cm.getUser().getUsername().getValue())
                                     .role(cm.getUser().getRole())
                                     .build())
                             .chatRole(cm.getRole())

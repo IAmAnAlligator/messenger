@@ -19,7 +19,7 @@ public class UserService {
     User user =
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 
-    return new UserDto(user.getId(), user.getUsername(), user.getRole());
+    return new UserDto(user.getId(), user.getUsername().getValue(), user.getRole());
   }
 
   public List<UserDto> searchUsers(String query, Long currentUserId) {
@@ -32,7 +32,7 @@ public class UserService {
 
     return users.stream()
         .filter(u -> !u.getId().equals(currentUserId)) // исключаем себя
-        .map(u -> new UserDto(u.getId(), u.getUsername(), u.getRole()))
+        .map(u -> new UserDto(u.getId(), u.getUsername().getValue(), u.getRole()))
         .toList();
   }
 }

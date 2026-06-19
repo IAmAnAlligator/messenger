@@ -18,9 +18,7 @@ type ChatType = "PRIVATE" | "GROUP";
  */
 type UserDto = {
     id: number;
-    username: {
-        value: string;
-    };
+    username: string;
     role: string;
 };
 
@@ -266,7 +264,7 @@ export default function ChatsPage() {
                                         addUser(user);
                                     }}
                                 >
-                                    {user.username.value} (id: {user.id})
+                                    {user.username} (id: {user.id})
                                 </div>
                             ))}
                         </div>
@@ -288,7 +286,7 @@ export default function ChatsPage() {
                             key={user.id}
                             style={{ display: "flex", gap: 10 }}
                         >
-                            <span>{user.username.value}</span>
+                            <span>{user.username}</span>
 
                             <button onClick={() => removeUser(user.id)}>
                                 remove

@@ -18,7 +18,7 @@ public class MessageMapper {
         .sender(
             UserDto.builder()
                 .id(message.getSender().getId())
-                .username(message.getSender().getUsername())
+                .username(message.getSender().getUsername().getValue())
                 .build())
         .build();
   }

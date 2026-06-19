@@ -179,7 +179,7 @@ public class MessageServiceImpl implements MessageService {
         .chatId(m.getChat().getId())
         .sender(
             new UserDto(
-                m.getSender().getId(), m.getSender().getUsername(), m.getSender().getRole()))
+                m.getSender().getId(), m.getSender().getUsername().getValue(), m.getSender().getRole()))
         .content(m.getContent())
         .createdAt(m.getCreatedAt())
         .status(m.getStatus().name())
