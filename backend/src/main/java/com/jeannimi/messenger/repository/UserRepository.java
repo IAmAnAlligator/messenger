@@ -10,9 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-  Optional<User> findByUsername(Username username);
+  Optional<User> findByUsername_ValueIgnoreCase(String username);
 
-  boolean existsByUsername(Username username);
+  boolean existsByUsername_ValueIgnoreCase(String username);
 
   @Query(
       """

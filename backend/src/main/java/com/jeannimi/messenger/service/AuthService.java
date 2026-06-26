@@ -29,7 +29,7 @@ public class AuthService {
 
     User user =
         userRepository
-            .findByUsername(username)
+            .findByUsername_ValueIgnoreCase(username.getValue())
             .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
     if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
@@ -46,7 +46,7 @@ public class AuthService {
 
     Username username = new Username(request.getUsername());
 
-    if (userRepository.existsByUsername(username)) {
+    if (userRepository.existsByUsername_ValueIgnoreCase(username.getValue())) {
       throw new ConflictException("User already exists");
     }
 

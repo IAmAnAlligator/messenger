@@ -8,22 +8,33 @@ import lombok.Getter;
 @Embeddable
 public class Username {
 
-  // @JsonValue
   private String value;
 
   protected Username() {} // нужен для JPA
 
-  // @JsonCreator
   public Username(String value) {
-    if (value == null || value.isBlank()) {
-      throw new IllegalArgumentException("Username must not be blank");
+
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Username must not be blank"
+      );
+    }
+
+    value = value.trim();
+
+    if (value.isBlank()) {
+      throw new IllegalArgumentException(
+          "Username must not be blank"
+      );
     }
 
     if (value.length() > 100) {
-      throw new IllegalArgumentException("Username too long");
+      throw new IllegalArgumentException(
+          "Username too long"
+      );
     }
 
-    this.value = value.trim().toLowerCase();
+    this.value = value;
   }
 
   // важно для JPA / коллекций
