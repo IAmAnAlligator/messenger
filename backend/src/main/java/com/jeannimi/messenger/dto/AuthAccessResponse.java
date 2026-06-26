@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,5 +12,4 @@ import lombok.Setter;
 public class AuthAccessResponse {
 
   private String accessToken;
-
 }

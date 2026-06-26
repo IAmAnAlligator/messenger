@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.service;
 
 import com.jeannimi.messenger.dto.MessageDto;
+import com.jeannimi.messenger.dto.ReadResult;
 import com.jeannimi.messenger.dto.UserDto;
 import com.jeannimi.messenger.entity.Chat;
 import com.jeannimi.messenger.entity.Message;
@@ -127,7 +128,7 @@ public class MessageServiceImpl implements MessageService {
   // =========================
 
   @Override
-  public void markAsRead(Long chatId, Long messageId, Long userId) {
+  public ReadResult markAsRead(Long chatId, Long messageId, Long userId) {
 
     checkMembership(chatId, userId);
 
@@ -136,14 +137,20 @@ public class MessageServiceImpl implements MessageService {
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    // ❗ Нельзя читать свои сообщения
     if (message.getSender().getId().equals(userId)) {
       throw new BadRequestException("Cannot mark your own message as read");
     }
 
+    boolean changed = false;
+
     if (message.getStatus() != MessageStatus.READ) {
+
       message.markRead();
+
+      changed = true;
     }
+
+    return new ReadResult(toDto(message), changed);
   }
 
   // =========================
@@ -173,16 +180,18 @@ public class MessageServiceImpl implements MessageService {
     }
   }
 
-  public MessageDto toDto(Message m) {
+  private MessageDto toDto(Message m) {
     return MessageDto.builder()
         .id(m.getId())
         .chatId(m.getChat().getId())
         .sender(
             new UserDto(
-                m.getSender().getId(), m.getSender().getUsername().getValue(), m.getSender().getRole()))
+                m.getSender().getId(),
+                m.getSender().getUsername().getValue(),
+                m.getSender().getRole()))
         .content(m.getContent())
         .createdAt(m.getCreatedAt())
-        .status(m.getStatus().name())
+        .status(m.getStatus())
         .build();
   }
 }

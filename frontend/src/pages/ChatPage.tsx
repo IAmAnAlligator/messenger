@@ -1,3 +1,4 @@
+
 import {
     useEffect,
     useState
@@ -28,18 +29,11 @@ type UserDto = {
 
 type MessageDto = {
     id: number;
-
     chatId: number;
-
     sender: UserDto;
-
     content: string;
-
     createdAt: string;
-
-    status:
-        | "SENT"
-        | "READ";
+    status: "SENT" | "READ";
 };
 
 export default function ChatPage() {
@@ -50,21 +44,25 @@ export default function ChatPage() {
     const navigate =
         useNavigate();
 
-    const {
-        user
-    } =
+    const { user } =
         useAuth();
 
-    const [messages,
-        setMessages] =
+    const [
+        messages,
+        setMessages
+    ] =
         useState<MessageDto[]>([]);
 
-    const [text,
-        setText] =
+    const [
+        text,
+        setText
+    ] =
         useState("");
 
-    const [loading,
-        setLoading] =
+    const [
+        loading,
+        setLoading
+    ] =
         useState(true);
 
     function sortMessages(
@@ -74,10 +72,12 @@ export default function ChatPage() {
         return [
             ...items
         ].sort(
+
             (
                 a,
                 b
             ) =>
+
                 new Date(
                     a.createdAt
                 ).getTime()
@@ -87,37 +87,51 @@ export default function ChatPage() {
                 new Date(
                     b.createdAt
                 ).getTime()
+
         );
 
     }
 
-    useEffect(() => {
+    useEffect(
 
-        loadMessages();
+        () => {
 
-        const token =
-            localStorage.getItem(
-                "accessToken"
-            );
+            const token =
+                localStorage.getItem(
+                    "accessToken"
+                );
 
-        if (
-            token
-        ) {
+            if (
+                token
+            ) {
 
-            connectSocket(
-                token,
-                subscribeMessages
-            );
+                connectSocket(
 
-        }
+                    token,
 
-        return () => {
+                    async () => {
 
-            disconnectSocket();
+                        subscribeMessages();
 
-        };
+                        await loadMessages();
 
-    }, [chatId]);
+                    }
+
+                );
+
+            }
+
+            return () => {
+
+                disconnectSocket();
+
+            };
+
+        },
+
+        [chatId]
+
+    );
 
     async function loadMessages() {
 
@@ -145,17 +159,23 @@ export default function ChatPage() {
                 )
             );
 
-            await markMessagesAsRead(
+            sendReadEvents(
                 loaded
             );
 
-        } catch (e) {
+        }
+
+        catch (
+            e
+        ) {
 
             console.error(
                 e
             );
 
-        } finally {
+        }
+
+        finally {
 
             setLoading(
                 false
@@ -165,7 +185,7 @@ export default function ChatPage() {
 
     }
 
-    async function markMessagesAsRead(
+    function sendReadEvents(
         loaded: MessageDto[]
     ) {
 
@@ -175,68 +195,59 @@ export default function ChatPage() {
             return;
         }
 
-        const unread =
-            loaded.filter(
-                m =>
-                    m.sender.id !==
-                    user.id &&
-                    m.status ===
-                    "SENT"
-            );
+        const socket =
+            getSocket();
 
-        try {
-
-            await Promise.all(
-
-                unread.map(
-                    m =>
-                        api.patch(
-                            `/chats/${chatId}/messages/${m.id}/read`
-                        )
-                )
-
-            );
-
-            setMessages(
-                prev =>
-
-                    prev.map(
-                        m => {
-
-                            const exists =
-                                unread.some(
-                                    x =>
-                                        x.id ===
-                                        m.id
-                                );
-
-                            if (
-                                !exists
-                            ) {
-                                return m;
-                            }
-
-                            return {
-
-                                ...m,
-
-                                status:
-                                    "READ"
-
-                            };
-
-                        }
-                    )
-
-            );
-
-        } catch (e) {
-
-            console.error(
-                e
-            );
-
+        if (
+            !socket?.connected
+        ) {
+            return;
         }
+
+        loaded
+            .filter(
+
+                m =>
+
+                    m.sender.id
+                    !==
+                    user.id
+
+                    &&
+
+                    m.status
+                    ===
+                    "SENT"
+
+            )
+
+            .forEach(
+
+                m => {
+
+                    socket.publish({
+
+                        destination:
+                            "/app/chat.read",
+
+                        body:
+                            JSON.stringify({
+
+                                id:
+                                    m.id,
+
+                                chatId:
+                                    Number(
+                                        chatId
+                                    )
+
+                            })
+
+                    });
+
+                }
+
+            );
 
     }
 
@@ -257,41 +268,126 @@ export default function ChatPage() {
 
             frame => {
 
-                const message =
+                const incoming =
                     JSON.parse(
                         frame.body
-                    );
+                    ) as MessageDto;
 
                 setMessages(
+
                     prev => {
 
-                        if (
+                        const index =
+                            prev.findIndex(
 
-                            prev.some(
                                 x =>
-                                    x.id ===
-                                    message.id
-                            )
 
+                                    x.id
+                                    ===
+                                    incoming.id
+
+                            );
+
+                        if (
+                            index
+                            !==
+                            -1
                         ) {
 
-                            return prev;
+                            const updated =
+                                [
+                                    ...prev
+                                ];
+
+                            updated[
+                                index
+                            ] =
+                            {
+                                ...updated[
+                                    index
+                                ],
+
+                                ...incoming
+                            };
+
+                            return sortMessages(
+                                updated
+                            );
 
                         }
 
-                        return sortMessages([
-                            ...prev,
-                            message
-                        ]);
+                        const next =
+                            sortMessages([
+
+                                ...prev,
+
+                                incoming
+
+                            ]);
+
+                        if (
+
+                            user
+
+                            &&
+
+                            incoming.sender.id
+                            !==
+                            user.id
+
+                            &&
+
+                            incoming.status
+                            ===
+                            "SENT"
+
+                        ) {
+
+                            setTimeout(
+
+                                () => {
+
+                                    socket.publish({
+
+                                        destination:
+                                            "/app/chat.read",
+
+                                        body:
+                                            JSON.stringify({
+
+                                                id:
+                                                    incoming.id,
+
+                                                chatId:
+                                                    Number(
+                                                        chatId
+                                                    )
+
+                                            })
+
+                                    });
+
+                                },
+
+                                0
+
+                            );
+
+                        }
+
+                        return next;
 
                     }
+
                 );
 
             },
 
             {
+
                 id:
                     `chat-${chatId}`
+
             }
 
         );
@@ -337,7 +433,9 @@ export default function ChatPage() {
 
         });
 
-        setText("");
+        setText(
+            ""
+        );
 
     }
 
@@ -351,10 +449,11 @@ export default function ChatPage() {
         >
 
             <button
-                onClick={() =>
-                    navigate(
-                        "/chats"
-                    )
+                onClick={
+                    () =>
+                        navigate(
+                            "/chats"
+                        )
                 }
             >
                 ← Back
@@ -381,14 +480,18 @@ export default function ChatPage() {
             >
 
                 {
-                    loading &&
-                    <p>
-                        Loading...
-                    </p>
+                    loading
+                    &&
+                    (
+                        <p>
+                            Loading...
+                        </p>
+                    )
                 }
 
                 {
                     messages.map(
+
                         m => (
 
                             <div
@@ -434,6 +537,7 @@ export default function ChatPage() {
                             </div>
 
                         )
+
                     )
                 }
 
@@ -450,9 +554,11 @@ export default function ChatPage() {
             >
 
                 <input
+
                     value={
                         text
                     }
+
                     onChange={
                         e =>
                             setText(
@@ -460,11 +566,14 @@ export default function ChatPage() {
                                     .value
                             )
                     }
+
                     placeholder="Type message..."
+
                     style={{
                         flex:
                             1
                     }}
+
                 />
 
                 <button
@@ -482,3 +591,4 @@ export default function ChatPage() {
     );
 
 }
+

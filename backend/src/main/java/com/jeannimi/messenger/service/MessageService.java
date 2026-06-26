@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.service;
 
 import com.jeannimi.messenger.dto.MessageDto;
+import com.jeannimi.messenger.dto.ReadResult;
 import java.util.List;
 
 public interface MessageService {
@@ -11,7 +12,7 @@ public interface MessageService {
 
   MessageDto getMessage(Long chatId, Long messageId, Long userId);
 
-  void markAsRead(Long chatId, Long messageId, Long userId);
+  ReadResult markAsRead(Long chatId, Long messageId, Long userId);
 
   void deleteMessage(Long chatId, Long messageId, Long userId);
 }

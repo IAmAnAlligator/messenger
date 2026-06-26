@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.dto;
 
+import com.jeannimi.messenger.entity.MessageStatus;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +19,5 @@ public class MessageDto {
 
   private String content;
   private Instant createdAt;
-  private String status;
+  private MessageStatus status;
 }

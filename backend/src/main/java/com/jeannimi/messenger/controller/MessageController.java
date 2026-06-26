@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,13 +53,13 @@ public class MessageController {
   }
 
   // MARK AS READ
-  @PatchMapping("/{messageId}/read")
-  public void markAsRead(
-      @PathVariable Long chatId,
-      @PathVariable Long messageId,
-      @AuthenticationPrincipal CustomUserDetails user) {
-    messageService.markAsRead(chatId, messageId, user.getId());
-  }
+  //  @PatchMapping("/{messageId}/read")
+  //  public void markAsRead(
+  //      @PathVariable Long chatId,
+  //      @PathVariable Long messageId,
+  //      @AuthenticationPrincipal CustomUserDetails user) {
+  //    messageService.markAsRead(chatId, messageId, user.getId());
+  //  }
 
   // DELETE
   @DeleteMapping("/{messageId}")

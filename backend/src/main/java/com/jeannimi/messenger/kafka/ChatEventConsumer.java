@@ -19,7 +19,6 @@ public class ChatEventConsumer {
 
   private final SimpMessagingTemplate messagingTemplate;
 
-
   /*
 
   1. получает raw JSON
@@ -73,7 +72,10 @@ public class ChatEventConsumer {
 
       MessageDto dto = objectMapper.readValue(payload, MessageDto.class);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId() + "/read", dto);
+      messagingTemplate.convertAndSend(
+          "/topic/chat/" + dto.getChatId(),
+          dto
+      );
 
       ack.acknowledge();
 

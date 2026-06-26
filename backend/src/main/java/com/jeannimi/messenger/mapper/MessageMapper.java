@@ -14,7 +14,7 @@ public class MessageMapper {
         .chatId(message.getChat().getId())
         .content(message.getContent())
         .createdAt(message.getCreatedAt())
-        .status(message.getStatus().name())
+        .status(message.getStatus())
         .sender(
             UserDto.builder()
                 .id(message.getSender().getId())

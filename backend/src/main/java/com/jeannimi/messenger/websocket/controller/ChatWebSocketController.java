@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.websocket.controller;
 
 import com.jeannimi.messenger.dto.MessageDto;
+import com.jeannimi.messenger.dto.ReadResult;
 import com.jeannimi.messenger.kafka.ChatEventProducer;
 import com.jeannimi.messenger.service.MessageService;
 import com.jeannimi.messenger.websocket.security.WsUserPrincipal;
@@ -32,13 +33,13 @@ public class ChatWebSocketController {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    Long userId = principal.userId();
-
     validateReadMessage(dto);
 
-    messageService.markAsRead(dto.getChatId(), dto.getId(), userId);
+    ReadResult result = messageService.markAsRead(dto.getChatId(), dto.getId(), principal.userId());
 
-    producer.readMessage(dto);
+    if (result.changed()) {
+      producer.readMessage(result.message());
+    }
   }
 
   private void validateSendMessage(MessageDto dto) {

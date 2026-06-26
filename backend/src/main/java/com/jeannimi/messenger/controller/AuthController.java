@@ -8,7 +8,6 @@ import com.jeannimi.messenger.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -21,27 +20,18 @@ public class AuthController {
 
   private final AuthService authService;
 
-
   // =========================
   // LOGIN
   // =========================
   @PostMapping("/login")
   public ResponseEntity<AuthAccessResponse> login(
-      @RequestBody LoginRequest request,
-      HttpServletResponse response
-  ) {
+      @RequestBody LoginRequest request, HttpServletResponse response) {
 
     AuthResponse auth = authService.login(request);
 
-    setRefreshCookie(
-        response,
-        auth.getRefreshToken(),
-        Duration.ofDays(30).getSeconds()
-    );
+    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(
-        new AuthAccessResponse(auth.getAccessToken())
-    );
+    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
   }
 
   // =========================
@@ -49,21 +39,13 @@ public class AuthController {
   // =========================
   @PostMapping("/register")
   public ResponseEntity<AuthAccessResponse> register(
-      @RequestBody RegisterRequest request,
-      HttpServletResponse response
-  ) {
+      @RequestBody RegisterRequest request, HttpServletResponse response) {
 
     AuthResponse auth = authService.register(request);
 
-    setRefreshCookie(
-        response,
-        auth.getRefreshToken(),
-        Duration.ofDays(30).getSeconds()
-    );
+    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(
-        new AuthAccessResponse(auth.getAccessToken())
-    );
+    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
   }
 
   // =========================
@@ -72,20 +54,13 @@ public class AuthController {
   @PostMapping("/refresh")
   public ResponseEntity<AuthAccessResponse> refresh(
       @CookieValue(value = "refreshToken", required = false) String refreshToken,
-      HttpServletResponse response
-  ) {
+      HttpServletResponse response) {
 
     AuthResponse auth = authService.refresh(refreshToken);
 
-    setRefreshCookie(
-        response,
-        auth.getRefreshToken(),
-        Duration.ofDays(30).getSeconds()
-    );
+    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(
-        new AuthAccessResponse(auth.getAccessToken())
-    );
+    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
   }
 
   // =========================
@@ -95,10 +70,8 @@ public class AuthController {
   public ResponseEntity<Void> logout(HttpServletResponse response) {
 
     setRefreshCookie(
-        response,
-        "",
-        0 // 👈 удаление cookie
-    );
+        response, "", 0 // 👈 удаление cookie
+        );
 
     return ResponseEntity.ok().build();
   }
@@ -106,22 +79,16 @@ public class AuthController {
   // =========================
   // SINGLE COOKIE METHOD
   // =========================
-  private void setRefreshCookie(
-      HttpServletResponse response,
-      String value,
-      long maxAgeSeconds
-  ) {
+  private void setRefreshCookie(HttpServletResponse response, String value, long maxAgeSeconds) {
 
-    ResponseCookie cookie = ResponseCookie.from(
-            "refreshToken",
-            value == null ? "" : value
-        )
-        .httpOnly(true)
-        .secure(false) // true в production
-        .path("/")
-        .sameSite("Lax")
-        .maxAge(maxAgeSeconds)
-        .build();
+    ResponseCookie cookie =
+        ResponseCookie.from("refreshToken", value == null ? "" : value)
+            .httpOnly(true)
+            .secure(false) // true в production
+            .path("/")
+            .sameSite("Lax")
+            .maxAge(maxAgeSeconds)
+            .build();
 
     response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
   }

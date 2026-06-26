@@ -25,9 +25,7 @@ public class UserController {
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
-      @RequestParam String query,
-      @AuthenticationPrincipal CustomUserDetails user
-  ) {
+      @RequestParam String query, @AuthenticationPrincipal CustomUserDetails user) {
     return userService.searchUsers(query, user.getId());
   }
 }

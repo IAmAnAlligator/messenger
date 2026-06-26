@@ -27,8 +27,8 @@ public class KafkaConfig {
   @Bean
   public DefaultErrorHandler errorHandler() {
     // Если consumer падает:
-    //retry каждые 1 сек
-    //максимум 5 попыток
+    // retry каждые 1 сек
+    // максимум 5 попыток
     return new DefaultErrorHandler(new FixedBackOff(1000L, 5));
   }
 
@@ -41,7 +41,7 @@ public class KafkaConfig {
     factory.setConsumerFactory(consumerFactory);
 
     // 3 consumer thread'а
-    //параллельная обработка partitions
+    // параллельная обработка partitions
     factory.setConcurrency(3);
 
     factory.setCommonErrorHandler(errorHandler);
