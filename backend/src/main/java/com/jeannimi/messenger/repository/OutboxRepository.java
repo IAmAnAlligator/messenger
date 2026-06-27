@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface OutboxRepository extends JpaRepository<OutboxEvent, Long> {
 
-  List<OutboxEvent> findByStatus(OutboxStatus status);
+  List<OutboxEvent> findByStatusOrderByIdAsc(OutboxStatus status);
 }

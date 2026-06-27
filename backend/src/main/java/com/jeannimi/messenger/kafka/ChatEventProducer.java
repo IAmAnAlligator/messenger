@@ -54,10 +54,7 @@ public class ChatEventProducer {
 
   public void readMessage(MessageDto dto) {
 
-    log.info(
-        "SEND READ {}",
-        dto.getId()
-    );
+    log.info("SEND READ {}", dto.getId());
 
     try {
 

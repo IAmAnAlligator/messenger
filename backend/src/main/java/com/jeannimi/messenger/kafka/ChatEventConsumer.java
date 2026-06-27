@@ -3,8 +3,12 @@ package com.jeannimi.messenger.kafka;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.dto.MessageDto;
+import com.jeannimi.messenger.entity.ProcessedMessage;
+import com.jeannimi.messenger.repository.ProcessedMessageRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -19,17 +23,18 @@ public class ChatEventConsumer {
 
   private final SimpMessagingTemplate messagingTemplate;
 
+  private final ProcessedMessageRepository processedRepository;
+
   /*
+  1. Получаем JSON из Kafka
+  2. Парсим в DTO
+  3. Проверяем идемпотентность
+  4. Отправляем в WebSocket
+  5. Фиксируем обработку
+  6. Commit offset
+  */
 
-  1. получает raw JSON
-  2. парсит в DTO
-  3. логика обработки
-  4. отправка в WebSocket
-  5. commit offset
-  6. error handling
-
-   */
-
+  @Transactional
   @KafkaListener(topics = "chat.messages", groupId = "chat-ws-group")
   public void consumeMessage(String payload, Acknowledgment ack) throws JsonProcessingException {
 
@@ -41,16 +46,34 @@ public class ChatEventConsumer {
 
       MessageDto dto = objectMapper.readValue(payload, MessageDto.class);
 
+      if (dto.getId() == null) {
+        throw new IllegalStateException("message id is null");
+      }
+
       log.info("[PARSED] id={}, chat={}", dto.getId(), dto.getChatId());
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+      boolean duplicate = false;
 
-      log.info("[WS SENT] id={}", dto.getId());
+      try {
 
-      //      throw new RuntimeException(
-      //          "simulate failure"
-      //      );
+        processedRepository.save(new ProcessedMessage(dto.getId()));
 
+      } catch (DataIntegrityViolationException e) {
+
+        duplicate = true;
+
+        log.info("[SKIP DUPLICATE] message={}", dto.getId());
+      }
+
+      // Отправляем только новые сообщения
+      if (!duplicate) {
+
+        messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+
+        log.info("[WS SENT] id={}", dto.getId());
+      }
+
+      // Kafka подтверждаем всегда
       ack.acknowledge();
 
     } catch (Exception e) {
@@ -72,10 +95,7 @@ public class ChatEventConsumer {
 
       MessageDto dto = objectMapper.readValue(payload, MessageDto.class);
 
-      messagingTemplate.convertAndSend(
-          "/topic/chat/" + dto.getChatId(),
-          dto
-      );
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
 
       ack.acknowledge();
 

@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.repository;
 
-import com.jeannimi.messenger.domain.Username;
 import com.jeannimi.messenger.entity.User;
 import java.util.List;
 import java.util.Optional;

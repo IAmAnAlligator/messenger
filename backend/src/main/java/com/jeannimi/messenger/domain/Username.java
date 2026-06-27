@@ -15,23 +15,17 @@ public class Username {
   public Username(String value) {
 
     if (value == null) {
-      throw new IllegalArgumentException(
-          "Username must not be blank"
-      );
+      throw new IllegalArgumentException("Username must not be blank");
     }
 
     value = value.trim();
 
     if (value.isBlank()) {
-      throw new IllegalArgumentException(
-          "Username must not be blank"
-      );
+      throw new IllegalArgumentException("Username must not be blank");
     }
 
     if (value.length() > 100) {
-      throw new IllegalArgumentException(
-          "Username too long"
-      );
+      throw new IllegalArgumentException("Username too long");
     }
 
     this.value = value;
