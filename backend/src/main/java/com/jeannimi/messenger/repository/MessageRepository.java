@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -31,4 +32,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 """)
   List<Message> findWithSenderByChatIdAndCursor(
       @Param("chatId") Long chatId, @Param("cursor") Long cursor, Pageable pageable);
+
+  @Modifying
+  @Query("""
+DELETE FROM Message m
+WHERE m.chat.id = :chatId
+""")
+  int deleteByChatId(@Param("chatId") Long chatId);
 }

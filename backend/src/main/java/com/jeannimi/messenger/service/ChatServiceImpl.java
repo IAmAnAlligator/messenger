@@ -31,6 +31,7 @@ public class ChatServiceImpl implements ChatService {
   private final ChatRepository chatRepository;
   private final UserRepository userRepository;
   private final ChatMemberRepository chatMemberRepository;
+  private final MessageService messageService;
 
   // =========================
   // CREATE CHAT
@@ -180,6 +181,22 @@ public class ChatServiceImpl implements ChatService {
     chat.removeMember(userId, currentUserId);
 
     chatRepository.save(chat);
+  }
+
+  @Override
+  @Transactional
+  public void deleteChat(Long chatId, Long currentUserId) {
+
+    Chat chat =
+        chatRepository
+            .findByIdWithMembers(chatId)
+            .orElseThrow(() -> new NotFoundException("Chat not found"));
+
+    chat.ensureCanDelete(currentUserId);
+
+    messageService.deleteAllByChat(chatId);
+
+    chatRepository.delete(chat);
   }
 
   // =========================

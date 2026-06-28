@@ -15,4 +15,6 @@ public interface MessageService {
   ReadResult markAsRead(Long chatId, Long messageId, Long userId);
 
   void deleteMessage(Long chatId, Long messageId, Long userId);
+
+  void deleteAllByChat(Long chatId);
 }

@@ -174,6 +174,11 @@ public class MessageServiceImpl implements MessageService {
     messageRepository.delete(message);
   }
 
+  @Override
+  public void deleteAllByChat(Long chatId) {
+    messageRepository.deleteByChatId(chatId);
+  }
+
   private void checkMembership(Long chatId, Long userId) {
     if (!chatMemberRepository.existsByChatIdAndUserId(chatId, userId)) {
       throw new ForbiddenException("You are not a member of this chat");

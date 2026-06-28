@@ -293,4 +293,17 @@ public class Chat {
     }
     member.setChat(null);
   }
+
+  public void ensureCanDelete(Long currentUserId) {
+
+    ChatMember currentUser = getMember(currentUserId);
+
+    if (currentUser == null) {
+      throw new ForbiddenException("Not a member of this chat");
+    }
+
+    if (!this.isPrivate() && !currentUser.isAdmin()) {
+      throw new ForbiddenException("Only admin can delete group chat");
+    }
+  }
 }

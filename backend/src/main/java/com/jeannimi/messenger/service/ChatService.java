@@ -17,4 +17,6 @@ public interface ChatService {
   void removeMember(Long chatId, Long userId, Long currentUserId);
 
   boolean isParticipant(Long chatId, Long userId);
+
+  void deleteChat(Long chatId, Long currentUserId);
 }
