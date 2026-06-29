@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.dto.DeleteMessageDto;
 import com.jeannimi.messenger.dto.MessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,8 @@ public class ChatEventProducer {
   private static final String MESSAGE_TOPIC = "chat.messages";
 
   private static final String READ_TOPIC = "chat.read";
+
+  private static final String DELETE_TOPIC = "chat.delete";
 
   /*
 
@@ -64,6 +67,22 @@ public class ChatEventProducer {
     } catch (Exception e) {
 
       throw new RuntimeException(e);
+    }
+  }
+
+  public void deleteMessage(DeleteMessageDto dto) {
+
+    try {
+
+      log.info("DELETE MESSAGE {}", dto.getId());
+
+      kafkaTemplate
+          .send(DELETE_TOPIC, dto.getChatId().toString(), objectMapper.writeValueAsString(dto))
+          .get();
+
+    } catch (Exception e) {
+
+      throw new RuntimeException("Kafka delete publish failed", e);
     }
   }
 }

@@ -1,4 +1,3 @@
-
 import {
     useEffect,
     useState
@@ -34,6 +33,11 @@ type MessageDto = {
     content: string;
     createdAt: string;
     status: "SENT" | "READ";
+};
+
+type DeleteMessageEvent = {
+    type: "MESSAGE_DELETED";
+    messageId: number;
 };
 
 export default function ChatPage() {
@@ -185,6 +189,41 @@ export default function ChatPage() {
 
     }
 
+    function deleteMessage(
+        messageId: number
+    ) {
+
+        const socket =
+            getSocket();
+
+        if (
+            !socket?.connected
+        ) {
+            return;
+        }
+
+        socket.publish({
+
+            destination:
+                "/app/chat.delete",
+
+            body:
+                JSON.stringify({
+
+                    id:
+                        messageId,
+
+                    chatId:
+                        Number(
+                            chatId
+                        )
+
+                })
+
+        });
+
+    }
+
     function sendReadEvents(
         loaded: MessageDto[]
     ) {
@@ -271,7 +310,39 @@ export default function ChatPage() {
                 const incoming =
                     JSON.parse(
                         frame.body
-                    ) as MessageDto;
+                    );
+
+                if (
+                    incoming.type
+                    ===
+                    "MESSAGE_DELETED"
+                ) {
+
+                    const event =
+                        incoming as DeleteMessageEvent;
+
+                    setMessages(
+
+                        prev =>
+
+                            prev.filter(
+
+                                m =>
+
+                                    m.id
+                                    !==
+                                    event.messageId
+
+                            )
+
+                    );
+
+                    return;
+
+                }
+
+                const message =
+                    incoming as MessageDto;
 
                 setMessages(
 
@@ -284,7 +355,7 @@ export default function ChatPage() {
 
                                     x.id
                                     ===
-                                    incoming.id
+                                    message.id
 
                             );
 
@@ -307,7 +378,7 @@ export default function ChatPage() {
                                     index
                                 ],
 
-                                ...incoming
+                                ...message
                             };
 
                             return sortMessages(
@@ -321,7 +392,7 @@ export default function ChatPage() {
 
                                 ...prev,
 
-                                incoming
+                                message
 
                             ]);
 
@@ -331,13 +402,13 @@ export default function ChatPage() {
 
                             &&
 
-                            incoming.sender.id
+                            message.sender.id
                             !==
                             user.id
 
                             &&
 
-                            incoming.status
+                            message.status
                             ===
                             "SENT"
 
@@ -356,7 +427,7 @@ export default function ChatPage() {
                                             JSON.stringify({
 
                                                 id:
-                                                    incoming.id,
+                                                    message.id,
 
                                                 chatId:
                                                     Number(
@@ -500,27 +571,75 @@ export default function ChatPage() {
                                 }
                                 style={{
                                     marginBottom:
-                                        12
+                                        12,
+
+                                    borderBottom:
+                                        "1px solid #eee",
+
+                                    paddingBottom:
+                                        8
                                 }}
                             >
 
-                                <b>
+                                <div
+                                    style={{
+                                        display:
+                                            "flex",
+
+                                        justifyContent:
+                                            "space-between",
+
+                                        alignItems:
+                                            "center"
+                                    }}
+                                >
+
+                                    <div>
+
+                                        <b>
+                                            {
+                                                m.sender
+                                                    .username
+                                            }
+                                        </b>
+
+                                        {" · "}
+
+                                        {
+                                            m.status
+                                        }
+
+                                    </div>
+
                                     {
-                                        m.sender
-                                            .username
+                                        user?.id
+                                        ===
+                                        m.sender.id
+
+                                        &&
+
+                                        (
+                                            <button
+                                                onClick={
+                                                    () =>
+                                                        deleteMessage(
+                                                            m.id
+                                                        )
+                                                }
+                                            >
+                                                🗑 Delete
+                                            </button>
+                                        )
                                     }
-                                </b>
 
-                                {" · "}
-
-                                {
-                                    m.status
-                                }
+                                </div>
 
                                 <div>
+
                                     {
                                         m.content
                                     }
+
                                 </div>
 
                                 <small>
@@ -591,4 +710,3 @@ export default function ChatPage() {
     );
 
 }
-

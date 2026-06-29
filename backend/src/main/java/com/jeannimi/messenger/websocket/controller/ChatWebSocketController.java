@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.websocket.controller;
 
+import com.jeannimi.messenger.dto.DeleteMessageDto;
 import com.jeannimi.messenger.dto.MessageDto;
 import com.jeannimi.messenger.dto.ReadResult;
 import com.jeannimi.messenger.kafka.ChatEventProducer;
@@ -39,6 +40,26 @@ public class ChatWebSocketController {
 
     if (result.changed()) {
       producer.readMessage(result.message());
+    }
+  }
+
+  @MessageMapping("/chat.delete")
+  public void delete(DeleteMessageDto dto, Authentication authentication) {
+
+    WsUserPrincipal principal = getPrincipal(authentication);
+
+    validateDeleteMessage(dto);
+
+    messageService.deleteMessage(dto.getChatId(), dto.getId(), principal.userId());
+
+    producer.deleteMessage(dto);
+  }
+
+  private void validateDeleteMessage(DeleteMessageDto dto) {
+
+    if (dto.getChatId() == null || dto.getId() == null) {
+
+      throw new IllegalArgumentException("Invalid delete DTO");
     }
   }
 

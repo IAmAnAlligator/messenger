@@ -2,6 +2,8 @@ package com.jeannimi.messenger.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.dto.DeleteMessageDto;
+import com.jeannimi.messenger.dto.MessageDeletedEvent;
 import com.jeannimi.messenger.dto.MessageDto;
 import com.jeannimi.messenger.entity.ProcessedMessage;
 import com.jeannimi.messenger.repository.ProcessedMessageRepository;
@@ -102,6 +104,27 @@ public class ChatEventConsumer {
     } catch (Exception e) {
 
       log.error("Read delivery failed", e);
+
+      throw new RuntimeException(e);
+    }
+  }
+
+  @KafkaListener(topics = "chat.delete", groupId = "chat-ws-group")
+  public void consumeDelete(String payload, Acknowledgment ack) {
+
+    try {
+
+      DeleteMessageDto dto = objectMapper.readValue(payload, DeleteMessageDto.class);
+
+      messagingTemplate.convertAndSend(
+          "/topic/chat/" + dto.getChatId(),
+          new MessageDeletedEvent("MESSAGE_DELETED", dto.getId()));
+
+      ack.acknowledge();
+
+    } catch (Exception e) {
+
+      log.error("Delete delivery failed", e);
 
       throw new RuntimeException(e);
     }

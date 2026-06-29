@@ -52,21 +52,12 @@ public class MessageController {
     return messageService.getMessage(chatId, messageId, user.getId());
   }
 
-  // MARK AS READ
-  //  @PatchMapping("/{messageId}/read")
-  //  public void markAsRead(
-  //      @PathVariable Long chatId,
-  //      @PathVariable Long messageId,
-  //      @AuthenticationPrincipal CustomUserDetails user) {
-  //    messageService.markAsRead(chatId, messageId, user.getId());
-  //  }
-
   // DELETE
-  @DeleteMapping("/{messageId}")
-  public void deleteMessage(
-      @PathVariable Long chatId,
-      @PathVariable Long messageId,
-      @AuthenticationPrincipal CustomUserDetails user) {
-    messageService.deleteMessage(chatId, messageId, user.getId());
-  }
+//  @DeleteMapping("/{messageId}")
+//  public void deleteMessage(
+//      @PathVariable Long chatId,
+//      @PathVariable Long messageId,
+//      @AuthenticationPrincipal CustomUserDetails user) {
+//    messageService.deleteMessage(chatId, messageId, user.getId());
+//  }
 }
