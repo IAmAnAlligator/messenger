@@ -40,673 +40,304 @@ type DeleteMessageEvent = {
     messageId: number;
 };
 
+type ChatDeletedEvent = {
+    type: "CHAT_DELETED";
+    chatId: number;
+};
+
 export default function ChatPage() {
 
-    const { chatId } =
-        useParams();
+    const { chatId } = useParams();
+    const navigate = useNavigate();
+    const { user } = useAuth();
 
-    const navigate =
-        useNavigate();
+    const [messages, setMessages] = useState<MessageDto[]>([]);
+    const [text, setText] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    const { user } =
-        useAuth();
-
-    const [
-        messages,
-        setMessages
-    ] =
-        useState<MessageDto[]>([]);
-
-    const [
-        text,
-        setText
-    ] =
-        useState("");
-
-    const [
-        loading,
-        setLoading
-    ] =
-        useState(true);
-
-    function sortMessages(
-        items: MessageDto[]
-    ) {
-
-        return [
-            ...items
-        ].sort(
-
-            (
-                a,
-                b
-            ) =>
-
-                new Date(
-                    a.createdAt
-                ).getTime()
-
-                -
-
-                new Date(
-                    b.createdAt
-                ).getTime()
-
+    function sortMessages(items: MessageDto[]) {
+        return [...items].sort(
+            (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
         );
-
     }
 
-    useEffect(
+    useEffect(() => {
 
-        () => {
+        const token = localStorage.getItem("accessToken");
 
-            const token =
-                localStorage.getItem(
-                    "accessToken"
-                );
+        if (token) {
+            connectSocket(token, async () => {
+                subscribeMessages();
+                await loadMessages();
+            });
+        }
 
-            if (
-                token
-            ) {
+        return () => {
+            disconnectSocket();
+        };
 
-                connectSocket(
-
-                    token,
-
-                    async () => {
-
-                        subscribeMessages();
-
-                        await loadMessages();
-
-                    }
-
-                );
-
-            }
-
-            return () => {
-
-                disconnectSocket();
-
-            };
-
-        },
-
-        [chatId]
-
-    );
+    }, [chatId]);
 
     async function loadMessages() {
 
         try {
 
-            setLoading(
-                true
+            setLoading(true);
+
+            const res = await api.get(
+                `/chats/${chatId}/messages`
             );
 
-            const res =
-                await api.get(
-                    `/chats/${chatId}/messages`
-                );
+            const loaded = Array.isArray(res.data)
+                ? res.data
+                : [];
 
-            const loaded =
-                Array.isArray(
-                    res.data
-                )
-                    ? res.data
-                    : [];
+            setMessages(sortMessages(loaded));
+            sendReadEvents(loaded);
 
-            setMessages(
-                sortMessages(
-                    loaded
-                )
-            );
-
-            sendReadEvents(
-                loaded
-            );
-
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-
-        catch (
-            e
-        ) {
-
-            console.error(
-                e
-            );
-
-        }
-
-        finally {
-
-            setLoading(
-                false
-            );
-
-        }
-
     }
 
-    function deleteMessage(
-        messageId: number
-    ) {
+    function deleteMessage(messageId: number) {
 
-        const socket =
-            getSocket();
+        const socket = getSocket();
 
-        if (
-            !socket?.connected
-        ) {
-            return;
-        }
+        if (!socket?.connected) return;
 
         socket.publish({
-
-            destination:
-                "/app/chat.delete",
-
-            body:
-                JSON.stringify({
-
-                    id:
-                        messageId,
-
-                    chatId:
-                        Number(
-                            chatId
-                        )
-
-                })
-
+            destination: "/app/chat.delete",
+            body: JSON.stringify({
+                id: messageId,
+                chatId: Number(chatId)
+            })
         });
 
     }
 
-    function sendReadEvents(
-        loaded: MessageDto[]
-    ) {
+    function sendReadEvents(loaded: MessageDto[]) {
 
-        if (
-            !user
-        ) {
-            return;
-        }
+        if (!user) return;
 
-        const socket =
-            getSocket();
+        const socket = getSocket();
 
-        if (
-            !socket?.connected
-        ) {
-            return;
-        }
+        if (!socket?.connected) return;
 
         loaded
-            .filter(
-
-                m =>
-
-                    m.sender.id
-                    !==
-                    user.id
-
-                    &&
-
-                    m.status
-                    ===
-                    "SENT"
-
+            .filter(m =>
+                m.sender.id !== user.id &&
+                m.status === "SENT"
             )
+            .forEach(m => {
 
-            .forEach(
+                socket.publish({
+                    destination: "/app/chat.read",
+                    body: JSON.stringify({
+                        id: m.id,
+                        chatId: Number(chatId)
+                    })
+                });
 
-                m => {
-
-                    socket.publish({
-
-                        destination:
-                            "/app/chat.read",
-
-                        body:
-                            JSON.stringify({
-
-                                id:
-                                    m.id,
-
-                                chatId:
-                                    Number(
-                                        chatId
-                                    )
-
-                            })
-
-                    });
-
-                }
-
-            );
+            });
 
     }
 
     function subscribeMessages() {
 
-        const socket =
-            getSocket();
+        const socket = getSocket();
 
-        if (
-            !socket
-        ) {
-            return;
-        }
+        if (!socket) return;
 
         socket.subscribe(
-
             `/topic/chat/${chatId}`,
-
             frame => {
 
-                const incoming =
-                    JSON.parse(
-                        frame.body
-                    );
+                const incoming: any = JSON.parse(frame.body);
 
+                // CHAT DELETED
                 if (
-                    incoming.type
-                    ===
-                    "MESSAGE_DELETED"
+                    typeof incoming === "object" &&
+                    "type" in incoming &&
+                    incoming.type === "CHAT_DELETED"
                 ) {
+                    navigate("/chats", { replace: true });
+                    return;
+                }
 
-                    const event =
-                        incoming as DeleteMessageEvent;
+                // MESSAGE DELETED
+                if (
+                    typeof incoming === "object" &&
+                    "type" in incoming &&
+                    incoming.type === "MESSAGE_DELETED"
+                ) {
+                    const event = incoming as DeleteMessageEvent;
 
-                    setMessages(
-
-                        prev =>
-
-                            prev.filter(
-
-                                m =>
-
-                                    m.id
-                                    !==
-                                    event.messageId
-
-                            )
-
+                    setMessages(prev =>
+                        prev.filter(m => m.id !== event.messageId)
                     );
 
                     return;
-
                 }
 
-                const message =
-                    incoming as MessageDto;
+                // NORMAL MESSAGE
+                const message = incoming as MessageDto;
 
-                setMessages(
+                setMessages(prev => {
 
-                    prev => {
+                    const index = prev.findIndex(x => x.id === message.id);
 
-                        const index =
-                            prev.findIndex(
+                    if (index !== -1) {
 
-                                x =>
+                        const updated = [...prev];
 
-                                    x.id
-                                    ===
-                                    message.id
+                        updated[index] = {
+                            ...updated[index],
+                            ...message
+                        };
 
-                            );
-
-                        if (
-                            index
-                            !==
-                            -1
-                        ) {
-
-                            const updated =
-                                [
-                                    ...prev
-                                ];
-
-                            updated[
-                                index
-                            ] =
-                            {
-                                ...updated[
-                                    index
-                                ],
-
-                                ...message
-                            };
-
-                            return sortMessages(
-                                updated
-                            );
-
-                        }
-
-                        const next =
-                            sortMessages([
-
-                                ...prev,
-
-                                message
-
-                            ]);
-
-                        if (
-
-                            user
-
-                            &&
-
-                            message.sender.id
-                            !==
-                            user.id
-
-                            &&
-
-                            message.status
-                            ===
-                            "SENT"
-
-                        ) {
-
-                            setTimeout(
-
-                                () => {
-
-                                    socket.publish({
-
-                                        destination:
-                                            "/app/chat.read",
-
-                                        body:
-                                            JSON.stringify({
-
-                                                id:
-                                                    message.id,
-
-                                                chatId:
-                                                    Number(
-                                                        chatId
-                                                    )
-
-                                            })
-
-                                    });
-
-                                },
-
-                                0
-
-                            );
-
-                        }
-
-                        return next;
-
+                        return sortMessages(updated);
                     }
 
-                );
+                    const next = sortMessages([...prev, message]);
+
+                    if (
+                        user &&
+                        message.sender.id !== user.id &&
+                        message.status === "SENT"
+                    ) {
+                        setTimeout(() => {
+                            socket.publish({
+                                destination: "/app/chat.read",
+                                body: JSON.stringify({
+                                    id: message.id,
+                                    chatId: Number(chatId)
+                                })
+                            });
+                        }, 0);
+                    }
+
+                    return next;
+                });
 
             },
-
             {
-
-                id:
-                    `chat-${chatId}`
-
+                id: `chat-${chatId}`
             }
-
         );
 
     }
 
     function sendMessage() {
 
-        const content =
-            text.trim();
+        const content = text.trim();
+        if (!content) return;
 
-        if (
-            !content
-        ) {
-            return;
-        }
-
-        const socket =
-            getSocket();
-
-        if (
-            !socket?.connected
-        ) {
-            return;
-        }
+        const socket = getSocket();
+        if (!socket?.connected) return;
 
         socket.publish({
-
-            destination:
-                "/app/chat.send",
-
-            body:
-                JSON.stringify({
-
-                    chatId:
-                        Number(
-                            chatId
-                        ),
-
-                    content
-
-                })
-
+            destination: "/app/chat.send",
+            body: JSON.stringify({
+                chatId: Number(chatId),
+                content
+            })
         });
 
-        setText(
-            ""
-        );
-
+        setText("");
     }
 
     return (
 
-        <div
-            style={{
-                padding:
-                    20
-            }}
-        >
+        <div style={{ padding: 20 }}>
 
-            <button
-                onClick={
-                    () =>
-                        navigate(
-                            "/chats"
-                        )
-                }
-            >
-                ← Back
-            </button>
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20
+            }}>
 
-            <h2>
-                Chat {chatId}
-            </h2>
+                <button onClick={() => navigate("/chats")}>
+                    ← Back
+                </button>
 
-            <div
-                style={{
-                    border:
-                        "1px solid #ddd",
+                <h2>Chat {chatId}</h2>
 
-                    minHeight:
-                        500,
-
-                    padding:
-                        16,
-
-                    marginBottom:
-                        20
-                }}
-            >
-
-                {
-                    loading
-                    &&
-                    (
-                        <p>
-                            Loading...
-                        </p>
-                    )
-                }
-
-                {
-                    messages.map(
-
-                        m => (
-
-                            <div
-                                key={
-                                    m.id
-                                }
-                                style={{
-                                    marginBottom:
-                                        12,
-
-                                    borderBottom:
-                                        "1px solid #eee",
-
-                                    paddingBottom:
-                                        8
-                                }}
-                            >
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-
-                                        justifyContent:
-                                            "space-between",
-
-                                        alignItems:
-                                            "center"
-                                    }}
-                                >
-
-                                    <div>
-
-                                        <b>
-                                            {
-                                                m.sender
-                                                    .username
-                                            }
-                                        </b>
-
-                                        {" · "}
-
-                                        {
-                                            m.status
-                                        }
-
-                                    </div>
-
-                                    {
-                                        user?.id
-                                        ===
-                                        m.sender.id
-
-                                        &&
-
-                                        (
-                                            <button
-                                                onClick={
-                                                    () =>
-                                                        deleteMessage(
-                                                            m.id
-                                                        )
-                                                }
-                                            >
-                                                🗑 Delete
-                                            </button>
-                                        )
-                                    }
-
-                                </div>
-
-                                <div>
-
-                                    {
-                                        m.content
-                                    }
-
-                                </div>
-
-                                <small>
-
-                                    {
-                                        new Date(
-                                            m.createdAt
-                                        )
-                                            .toLocaleString()
-                                    }
-
-                                </small>
-
-                            </div>
-
-                        )
-
-                    )
-                }
+                <button onClick={() =>
+                    navigate(`/chats/${chatId}/edit`)
+                }>
+                    ⚙ Edit chat
+                </button>
 
             </div>
 
-            <div
-                style={{
-                    display:
-                        "flex",
+            <div style={{
+                border: "1px solid #ddd",
+                minHeight: 500,
+                padding: 16,
+                marginBottom: 20
+            }}>
 
-                    gap:
-                        10
-                }}
-            >
+                {loading && <p>Loading...</p>}
+
+                {messages.map(m => (
+                    <div key={m.id} style={{
+                        marginBottom: 12,
+                        borderBottom: "1px solid #eee",
+                        paddingBottom: 8
+                    }}>
+
+                        <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+
+                            <div>
+                                <b>{m.sender.username}</b>{" · "}{m.status}
+                            </div>
+
+                            {user?.id === m.sender.id && (
+                                <button
+                                    onClick={() => deleteMessage(m.id)}
+                                >
+                                    🗑 Delete
+                                </button>
+                            )}
+
+                        </div>
+
+                        <div>{m.content}</div>
+
+                        <small>
+                            {new Date(m.createdAt).toLocaleString()}
+                        </small>
+
+                    </div>
+                ))}
+
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
 
                 <input
-
-                    value={
-                        text
-                    }
-
-                    onChange={
-                        e =>
-                            setText(
-                                e.target
-                                    .value
-                            )
-                    }
-
+                    value={text}
+                    onChange={e => setText(e.target.value)}
                     placeholder="Type message..."
-
-                    style={{
-                        flex:
-                            1
-                    }}
-
+                    style={{ flex: 1 }}
                 />
 
-                <button
-                    onClick={
-                        sendMessage
-                    }
-                >
+                <button onClick={sendMessage}>
                     Send
                 </button>
 
             </div>
 
         </div>
-
     );
-
 }

@@ -4,12 +4,15 @@ import static com.jeannimi.messenger.entity.Chat.buildPrivateKey;
 
 import com.jeannimi.messenger.dto.ChatCreateRequest;
 import com.jeannimi.messenger.dto.ChatDto;
+import com.jeannimi.messenger.dto.ChatMemberDto;
+import com.jeannimi.messenger.dto.UserDto;
 import com.jeannimi.messenger.entity.Chat;
 import com.jeannimi.messenger.entity.User;
 import com.jeannimi.messenger.exception_handling.BadRequestException;
 import com.jeannimi.messenger.exception_handling.ConflictException;
 import com.jeannimi.messenger.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.exception_handling.NotFoundException;
+import com.jeannimi.messenger.kafka.ChatEventProducer;
 import com.jeannimi.messenger.mapper.ChatMapper;
 import com.jeannimi.messenger.repository.ChatMemberRepository;
 import com.jeannimi.messenger.repository.ChatRepository;
@@ -32,6 +35,7 @@ public class ChatServiceImpl implements ChatService {
   private final UserRepository userRepository;
   private final ChatMemberRepository chatMemberRepository;
   private final MessageService messageService;
+  private final ChatEventProducer chatEventProducer;
 
   // =========================
   // CREATE CHAT
@@ -197,6 +201,41 @@ public class ChatServiceImpl implements ChatService {
     messageService.deleteAllByChat(chatId);
 
     chatRepository.delete(chat);
+
+    chatEventProducer.publishChatDeleted(chatId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ChatMemberDto> getMembers(Long chatId, Long currentUserId) {
+
+    Chat chat =
+        chatRepository
+            .findByIdWithMembers(chatId)
+            .orElseThrow(() -> new NotFoundException("Chat not found"));
+
+    boolean hasAccess =
+        chat.getMembers().stream()
+            .anyMatch(member -> member.getUser().getId().equals(currentUserId));
+
+    if (!hasAccess) {
+
+      throw new ForbiddenException("Access denied");
+    }
+
+    return chat.getMembers().stream()
+        .map(
+            member ->
+                ChatMemberDto.builder()
+                    .user(
+                        UserDto.builder()
+                            .id(member.getUser().getId())
+                            .username(member.getUser().getUsername().getValue())
+                            .role(member.getUser().getRole())
+                            .build())
+                    .chatRole(member.getRole())
+                    .joinedAt(member.getJoinedAt())
+                    .build())
+        .toList();
   }
 
   // =========================

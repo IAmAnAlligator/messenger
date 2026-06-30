@@ -2,6 +2,7 @@ package com.jeannimi.messenger.service;
 
 import com.jeannimi.messenger.dto.ChatCreateRequest;
 import com.jeannimi.messenger.dto.ChatDto;
+import com.jeannimi.messenger.dto.ChatMemberDto;
 import java.util.List;
 
 public interface ChatService {
@@ -19,4 +20,6 @@ public interface ChatService {
   boolean isParticipant(Long chatId, Long userId);
 
   void deleteChat(Long chatId, Long currentUserId);
+
+  List<ChatMemberDto> getMembers(Long chatId, Long currentUserId);
 }

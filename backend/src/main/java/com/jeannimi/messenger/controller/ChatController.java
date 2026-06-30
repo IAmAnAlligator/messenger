@@ -2,6 +2,7 @@ package com.jeannimi.messenger.controller;
 
 import com.jeannimi.messenger.dto.ChatCreateRequest;
 import com.jeannimi.messenger.dto.ChatDto;
+import com.jeannimi.messenger.dto.ChatMemberDto;
 import com.jeannimi.messenger.dto.CustomUserDetails;
 import com.jeannimi.messenger.service.ChatService;
 import java.util.List;
@@ -59,5 +60,12 @@ public class ChatController {
     chatService.deleteChat(chatId, currentUser.getId());
 
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/{chatId}/members")
+  public List<ChatMemberDto> getMembers(
+      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+    return chatService.getMembers(chatId, currentUser.getId());
   }
 }
