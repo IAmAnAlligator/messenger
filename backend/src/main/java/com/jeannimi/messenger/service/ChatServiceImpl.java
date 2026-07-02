@@ -82,7 +82,10 @@ public class ChatServiceImpl implements ChatService {
     chat.validate();
 
     try {
-      return toDto(chatRepository.save(chat));
+      Chat saved = chatRepository.save(chat);
+      chatEventProducer.publishChatCreated(saved.getId(), saved.getName());
+      return toDto(saved);
+
     } catch (DataIntegrityViolationException e) {
       return toDto(
           chatRepository
@@ -114,7 +117,11 @@ public class ChatServiceImpl implements ChatService {
 
     Chat chat = Chat.createGroup(request.getName(), creator, users);
 
-    return toDto(chatRepository.save(chat));
+    Chat saved = chatRepository.save(chat);
+
+    chatEventProducer.publishChatCreated(saved.getId(), saved.getName());
+
+    return toDto(saved);
   }
 
   // =========================

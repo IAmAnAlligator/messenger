@@ -25,14 +25,14 @@ public class ChatMapper {
 
     String chatName = chat.getName();
 
-    if (chat.getType() == ChatType.PRIVATE) {
-      chatName =
-          members.stream()
-              .map(ChatMember::getUser)
-              .sorted(Comparator.comparing(User::getId))
-              .map(u -> u.getUsername().toString())
-              .collect(Collectors.joining("_"));
-    }
+//    if (chat.getType() == ChatType.PRIVATE) {
+//      chatName =
+//          members.stream()
+//              .map(ChatMember::getUser)
+//              .sorted(Comparator.comparing(User::getId))
+//              .map(u -> u.getUsername().toString())
+//              .collect(Collectors.joining("_"));
+//    }
 
     return ChatDto.builder()
         .id(chat.getId())

@@ -1,24 +1,15 @@
-import {
-    useEffect,
-    useState
-} from "react";
-
-import {
-    useNavigate,
-    useParams
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 
 import {
     connectSocket,
-    disconnectSocket,
+    subscribe,
+    unsubscribe,
     getSocket
 } from "../websocket/chatSocket";
-
-import {
-    useAuth
-} from "../auth/AuthContext";
 
 type UserDto = {
     id: number;
@@ -65,17 +56,81 @@ export default function ChatPage() {
 
     useEffect(() => {
 
-        const token = localStorage.getItem("accessToken");
+        if (!chatId) return;
 
-        if (token) {
-            connectSocket(token, async () => {
-                subscribeMessages();
-                await loadMessages();
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+
+        connectSocket(token);
+
+        loadMessages();
+
+        const destination = `/topic/chat/${chatId}`;
+
+        subscribe(destination, (frame) => {
+
+            const incoming: any = JSON.parse(frame.body);
+
+            // CHAT DELETED
+            if (incoming?.type === "CHAT_DELETED") {
+                navigate("/chats", { replace: true });
+                return;
+            }
+
+            // MESSAGE DELETED
+            if (incoming?.type === "MESSAGE_DELETED") {
+                const event = incoming as DeleteMessageEvent;
+
+                setMessages(prev =>
+                    prev.filter(m => m.id !== event.messageId)
+                );
+
+                return;
+            }
+
+            // NORMAL MESSAGE
+            const message = incoming as MessageDto;
+
+            setMessages(prev => {
+
+                const index = prev.findIndex(x => x.id === message.id);
+
+                if (index !== -1) {
+                    const updated = [...prev];
+                    updated[index] = {
+                        ...updated[index],
+                        ...message
+                    };
+                    return sortMessages(updated);
+                }
+
+                const next = sortMessages([...prev, message]);
+
+                // auto read
+                if (
+                    user &&
+                    message.sender.id !== user.id &&
+                    message.status === "SENT"
+                ) {
+                    setTimeout(() => {
+                        const socket = getSocket();
+                        socket?.publish({
+                            destination: "/app/chat.read",
+                            body: JSON.stringify({
+                                id: message.id,
+                                chatId: Number(chatId)
+                            })
+                        });
+                    }, 0);
+                }
+
+                return next;
             });
-        }
+
+        });
 
         return () => {
-            disconnectSocket();
+            unsubscribe(destination);
         };
 
     }, [chatId]);
@@ -94,8 +149,10 @@ export default function ChatPage() {
                 ? res.data
                 : [];
 
-            setMessages(sortMessages(loaded));
-            sendReadEvents(loaded);
+            const sorted = sortMessages(loaded);
+
+            setMessages(sorted);
+            sendReadEvents(sorted);
 
         } catch (e) {
             console.error(e);
@@ -104,10 +161,32 @@ export default function ChatPage() {
         }
     }
 
+    function sendReadEvents(loaded: MessageDto[]) {
+
+        if (!user) return;
+
+        const socket = getSocket();
+        if (!socket?.connected) return;
+
+        loaded
+            .filter(m =>
+                m.sender.id !== user.id &&
+                m.status === "SENT"
+            )
+            .forEach(m => {
+                socket.publish({
+                    destination: "/app/chat.read",
+                    body: JSON.stringify({
+                        id: m.id,
+                        chatId: Number(chatId)
+                    })
+                });
+            });
+    }
+
     function deleteMessage(messageId: number) {
 
         const socket = getSocket();
-
         if (!socket?.connected) return;
 
         socket.publish({
@@ -117,119 +196,6 @@ export default function ChatPage() {
                 chatId: Number(chatId)
             })
         });
-
-    }
-
-    function sendReadEvents(loaded: MessageDto[]) {
-
-        if (!user) return;
-
-        const socket = getSocket();
-
-        if (!socket?.connected) return;
-
-        loaded
-            .filter(m =>
-                m.sender.id !== user.id &&
-                m.status === "SENT"
-            )
-            .forEach(m => {
-
-                socket.publish({
-                    destination: "/app/chat.read",
-                    body: JSON.stringify({
-                        id: m.id,
-                        chatId: Number(chatId)
-                    })
-                });
-
-            });
-
-    }
-
-    function subscribeMessages() {
-
-        const socket = getSocket();
-
-        if (!socket) return;
-
-        socket.subscribe(
-            `/topic/chat/${chatId}`,
-            frame => {
-
-                const incoming: any = JSON.parse(frame.body);
-
-                // CHAT DELETED
-                if (
-                    typeof incoming === "object" &&
-                    "type" in incoming &&
-                    incoming.type === "CHAT_DELETED"
-                ) {
-                    navigate("/chats", { replace: true });
-                    return;
-                }
-
-                // MESSAGE DELETED
-                if (
-                    typeof incoming === "object" &&
-                    "type" in incoming &&
-                    incoming.type === "MESSAGE_DELETED"
-                ) {
-                    const event = incoming as DeleteMessageEvent;
-
-                    setMessages(prev =>
-                        prev.filter(m => m.id !== event.messageId)
-                    );
-
-                    return;
-                }
-
-                // NORMAL MESSAGE
-                const message = incoming as MessageDto;
-
-                setMessages(prev => {
-
-                    const index = prev.findIndex(x => x.id === message.id);
-
-                    if (index !== -1) {
-
-                        const updated = [...prev];
-
-                        updated[index] = {
-                            ...updated[index],
-                            ...message
-                        };
-
-                        return sortMessages(updated);
-                    }
-
-                    const next = sortMessages([...prev, message]);
-
-                    if (
-                        user &&
-                        message.sender.id !== user.id &&
-                        message.status === "SENT"
-                    ) {
-                        setTimeout(() => {
-                            socket.publish({
-                                destination: "/app/chat.read",
-                                body: JSON.stringify({
-                                    id: message.id,
-                                    chatId: Number(chatId)
-                                })
-                            });
-                        }, 0);
-                    }
-
-                    return next;
-                });
-
-            },
-            {
-                id: `chat-${chatId}`
-            }
-        );
-
     }
 
     function sendMessage() {
@@ -294,8 +260,7 @@ export default function ChatPage() {
 
                         <div style={{
                             display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center"
+                            justifyContent: "space-between"
                         }}>
 
                             <div>
@@ -303,9 +268,7 @@ export default function ChatPage() {
                             </div>
 
                             {user?.id === m.sender.id && (
-                                <button
-                                    onClick={() => deleteMessage(m.id)}
-                                >
+                                <button onClick={() => deleteMessage(m.id)}>
                                     🗑 Delete
                                 </button>
                             )}

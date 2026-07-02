@@ -2,6 +2,7 @@ package com.jeannimi.messenger.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.dto.ChatCreatedEvent;
 import com.jeannimi.messenger.dto.ChatDeletedEvent;
 import com.jeannimi.messenger.dto.DeleteMessageDto;
 import com.jeannimi.messenger.dto.MessageDeletedEvent;
@@ -138,7 +139,17 @@ public class ChatEventConsumer {
 
       ChatDeletedEvent dto = objectMapper.readValue(payload, ChatDeletedEvent.class);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+      // Для ChatPage
+      messagingTemplate.convertAndSend(
+          "/topic/chat/" + dto.getChatId(),
+          dto
+      );
+
+      // Для ChatsPage
+      messagingTemplate.convertAndSend(
+          "/topic/chat.deleted",
+          dto
+      );
 
       ack.acknowledge();
 
@@ -147,4 +158,26 @@ public class ChatEventConsumer {
       throw new RuntimeException(e);
     }
   }
+
+  @KafkaListener(topics = "chat.created", groupId = "chat-ws-group")
+  public void consumeChatCreated(String payload, Acknowledgment ack) {
+
+    try {
+
+      ChatCreatedEvent dto =
+          objectMapper.readValue(payload, ChatCreatedEvent.class);
+
+      messagingTemplate.convertAndSend(
+          "/topic/chat.created",
+          dto
+      );
+
+      ack.acknowledge();
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
 }

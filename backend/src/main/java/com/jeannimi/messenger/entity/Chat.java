@@ -184,6 +184,9 @@ public class Chat {
     Instant now = Instant.now();
 
     Chat chat = new Chat();
+
+    chat.name = userA.getUsername().getValue() + "_" + userB.getUsername().getValue();
+
     chat.type = ChatType.PRIVATE;
     chat.createdAt = now;
     chat.lastMessageAt = now;

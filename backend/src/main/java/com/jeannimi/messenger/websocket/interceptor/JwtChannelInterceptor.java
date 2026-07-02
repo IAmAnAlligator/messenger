@@ -6,6 +6,7 @@ import com.jeannimi.messenger.websocket.security.WsUserPrincipal;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -16,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtChannelInterceptor implements ChannelInterceptor {
@@ -39,137 +41,150 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
       return message;
     }
 
-    if (StompCommand.CONNECT.equals(command)) {
-      handleConnect(accessor);
-    }
+    switch (command) {
 
-    if (StompCommand.SUBSCRIBE.equals(command)) {
-      handleSubscribe(accessor);
+      case CONNECT -> handleConnect(accessor);
+
+      case SUBSCRIBE -> handleSubscribe(accessor);
+
+      case SEND -> handleSend(accessor);
+
+      default -> {
+        // ignore
+      }
     }
 
     return message;
   }
 
+  // =========================
+  // CONNECT
+  // =========================
   private void handleConnect(StompHeaderAccessor accessor) {
 
-    String token = extractToken(accessor);
+    String token;
 
-    Long userId = jwtService.extractUserId(token);
-    String username = jwtService.extractUsername(token);
+    try {
+      token = extractToken(accessor);
+    } catch (Exception e) {
+      log.warn("WS CONNECT missing/invalid token");
+      accessor.setUser(null);
+      return;
+    }
 
-    validateJwtData(userId, username);
+    Long userId;
+    String username;
+
+    try {
+      userId = jwtService.extractUserId(token);
+      username = jwtService.extractUsername(token);
+    } catch (Exception e) {
+      log.warn("WS CONNECT expired/invalid JWT");
+      accessor.setUser(null);
+      return;
+    }
+
+    if (userId == null || username == null) {
+      accessor.setUser(null);
+      return;
+    }
 
     WsUserPrincipal principal = new WsUserPrincipal(userId, username);
 
-    UsernamePasswordAuthenticationToken authentication =
+    UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken(principal, null, List.of());
 
-    accessor.setUser(authentication);
+    accessor.setUser(auth);
+
+    log.info("WS CONNECTED userId={}", userId);
   }
 
+  // =========================
+  // SUBSCRIBE
+  // =========================
   private void handleSubscribe(StompHeaderAccessor accessor) {
 
     WsUserPrincipal principal = extractPrincipal(accessor);
-
-    Long userId = principal.userId();
+    if (principal == null) {
+      log.warn("WS SUBSCRIBE without principal");
+      return;
+    }
 
     String destination = accessor.getDestination();
 
-    validateDestination(destination);
+    if (destination == null) return;
+
+    if ("/topic/chat.deleted".equals(destination)
+        || "/topic/chat.created".equals(destination)) {
+      return;
+    }
+
+    if (!destination.startsWith("/topic/chat/")) {
+      return;
+    }
 
     Long chatId = extractChatId(destination);
 
-    boolean isMember = chatService.isParticipant(chatId, userId);
+    boolean isMember = chatService.isParticipant(chatId, principal.userId());
 
     if (!isMember) {
-      throw new IllegalArgumentException("Access denied to chat " + chatId);
+      log.warn("WS SUBSCRIBE denied userId={} chatId={}", principal.userId(), chatId);
+      return; // ❗ IMPORTANT: no throw
     }
   }
 
-  private String extractToken(StompHeaderAccessor accessor) {
-
-    String authHeader = accessor.getFirstNativeHeader("Authorization");
-
-    if (authHeader == null || authHeader.isBlank()) {
-      throw new IllegalArgumentException("Missing Authorization header");
-    }
-
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new IllegalArgumentException("Invalid Authorization header");
-    }
-
-    String token = authHeader.substring(7);
-
-    if (token.isBlank()) {
-      throw new IllegalArgumentException("JWT token is empty");
-    }
-
-    return token;
+  // =========================
+  // SEND (no security logic here for now)
+  // =========================
+  private void handleSend(StompHeaderAccessor accessor) {
+    // intentionally empty or extend later
   }
 
-  private void validateJwtData(Long userId, String username) {
-
-    if (userId == null) {
-      throw new IllegalArgumentException("Invalid JWT: userId is missing");
-    }
-
-    if (username == null || username.isBlank()) {
-      throw new IllegalArgumentException("Invalid JWT: username is missing");
-    }
-  }
-
+  // =========================
+  // PRINCIPAL
+  // =========================
   private WsUserPrincipal extractPrincipal(StompHeaderAccessor accessor) {
 
     Principal user = accessor.getUser();
 
-    if (user == null) {
-      throw new IllegalArgumentException("Unauthorized");
-    }
-
     if (!(user instanceof Authentication authentication)) {
-      throw new IllegalArgumentException("Invalid authentication object");
+      return null;
     }
 
-    Object principalObj = authentication.getPrincipal();
+    Object p = authentication.getPrincipal();
 
-    if (!(principalObj instanceof WsUserPrincipal principal)) {
-      throw new IllegalArgumentException("Invalid principal");
-    }
-
-    if (principal.userId() == null) {
-      throw new IllegalArgumentException("User ID is missing");
+    if (!(p instanceof WsUserPrincipal principal)) {
+      return null;
     }
 
     return principal;
   }
 
-  private void validateDestination(String destination) {
+  // =========================
+  // TOKEN
+  // =========================
+  private String extractToken(StompHeaderAccessor accessor) {
 
-    if (destination == null || destination.isBlank()) {
-      throw new IllegalArgumentException("Destination is missing");
+    String authHeader = accessor.getFirstNativeHeader("Authorization");
+
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      throw new IllegalArgumentException("Invalid Authorization header");
     }
+
+    return authHeader.substring(7);
   }
 
+  // =========================
+  // DESTINATION PARSING
+  // =========================
   private Long extractChatId(String destination) {
-
-    validateDestination(destination);
 
     String[] parts = destination.split("/");
 
-    if (parts.length == 0) {
-      throw new IllegalArgumentException("Invalid destination format");
-    }
-
-    String chatIdPart = parts[parts.length - 1];
-
-    if (chatIdPart.isBlank()) {
-      throw new IllegalArgumentException("Chat ID is missing");
-    }
-
     try {
-      return Long.parseLong(chatIdPart);
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("Invalid chat ID: " + chatIdPart);
+      return Long.parseLong(parts[parts.length - 1]);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid chat id");
     }
   }
 }

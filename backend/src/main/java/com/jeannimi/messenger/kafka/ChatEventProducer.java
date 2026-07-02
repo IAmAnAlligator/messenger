@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.dto.ChatCreatedEvent;
 import com.jeannimi.messenger.dto.ChatDeletedEvent;
 import com.jeannimi.messenger.dto.DeleteMessageDto;
 import com.jeannimi.messenger.dto.MessageDto;
@@ -23,9 +24,11 @@ public class ChatEventProducer {
 
   private static final String READ_TOPIC = "chat.read";
 
-  private static final String DELETE_TOPIC = "chat.delete";
+  private static final String MESSAGE_DELETE_TOPIC = "chat.delete";
 
   private static final String CHAT_DELETE_TOPIC = "chat.deleted";
+
+  private static final String CHAT_CREATE_TOPIC = "chat.created";
 
   /*
 
@@ -80,7 +83,10 @@ public class ChatEventProducer {
       log.info("DELETE MESSAGE {}", dto.getId());
 
       kafkaTemplate
-          .send(DELETE_TOPIC, dto.getChatId().toString(), objectMapper.writeValueAsString(dto))
+          .send(
+              MESSAGE_DELETE_TOPIC,
+              dto.getChatId().toString(),
+              objectMapper.writeValueAsString(dto))
           .get();
 
     } catch (Exception e) {
@@ -107,4 +113,27 @@ public class ChatEventProducer {
       throw new RuntimeException("Kafka chat delete publish failed", e);
     }
   }
+
+  public void publishChatCreated(Long chatId, String name) {
+
+    try {
+      log.info("CHAT CREATED {}", chatId);
+
+      ChatCreatedEvent event =
+          new ChatCreatedEvent("CHAT_CREATED", chatId, name);
+
+      kafkaTemplate
+          .send(
+              CHAT_CREATE_TOPIC,
+              chatId.toString(),
+              objectMapper.writeValueAsString(event)
+          )
+          .get();
+
+    } catch (Exception e) {
+      throw new RuntimeException("Kafka chat create publish failed", e);
+    }
+  }
+
+
 }

@@ -13,8 +13,8 @@ import { api } from "../api/client";
 
 import {
     connectSocket,
-    disconnectSocket,
-    getSocket
+    subscribe,
+    unsubscribe
 } from "../websocket/chatSocket";
 
 type UserDto = {
@@ -47,41 +47,39 @@ export default function ChatEditPage() {
 
     useEffect(() => {
 
+        if (!chatId) return;
+
         const token = localStorage.getItem("accessToken");
 
         if (token) {
-            connectSocket(token, () => {
-                subscribe();
-            });
+            connectSocket(token);
         }
 
         load();
 
+        const destination = `/topic/chat/${chatId}`;
+
+        subscribe(destination, frame => {
+
+            const incoming = JSON.parse(frame.body);
+
+            if (
+                incoming?.type === "CHAT_DELETED" ||
+                incoming?.event === "CHAT_DELETED"
+            ) {
+                redirectToChats();
+            }
+
+        });
+
         return () => {
-            disconnectSocket();
+            unsubscribe(destination);
         };
 
     }, [chatId]);
 
-    function subscribe() {
-
-        const socket = getSocket();
-        if (!socket) return;
-
-        socket.subscribe(
-            `/topic/chat/${chatId}`,
-            frame => {
-
-                const incoming: any = JSON.parse(frame.body);
-
-                if (incoming?.type === "CHAT_DELETED") {
-                    navigate("/chats", { replace: true });
-                    return;
-                }
-
-            },
-            { id: `chat-edit-${chatId}` }
-        );
+    function redirectToChats() {
+        navigate("/chats", { replace: true });
     }
 
     async function load() {
@@ -113,7 +111,7 @@ export default function ChatEditPage() {
         } catch (e: any) {
 
             if (e.response?.status === 404) {
-                navigate("/chats", { replace: true });
+                redirectToChats();
                 return;
             }
 
@@ -122,7 +120,6 @@ export default function ChatEditPage() {
         } finally {
             setLoading(false);
         }
-
     }
 
     const currentMember = useMemo(
@@ -133,7 +130,8 @@ export default function ChatEditPage() {
         [members, currentUserId]
     );
 
-    const isAdmin = currentMember?.chatRole === "ADMIN";
+    const isAdmin =
+        currentMember?.chatRole === "ADMIN";
 
     const canDeleteChat =
         chat?.type === "PRIVATE" ||
@@ -144,23 +142,16 @@ export default function ChatEditPage() {
 
     async function goBack() {
 
-        // ADMIN → как раньше
         if (isAdmin) {
             navigate(`/chats/${chatId}`);
             return;
         }
 
-        // MEMBER → проверка существования чата
         try {
-
             await api.get(`/chats/${chatId}`);
-
             navigate(`/chats/${chatId}`);
-
         } catch {
-
-            navigate("/chats", { replace: true });
-
+            redirectToChats();
         }
     }
 
@@ -179,7 +170,6 @@ export default function ChatEditPage() {
         } catch (e) {
             console.error(e);
         }
-
     }
 
     async function deleteChat() {
@@ -189,8 +179,7 @@ export default function ChatEditPage() {
         try {
 
             await api.delete(`/chats/${chatId}`);
-
-            navigate("/chats", { replace: true });
+            redirectToChats();
 
         } catch (e) {
 
@@ -198,7 +187,6 @@ export default function ChatEditPage() {
             alert("Cannot delete chat");
 
         }
-
     }
 
     return (
@@ -216,9 +204,11 @@ export default function ChatEditPage() {
                 </button>
 
                 <h2>
-                    {chat?.type === "PRIVATE"
-                        ? "Private Chat"
-                        : "Group Settings"}
+                    {
+                        chat?.type === "PRIVATE"
+                            ? "Private Chat"
+                            : "Group Settings"
+                    }
                 </h2>
 
                 {canDeleteChat && (
@@ -273,13 +263,9 @@ export default function ChatEditPage() {
 
                             <div>
                                 <b>{member.user.username}</b>
-
-                                <div>
-                                    Role: {member.chatRole}
-                                </div>
-
+                                <div>Role: {member.chatRole}</div>
                                 <small>
-                                    Joined:{" "}
+                                    Joined{" "}
                                     {new Date(member.joinedAt).toLocaleString()}
                                 </small>
                             </div>

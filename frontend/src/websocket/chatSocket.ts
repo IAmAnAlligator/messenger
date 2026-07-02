@@ -1,126 +1,155 @@
-import {
-    Client
-} from "@stomp/stompjs";
+import { Client } from "@stomp/stompjs";
+import type { IMessage, StompSubscription } from "@stomp/stompjs";
 
-let client:
-    Client
-    | null =
-    null;
+type SubscriptionCallback = (message: IMessage) => void;
+
+let client: Client | null = null;
+
+const subscriptions = new Map<string, SubscriptionCallback>();
+const activeSubs = new Map<string, StompSubscription>();
+
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 5;
 
 export function connectSocket(
     token: string,
     onConnect?: () => void
 ) {
 
-    if (
-        client?.connected
-    ) {
+    if (client?.connected) return client;
 
-        return client;
+    client = new Client({
+        brokerURL: "ws://localhost:8080/ws",
 
-    }
+        reconnectDelay: 3000,
 
-    client =
-        new Client({
+        connectHeaders: {
+            Authorization: `Bearer ${token}`
+        },
 
-            brokerURL:
-                "ws://localhost:8080/ws",
+        debug: (msg) => {
+            console.log("[STOMP]", msg);
+        },
 
-            reconnectDelay:
-                3000,
+        beforeConnect: () => {
+            console.log("[WS] connecting...");
+        },
 
-            connectHeaders: {
+        onConnect: () => {
+            console.log("[WS] connected");
 
-                Authorization:
-                    `Bearer ${token}`
+            reconnectAttempts = 0;
 
-            },
+            resubscribeAll();
 
-            debug:
-                message => {
+            onConnect?.();
+        },
 
-                    console.log(
-                        "[STOMP]",
-                        message
-                    );
+        onDisconnect: () => {
+            console.log("[WS] disconnected");
+        },
 
-                },
+        onWebSocketClose: () => {
 
-            beforeConnect:
-                () => {
+            reconnectAttempts++;
 
-                    console.log(
-                        "[WS] opening"
-                    );
+            console.log("[WS] closed attempt:", reconnectAttempts);
 
-                },
+            if (reconnectAttempts >= MAX_RECONNECT) {
+                console.warn("[WS] max reconnect reached → stopping socket");
 
-            onConnect:
-                () => {
+                disconnectSocket();
+            }
+        },
 
-                    console.log(
-                        "[WS] connected"
-                    );
+        onWebSocketError: (err) => {
+            console.error("[WS ERROR]", err);
+        },
 
-                    onConnect?.();
+        onStompError: (frame) => {
+            console.error("[STOMP ERROR]", frame);
 
-                },
-
-            onDisconnect:
-                () => {
-
-                    console.log(
-                        "[WS] disconnected"
-                    );
-
-                },
-
-            onWebSocketClose:
-                event => {
-
-                    console.log(
-                        "[WS] closed",
-                        event
-                    );
-
-                },
-
-            onWebSocketError:
-                error => {
-
-                    console.error(
-                        "[WS] error",
-                        error
-                    );
-
-                },
-
-            onStompError:
-                frame => {
-
-                    console.error(
-                        "[STOMP] error",
-                        frame
-                    );
-
-                }
-
-        });
+            disconnectSocket();
+            localStorage.removeItem("accessToken");
+            window.location.href = "/login";
+        }
+    });
 
     client.activate();
 
     return client;
-
 }
 
+/**
+ * SAFE subscribe
+ */
+export function subscribe(
+    destination: string,
+    callback: SubscriptionCallback
+) {
+    subscriptions.set(destination, callback);
+
+    if (client?.connected) {
+        createOrReplace(destination, callback);
+    }
+}
+
+/**
+ * SAFE unsubscribe
+ */
+export function unsubscribe(destination: string) {
+
+    subscriptions.delete(destination);
+
+    const sub = activeSubs.get(destination);
+
+    if (sub) {
+        sub.unsubscribe();
+        activeSubs.delete(destination);
+    }
+}
+
+function createOrReplace(
+    destination: string,
+    callback: SubscriptionCallback
+) {
+
+    const existing = activeSubs.get(destination);
+
+    if (existing) {
+        existing.unsubscribe();
+    }
+
+    const sub = client!.subscribe(destination, callback);
+
+    activeSubs.set(destination, sub);
+}
+
+function resubscribeAll() {
+
+    if (!client?.connected) return;
+
+    for (const [dest, cb] of subscriptions.entries()) {
+        createOrReplace(dest, cb);
+    }
+}
+
+/**
+ * FULL cleanup
+ */
 export function disconnectSocket() {
 
-    client?.deactivate();
+    activeSubs.forEach(s => s.unsubscribe());
+    activeSubs.clear();
 
+    subscriptions.clear();
+
+    reconnectAttempts = 0;
+
+    client?.deactivate();
+    client = null;
 }
 
 export function getSocket() {
-
     return client;
-
 }
