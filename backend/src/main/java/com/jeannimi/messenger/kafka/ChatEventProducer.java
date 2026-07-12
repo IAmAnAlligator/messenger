@@ -119,21 +119,14 @@ public class ChatEventProducer {
     try {
       log.info("CHAT CREATED {}", chatId);
 
-      ChatCreatedEvent event =
-          new ChatCreatedEvent("CHAT_CREATED", chatId, name);
+      ChatCreatedEvent event = new ChatCreatedEvent("CHAT_CREATED", chatId, name);
 
       kafkaTemplate
-          .send(
-              CHAT_CREATE_TOPIC,
-              chatId.toString(),
-              objectMapper.writeValueAsString(event)
-          )
+          .send(CHAT_CREATE_TOPIC, chatId.toString(), objectMapper.writeValueAsString(event))
           .get();
 
     } catch (Exception e) {
       throw new RuntimeException("Kafka chat create publish failed", e);
     }
   }
-
-
 }

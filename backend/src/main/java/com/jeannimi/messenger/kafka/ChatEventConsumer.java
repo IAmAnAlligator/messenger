@@ -140,16 +140,10 @@ public class ChatEventConsumer {
       ChatDeletedEvent dto = objectMapper.readValue(payload, ChatDeletedEvent.class);
 
       // Для ChatPage
-      messagingTemplate.convertAndSend(
-          "/topic/chat/" + dto.getChatId(),
-          dto
-      );
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
 
       // Для ChatsPage
-      messagingTemplate.convertAndSend(
-          "/topic/chat.deleted",
-          dto
-      );
+      messagingTemplate.convertAndSend("/topic/chat.deleted", dto);
 
       ack.acknowledge();
 
@@ -164,13 +158,9 @@ public class ChatEventConsumer {
 
     try {
 
-      ChatCreatedEvent dto =
-          objectMapper.readValue(payload, ChatCreatedEvent.class);
+      ChatCreatedEvent dto = objectMapper.readValue(payload, ChatCreatedEvent.class);
 
-      messagingTemplate.convertAndSend(
-          "/topic/chat.created",
-          dto
-      );
+      messagingTemplate.convertAndSend("/topic/chat.created", dto);
 
       ack.acknowledge();
 
@@ -178,6 +168,4 @@ public class ChatEventConsumer {
       throw new RuntimeException(e);
     }
   }
-
-
 }

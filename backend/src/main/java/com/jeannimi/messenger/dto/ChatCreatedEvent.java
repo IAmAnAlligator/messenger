@@ -14,5 +14,4 @@ public class ChatCreatedEvent {
   private Long chatId;
 
   private String name;
-
 }

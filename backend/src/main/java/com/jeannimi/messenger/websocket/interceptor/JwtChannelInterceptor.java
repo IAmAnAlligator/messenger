@@ -42,7 +42,6 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     }
 
     switch (command) {
-
       case CONNECT -> handleConnect(accessor);
 
       case SUBSCRIBE -> handleSubscribe(accessor);
@@ -114,8 +113,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     if (destination == null) return;
 
-    if ("/topic/chat.deleted".equals(destination)
-        || "/topic/chat.created".equals(destination)) {
+    if ("/topic/chat.deleted".equals(destination) || "/topic/chat.created".equals(destination)) {
       return;
     }
 
