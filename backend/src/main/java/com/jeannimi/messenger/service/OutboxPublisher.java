@@ -66,7 +66,7 @@ public class OutboxPublisher {
 
         // Для Kafka используется ключ = chatId.
         // Это гарантирует: сообщения одного чата попадут в один partition и сохранят порядок.
-        if (dto.getChatId() == null) {
+        if (dto.chatId() == null) {
           throw new IllegalStateException("chatId is null");
         }
 
@@ -75,14 +75,14 @@ public class OutboxPublisher {
         // Это важно: БЕЗ .get(): send() status=SENT приложение упало
         // → сообщение потеряно //
         // С .get(): сначала подтверждение Kafka потом статус SENT
-        kafkaTemplate.send(event.getTopic(), dto.getChatId().toString(), event.getPayload()).get();
+        kafkaTemplate.send(event.getTopic(), dto.chatId().toString(), event.getPayload()).get();
 
         // Помечаем событие как отправленное.
         // Благодаря @Transactional отдельный save() не нужен — JPA сохранит изменения
         // автоматически.
         event.setStatus(OutboxStatus.SENT);
 
-        log.info("[OUTBOX SENT] event={}, chat={}", event.getId(), dto.getChatId());
+        log.info("[OUTBOX SENT] event={}, chat={}", event.getId(), dto.chatId());
 
       } catch (Exception e) {
 

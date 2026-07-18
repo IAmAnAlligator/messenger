@@ -29,9 +29,9 @@ public class AuthController {
 
     AuthResponse auth = authService.login(request);
 
-    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
+    setRefreshCookie(response, auth.refreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
+    return ResponseEntity.ok(new AuthAccessResponse(auth.accessToken()));
   }
 
   // =========================
@@ -43,9 +43,9 @@ public class AuthController {
 
     AuthResponse auth = authService.register(request);
 
-    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
+    setRefreshCookie(response, auth.refreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
+    return ResponseEntity.ok(new AuthAccessResponse(auth.accessToken()));
   }
 
   // =========================
@@ -58,9 +58,9 @@ public class AuthController {
 
     AuthResponse auth = authService.refresh(refreshToken);
 
-    setRefreshCookie(response, auth.getRefreshToken(), Duration.ofDays(30).getSeconds());
+    setRefreshCookie(response, auth.refreshToken(), Duration.ofDays(30).getSeconds());
 
-    return ResponseEntity.ok(new AuthAccessResponse(auth.getAccessToken()));
+    return ResponseEntity.ok(new AuthAccessResponse(auth.accessToken()));
   }
 
   // =========================

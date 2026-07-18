@@ -26,7 +26,7 @@ public class ChatWebSocketController {
 
     validateSendMessage(dto);
 
-    messageService.sendMessage(dto.getChatId(), principal.userId(), dto.getContent());
+    messageService.sendMessage(dto.chatId(), principal.userId(), dto.content());
   }
 
   @MessageMapping("/chat.read")
@@ -36,7 +36,7 @@ public class ChatWebSocketController {
 
     validateReadMessage(dto);
 
-    ReadResult result = messageService.markAsRead(dto.getChatId(), dto.getId(), principal.userId());
+    ReadResult result = messageService.markAsRead(dto.chatId(), dto.id(), principal.userId());
 
     if (result.changed()) {
       producer.readMessage(result.message());
@@ -50,14 +50,14 @@ public class ChatWebSocketController {
 
     validateDeleteMessage(dto);
 
-    messageService.deleteMessage(dto.getChatId(), dto.getId(), principal.userId());
+    messageService.deleteMessage(dto.chatId(), dto.id(), principal.userId());
 
     producer.deleteMessage(dto);
   }
 
   private void validateDeleteMessage(DeleteMessageDto dto) {
 
-    if (dto.getChatId() == null || dto.getId() == null) {
+    if (dto.chatId() == null || dto.id() == null) {
 
       throw new IllegalArgumentException("Invalid delete DTO");
     }
@@ -65,7 +65,7 @@ public class ChatWebSocketController {
 
   private void validateSendMessage(MessageDto dto) {
 
-    if (dto.getChatId() == null || dto.getContent() == null || dto.getContent().isBlank()) {
+    if (dto.chatId() == null || dto.content() == null || dto.content().isBlank()) {
 
       throw new IllegalArgumentException("Invalid message DTO");
     }
@@ -73,7 +73,7 @@ public class ChatWebSocketController {
 
   private void validateReadMessage(MessageDto dto) {
 
-    if (dto.getChatId() == null || dto.getId() == null) {
+    if (dto.chatId() == null || dto.id() == null) {
 
       throw new IllegalArgumentException("Invalid message DTO");
     }

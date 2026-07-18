@@ -1,23 +1,20 @@
 package com.jeannimi.messenger.dto;
 
+import com.jeannimi.messenger.entity.Message;
 import com.jeannimi.messenger.entity.MessageStatus;
 import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class MessageDto {
+public record MessageDto(
+    Long id, Long chatId, UserDto sender, String content, Instant createdAt, MessageStatus status) {
 
-  private Long id;
-  private Long chatId;
-  private UserDto sender;
+  public static MessageDto toDto(Message message) {
 
-  private String content;
-  private Instant createdAt;
-  private MessageStatus status;
+    return new MessageDto(
+        message.getId(),
+        message.getChat().getId(),
+        UserDto.toDto(message.getSender()),
+        message.getContent(),
+        message.getCreatedAt(),
+        message.getStatus());
+  }
 }

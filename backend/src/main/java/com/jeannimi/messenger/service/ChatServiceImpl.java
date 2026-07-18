@@ -5,7 +5,6 @@ import static com.jeannimi.messenger.entity.Chat.buildPrivateKey;
 import com.jeannimi.messenger.dto.ChatCreateRequest;
 import com.jeannimi.messenger.dto.ChatDto;
 import com.jeannimi.messenger.dto.ChatMemberDto;
-import com.jeannimi.messenger.dto.UserDto;
 import com.jeannimi.messenger.entity.Chat;
 import com.jeannimi.messenger.entity.User;
 import com.jeannimi.messenger.exception_handling.BadRequestException;
@@ -13,7 +12,6 @@ import com.jeannimi.messenger.exception_handling.ConflictException;
 import com.jeannimi.messenger.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.exception_handling.NotFoundException;
 import com.jeannimi.messenger.kafka.ChatEventProducer;
-import com.jeannimi.messenger.mapper.ChatMapper;
 import com.jeannimi.messenger.repository.ChatMemberRepository;
 import com.jeannimi.messenger.repository.ChatRepository;
 import com.jeannimi.messenger.repository.UserRepository;
@@ -49,7 +47,7 @@ public class ChatServiceImpl implements ChatService {
             .findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("User not found"));
 
-    return switch (request.getType()) {
+    return switch (request.type()) {
       case PRIVATE -> createPrivateChat(request, creator);
       case GROUP -> createGroupChat(request, creator);
       default -> throw new BadRequestException("Unsupported chat type");
@@ -58,11 +56,11 @@ public class ChatServiceImpl implements ChatService {
 
   private ChatDto createPrivateChat(ChatCreateRequest request, User creator) {
 
-    if (request.getMemberIds() == null || request.getMemberIds().size() != 1) {
+    if (request.memberIds() == null || request.memberIds().size() != 1) {
       throw new BadRequestException("Private chat must have exactly one member");
     }
 
-    Long otherUserId = request.getMemberIds().get(0);
+    Long otherUserId = request.memberIds().get(0);
 
     String key = buildPrivateKey(creator.getId(), otherUserId);
 
@@ -96,12 +94,12 @@ public class ChatServiceImpl implements ChatService {
 
   private ChatDto createGroupChat(ChatCreateRequest request, User creator) {
 
-    if (request.getName() == null || request.getName().isBlank()) {
+    if (request.name() == null || request.name().isBlank()) {
       throw new BadRequestException("Group name is required");
     }
 
     Set<Long> uniqueIds =
-        request.getMemberIds() == null ? new HashSet<>() : new HashSet<>(request.getMemberIds());
+        request.memberIds() == null ? new HashSet<>() : new HashSet<>(request.memberIds());
 
     uniqueIds.remove(creator.getId());
 
@@ -115,7 +113,7 @@ public class ChatServiceImpl implements ChatService {
       throw new NotFoundException("One or more users not found");
     }
 
-    Chat chat = Chat.createGroup(request.getName(), creator, users);
+    Chat chat = Chat.createGroup(request.name(), creator, users);
 
     Chat saved = chatRepository.save(chat);
 
@@ -229,20 +227,7 @@ public class ChatServiceImpl implements ChatService {
       throw new ForbiddenException("Access denied");
     }
 
-    return chat.getMembers().stream()
-        .map(
-            member ->
-                ChatMemberDto.builder()
-                    .user(
-                        UserDto.builder()
-                            .id(member.getUser().getId())
-                            .username(member.getUser().getUsername().getValue())
-                            .role(member.getUser().getRole())
-                            .build())
-                    .chatRole(member.getRole())
-                    .joinedAt(member.getJoinedAt())
-                    .build())
-        .toList();
+    return chat.getMembers().stream().map(ChatMemberDto::toDto).toList();
   }
 
   // =========================
@@ -250,7 +235,7 @@ public class ChatServiceImpl implements ChatService {
   // =========================
 
   private ChatDto toDto(Chat chat) {
-    return ChatMapper.toDto(chat);
+    return ChatDto.toDto(chat);
   }
 
   public boolean isParticipant(Long chatId, Long userId) {

@@ -1,18 +1,11 @@
 package com.jeannimi.messenger.dto;
 
 import com.jeannimi.messenger.entity.Role;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.jeannimi.messenger.entity.User;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserDto {
+public record UserDto(Long id, String username, Role role) {
 
-  private Long id;
-  private String username;
-  private Role role;
+  public static UserDto toDto(User user) {
+    return new UserDto(user.getId(), user.getUsername().getValue(), user.getRole());
+  }
 }

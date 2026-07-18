@@ -30,7 +30,7 @@ public class MessageController {
       @PathVariable Long chatId,
       @RequestBody @Valid MessageSendRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.sendMessage(chatId, user.getId(), request.getContent());
+    return messageService.sendMessage(chatId, user.id(), request.content());
   }
 
   // GET LIST
@@ -39,7 +39,7 @@ public class MessageController {
       @PathVariable Long chatId,
       @RequestParam(required = false) Long cursor,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.getMessages(chatId, user.getId(), cursor);
+    return messageService.getMessages(chatId, user.id(), cursor);
   }
 
   // GET ONE
@@ -48,7 +48,7 @@ public class MessageController {
       @PathVariable Long chatId,
       @PathVariable Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.getMessage(chatId, messageId, user.getId());
+    return messageService.getMessage(chatId, messageId, user.id());
   }
 
   // DELETE

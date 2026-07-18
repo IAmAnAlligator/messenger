@@ -25,14 +25,14 @@ public class AuthService {
 
   public AuthResponse login(LoginRequest request) {
 
-    Username username = new Username(request.getUsername());
+    Username username = new Username(request.username());
 
     User user =
         userRepository
             .findByUsername_ValueIgnoreCase(username.getValue())
             .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
-    if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+    if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
@@ -44,13 +44,13 @@ public class AuthService {
 
   public AuthResponse register(RegisterRequest request) {
 
-    Username username = new Username(request.getUsername());
+    Username username = new Username(request.username());
 
     if (userRepository.existsByUsername_ValueIgnoreCase(username.getValue())) {
       throw new ConflictException("User already exists");
     }
 
-    User user = User.of(username, passwordEncoder.encode(request.getPassword()), USER);
+    User user = User.of(username, passwordEncoder.encode(request.password()), USER);
 
     userRepository.save(user);
 

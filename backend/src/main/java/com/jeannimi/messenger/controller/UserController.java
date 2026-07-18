@@ -20,12 +20,12 @@ public class UserController {
 
   @GetMapping("/me")
   public UserDto me(@AuthenticationPrincipal CustomUserDetails userId) {
-    return userService.getCurrentUser(userId.getId());
+    return userService.getCurrentUser(userId.id());
   }
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
       @RequestParam String query, @AuthenticationPrincipal CustomUserDetails user) {
-    return userService.searchUsers(query, user.getId());
+    return userService.searchUsers(query, user.id());
   }
 }

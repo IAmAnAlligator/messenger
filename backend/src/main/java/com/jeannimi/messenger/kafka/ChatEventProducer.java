@@ -53,7 +53,7 @@ public class ChatEventProducer {
     try {
 
       kafkaTemplate.send(
-          MESSAGE_TOPIC, dto.getChatId().toString(), objectMapper.writeValueAsString(dto));
+          MESSAGE_TOPIC, dto.chatId().toString(), objectMapper.writeValueAsString(dto));
 
     } catch (Exception e) {
 
@@ -63,12 +63,12 @@ public class ChatEventProducer {
 
   public void readMessage(MessageDto dto) {
 
-    log.info("SEND READ {}", dto.getId());
+    log.info("SEND READ {}", dto.id());
 
     try {
 
       kafkaTemplate.send(
-          READ_TOPIC, dto.getChatId().toString(), objectMapper.writeValueAsString(dto));
+          READ_TOPIC, dto.chatId().toString(), objectMapper.writeValueAsString(dto));
 
     } catch (Exception e) {
 
@@ -80,12 +80,12 @@ public class ChatEventProducer {
 
     try {
 
-      log.info("DELETE MESSAGE {}", dto.getId());
+      log.info("DELETE MESSAGE {}", dto.id());
 
       kafkaTemplate
           .send(
               MESSAGE_DELETE_TOPIC,
-              dto.getChatId().toString(),
+              dto.chatId().toString(),
               objectMapper.writeValueAsString(dto))
           .get();
 

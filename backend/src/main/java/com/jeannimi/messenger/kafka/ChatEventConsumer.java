@@ -50,31 +50,31 @@ public class ChatEventConsumer {
 
       MessageDto dto = objectMapper.readValue(payload, MessageDto.class);
 
-      if (dto.getId() == null) {
+      if (dto.id() == null) {
         throw new IllegalStateException("message id is null");
       }
 
-      log.info("[PARSED] id={}, chat={}", dto.getId(), dto.getChatId());
+      log.info("[PARSED] id={}, chat={}", dto.id(), dto.chatId());
 
       boolean duplicate = false;
 
       try {
 
-        processedRepository.save(new ProcessedMessage(dto.getId()));
+        processedRepository.save(new ProcessedMessage(dto.id()));
 
       } catch (DataIntegrityViolationException e) {
 
         duplicate = true;
 
-        log.info("[SKIP DUPLICATE] message={}", dto.getId());
+        log.info("[SKIP DUPLICATE] message={}", dto.id());
       }
 
       // Отправляем только новые сообщения
       if (!duplicate) {
 
-        messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+        messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
 
-        log.info("[WS SENT] id={}", dto.getId());
+        log.info("[WS SENT] id={}", dto.id());
       }
 
       // Kafka подтверждаем всегда
@@ -99,7 +99,7 @@ public class ChatEventConsumer {
 
       MessageDto dto = objectMapper.readValue(payload, MessageDto.class);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
 
       ack.acknowledge();
 
@@ -119,8 +119,7 @@ public class ChatEventConsumer {
       DeleteMessageDto dto = objectMapper.readValue(payload, DeleteMessageDto.class);
 
       messagingTemplate.convertAndSend(
-          "/topic/chat/" + dto.getChatId(),
-          new MessageDeletedEvent("MESSAGE_DELETED", dto.getId()));
+          "/topic/chat/" + dto.chatId(), new MessageDeletedEvent("MESSAGE_DELETED", dto.id()));
 
       ack.acknowledge();
 
@@ -140,7 +139,7 @@ public class ChatEventConsumer {
       ChatDeletedEvent dto = objectMapper.readValue(payload, ChatDeletedEvent.class);
 
       // Для ChatPage
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.getChatId(), dto);
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
 
       // Для ChatsPage
       messagingTemplate.convertAndSend("/topic/chat.deleted", dto);

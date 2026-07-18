@@ -1,17 +1,3 @@
 package com.jeannimi.messenger.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ChatCreatedEvent {
-
-  private String type;
-
-  private Long chatId;
-
-  private String name;
-}
+public record ChatCreatedEvent(String type, Long chatId, String name) {}

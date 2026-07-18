@@ -2,7 +2,6 @@ package com.jeannimi.messenger.service;
 
 import com.jeannimi.messenger.dto.MessageDto;
 import com.jeannimi.messenger.dto.ReadResult;
-import com.jeannimi.messenger.dto.UserDto;
 import com.jeannimi.messenger.entity.Chat;
 import com.jeannimi.messenger.entity.Message;
 import com.jeannimi.messenger.entity.MessageStatus;
@@ -186,17 +185,6 @@ public class MessageServiceImpl implements MessageService {
   }
 
   private MessageDto toDto(Message m) {
-    return MessageDto.builder()
-        .id(m.getId())
-        .chatId(m.getChat().getId())
-        .sender(
-            new UserDto(
-                m.getSender().getId(),
-                m.getSender().getUsername().getValue(),
-                m.getSender().getRole()))
-        .content(m.getContent())
-        .createdAt(m.getCreatedAt())
-        .status(m.getStatus())
-        .build();
+    return MessageDto.toDto(m);
   }
 }

@@ -21,18 +21,18 @@ public class ChatController {
   @PostMapping
   public ChatDto createChat(
       @RequestBody ChatCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
-    return chatService.createChat(request, user.getId());
+    return chatService.createChat(request, user.id());
   }
 
   @GetMapping
   public List<ChatDto> getUserChats(@AuthenticationPrincipal CustomUserDetails user) {
-    return chatService.getUserChats(user.getId());
+    return chatService.getUserChats(user.id());
   }
 
   @GetMapping("/{chatId}")
   public ChatDto getChat(
       @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails user) {
-    return chatService.getChat(chatId, user.getId());
+    return chatService.getChat(chatId, user.id());
   }
 
   @PostMapping("/{chatId}/members")
@@ -40,7 +40,7 @@ public class ChatController {
       @PathVariable Long chatId,
       @RequestParam Long userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
-    chatService.addMember(chatId, userId, currentUser.getId());
+    chatService.addMember(chatId, userId, currentUser.id());
     return ResponseEntity.ok().build();
   }
 
@@ -49,7 +49,7 @@ public class ChatController {
       @PathVariable Long chatId,
       @PathVariable Long userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
-    chatService.removeMember(chatId, userId, currentUser.getId());
+    chatService.removeMember(chatId, userId, currentUser.id());
     return ResponseEntity.ok().build();
   }
 
@@ -57,7 +57,7 @@ public class ChatController {
   public ResponseEntity<Void> deleteChat(
       @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    chatService.deleteChat(chatId, currentUser.getId());
+    chatService.deleteChat(chatId, currentUser.id());
 
     return ResponseEntity.noContent().build();
   }
@@ -66,6 +66,6 @@ public class ChatController {
   public List<ChatMemberDto> getMembers(
       @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    return chatService.getMembers(chatId, currentUser.getId());
+    return chatService.getMembers(chatId, currentUser.id());
   }
 }
