@@ -24,108 +24,78 @@ import lombok.Setter;
 @Entity
 @Table(
     name = "chat_members",
-
-    // Уникальность: один пользователь может быть в чате только один раз
     uniqueConstraints = @UniqueConstraint(columnNames = {"chat_id", "user_id"}),
-
-    // Индексы для ускорения запросов:
-    // - поиск участников чата
-    // - поиск всех чатов пользователя
     indexes = {
       @Index(name = "idx_chat_id", columnList = "chat_id"),
       @Index(name = "idx_user_id", columnList = "user_id")
     })
 @Getter
-@Setter // ⚠️ частично ограничен ниже (setChat)
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA требует
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMember {
 
   @Id
   @Column(name = "id")
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  // Первичный ключ
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "chat_id", nullable = false)
   @Setter(AccessLevel.PACKAGE)
-  // Связь с чатом
-  // LAZY → не грузим чат каждый раз
-  // PACKAGE setter → только Chat управляет связью (aggregate root)
   private Chat chat;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
-  // Пользователь-участник
-  // LAZY → не грузим User без необходимости
-  @Setter(AccessLevel.NONE)
   private User user;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false)
-  // Роль участника:
-  // ADMIN / MEMBER
-  // STRING → безопасно при изменении enum
-  @Setter(AccessLevel.NONE)
   private ChatRole role;
 
   @Column(name = "joined_at", nullable = false)
-  // Когда пользователь присоединился к чату
   private Instant joinedAt;
 
   @PrePersist
-  public void prePersist() {
-    // lifecycle hook перед INSERT
-    // гарантирует заполнение joinedAt
+  private void prePersist() {
     if (joinedAt == null) {
       joinedAt = Instant.now();
     }
   }
 
-  // =========================
-  // BUSINESS LOGIC
-  // =========================
-
   public boolean isAdmin() {
-    // Проверка роли
     return role == ChatRole.ADMIN;
   }
 
   public void promoteToAdmin() {
-    // Повышение до администратора
-    // ⚠️ в реальном приложении лучше проверять:
-    // кто выполняет действие (например, только ADMIN)
-    this.role = ChatRole.ADMIN;
+    if (!isAdmin()) {
+      role = ChatRole.ADMIN;
+    }
   }
 
   public void demoteToMember() {
-    // Понижение роли
-    this.role = ChatRole.MEMBER;
+    if (isAdmin()) {
+      role = ChatRole.MEMBER;
+    }
   }
 
   public static ChatMember of(User user, ChatRole role) {
-    // Фабричный метод
-    // создаёт валидный объект без chat (его установит Chat.addMember())
     ChatMember member = new ChatMember();
-    member.user = Objects.requireNonNull(user);
-    member.role = Objects.requireNonNull(role);
+    member.user = Objects.requireNonNull(user, "user");
+    member.role = Objects.requireNonNull(role, "role");
     return member;
   }
 
-  // =========================
-  // EQUALS / HASHCODE
-  // =========================
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof ChatMember that)) return false;
 
-    return user != null && user.getId() != null && user.getId().equals(that.user.getId());
+    return id != null && id.equals(that.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(user != null ? user.getId() : null);
+    return getClass().hashCode();
   }
+
 }

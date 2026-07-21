@@ -92,6 +92,23 @@ public class GlobalExceptionHandler {
         .body(new ErrorResponse(ex.getMessage(), status.value(), LocalDateTime.now()));
   }
 
+  @ExceptionHandler(MessageException.class)
+  public ResponseEntity<ErrorResponse> handle(MessageException ex) {
+
+    HttpStatus status = switch (ex.getError()) {
+      case CONTENT_BLANK,
+           CONTENT_TOO_LONG ->
+          HttpStatus.BAD_REQUEST;
+    };
+
+    return ResponseEntity
+        .status(status)
+        .body(new ErrorResponse(ex.getMessage(), status.value(), LocalDateTime.now()));
+  }
+
+
+
+
   // =========================
   // Fallback (500)
   // =========================
