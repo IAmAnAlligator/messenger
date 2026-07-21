@@ -12,6 +12,8 @@ import ChatPage from "./pages/ChatPage";
 
 import ChatEditPage from "./pages/ChatEditPage";
 
+import ChatCreatePage from "./pages/ChatCreatePage";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 /**
@@ -48,6 +50,11 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
+                <Route
+    path="/chats/create"
+    element={<ChatCreatePage />}
+/>
 
                 <Route
     path="/chats/:chatId/edit"

@@ -4,6 +4,7 @@ import com.jeannimi.messenger.dto.ChatCreateRequest;
 import com.jeannimi.messenger.dto.ChatDto;
 import com.jeannimi.messenger.dto.ChatMemberDto;
 import com.jeannimi.messenger.dto.CustomUserDetails;
+import com.jeannimi.messenger.dto.RenameChatRequest;
 import com.jeannimi.messenger.service.ChatService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -67,5 +68,25 @@ public class ChatController {
       @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     return chatService.getMembers(chatId, currentUser.id());
+  }
+
+  @DeleteMapping("/{chatId}/leave")
+  public ResponseEntity<Void> leaveChat(
+      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+    chatService.leaveChat(chatId, currentUser.id());
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/{chatId}/name")
+  public ResponseEntity<Void> renameChat(
+      @PathVariable Long chatId,
+      @RequestBody RenameChatRequest request,
+      @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+    chatService.renameChat(chatId, request.name(), currentUser.id());
+
+    return ResponseEntity.noContent().build();
   }
 }

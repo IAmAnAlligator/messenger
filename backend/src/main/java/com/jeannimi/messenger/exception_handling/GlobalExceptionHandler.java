@@ -64,6 +64,34 @@ public class GlobalExceptionHandler {
     return buildResponse(message, HttpStatus.BAD_REQUEST);
   }
 
+  @ExceptionHandler(ChatException.class)
+  public ResponseEntity<ErrorResponse> handle(ChatException ex) {
+
+    HttpStatus status = switch (ex.getError()) {
+
+      case NOT_CHAT_MEMBER,
+           ONLY_ADMIN_ALLOWED,
+           ADMIN_CANNOT_LEAVE ->
+          HttpStatus.FORBIDDEN;
+
+      case USER_ALREADY_IN_CHAT,
+           LAST_ADMIN_CANNOT_BE_REMOVED,
+           PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS,
+           PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY ->
+          HttpStatus.CONFLICT;
+
+      case MEMBER_NOT_FOUND ->
+          HttpStatus.NOT_FOUND;
+
+      default ->
+          HttpStatus.BAD_REQUEST;
+    };
+
+    return ResponseEntity
+        .status(status)
+        .body(new ErrorResponse(ex.getMessage(), status.value(), LocalDateTime.now()));
+  }
+
   // =========================
   // Fallback (500)
   // =========================

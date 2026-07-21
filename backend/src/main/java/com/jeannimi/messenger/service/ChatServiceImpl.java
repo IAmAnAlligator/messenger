@@ -210,6 +210,17 @@ public class ChatServiceImpl implements ChatService {
     chatEventProducer.publishChatDeleted(chatId);
   }
 
+  @Override
+  public void leaveChat(Long chatId, Long currentUserId) {
+
+    Chat chat =
+        chatRepository
+            .findByIdWithMembers(chatId)
+            .orElseThrow(() -> new NotFoundException("Chat not found"));
+
+    chat.leaveChat(currentUserId);
+  }
+
   @Transactional(readOnly = true)
   public List<ChatMemberDto> getMembers(Long chatId, Long currentUserId) {
 
@@ -228,6 +239,18 @@ public class ChatServiceImpl implements ChatService {
     }
 
     return chat.getMembers().stream().map(ChatMemberDto::toDto).toList();
+  }
+
+  @Override
+  @Transactional
+  public void renameChat(Long chatId, String chatName, Long currentUserId) {
+
+    Chat chat =
+        chatRepository
+            .findByIdWithMembers(chatId)
+            .orElseThrow(() -> new NotFoundException("Chat not found"));
+
+    chat.renameChat(currentUserId, chatName);
   }
 
   // =========================

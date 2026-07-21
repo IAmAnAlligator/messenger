@@ -21,5 +21,9 @@ public interface ChatService {
 
   void deleteChat(Long chatId, Long currentUserId);
 
+  void leaveChat(Long chatId, Long currentUserId);
+
   List<ChatMemberDto> getMembers(Long chatId, Long currentUserId);
+
+  void renameChat(Long chatId, String chatName, Long currentUserId);
 }

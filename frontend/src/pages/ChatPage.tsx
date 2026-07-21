@@ -11,6 +11,20 @@ import {
     getSocket
 } from "../websocket/chatSocket";
 
+
+type ChatMemberDto = {
+    user: UserDto;
+    chatRole: string;
+    joinedAt: string;
+};
+
+type ChatDto = {
+    id: number;
+    name: string;
+    type: "PRIVATE" | "GROUP";
+    members: ChatMemberDto[];
+};
+
 type UserDto = {
     id: number;
     username: string;
@@ -41,8 +55,10 @@ export default function ChatPage() {
     const { chatId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    
 
     const [messages, setMessages] = useState<MessageDto[]>([]);
+    const [chat, setChat] = useState<ChatDto | null>(null);
     const [text, setText] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -54,6 +70,42 @@ export default function ChatPage() {
         );
     }
 
+    async function loadChat() {
+
+    try {
+
+        const res = await api.get(`/chats/${chatId}`);
+
+        setChat(res.data);
+
+    } catch (e) {
+
+        console.error(e);
+
+    }
+    }
+
+    function getChatName(): string {
+
+    if (!chat) {
+        return `Chat ${chatId}`;
+    }
+
+    if (chat.type === "GROUP") {
+        return chat.name;
+    }
+
+    if (!user) {
+        return chat.name;
+    }
+
+    const otherMember = chat.members.find(
+        member => member.user.id !== user.id
+    );
+
+    return otherMember?.user.username ?? chat.name;
+}
+
     useEffect(() => {
 
         if (!chatId) return;
@@ -63,6 +115,7 @@ export default function ChatPage() {
 
         connectSocket(token);
 
+        loadChat();
         loadMessages();
 
         const destination = `/topic/chat/${chatId}`;
@@ -232,7 +285,7 @@ export default function ChatPage() {
                     ← Back
                 </button>
 
-                <h2>Chat {chatId}</h2>
+                <h2>{getChatName()}</h2>
 
                 <button onClick={() =>
                     navigate(`/chats/${chatId}/edit`)

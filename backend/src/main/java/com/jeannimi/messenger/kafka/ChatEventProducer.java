@@ -67,8 +67,7 @@ public class ChatEventProducer {
 
     try {
 
-      kafkaTemplate.send(
-          READ_TOPIC, dto.chatId().toString(), objectMapper.writeValueAsString(dto));
+      kafkaTemplate.send(READ_TOPIC, dto.chatId().toString(), objectMapper.writeValueAsString(dto));
 
     } catch (Exception e) {
 
@@ -83,10 +82,7 @@ public class ChatEventProducer {
       log.info("DELETE MESSAGE {}", dto.id());
 
       kafkaTemplate
-          .send(
-              MESSAGE_DELETE_TOPIC,
-              dto.chatId().toString(),
-              objectMapper.writeValueAsString(dto))
+          .send(MESSAGE_DELETE_TOPIC, dto.chatId().toString(), objectMapper.writeValueAsString(dto))
           .get();
 
     } catch (Exception e) {
