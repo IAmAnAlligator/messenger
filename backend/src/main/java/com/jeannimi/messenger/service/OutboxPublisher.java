@@ -80,7 +80,7 @@ public class OutboxPublisher {
         // Помечаем событие как отправленное.
         // Благодаря @Transactional отдельный save() не нужен — JPA сохранит изменения
         // автоматически.
-        event.setStatus(OutboxStatus.SENT);
+        event.markSent();
 
         log.info("[OUTBOX SENT] event={}, chat={}", event.getId(), dto.chatId());
 
@@ -90,7 +90,7 @@ public class OutboxPublisher {
         // переводит событие в FAILED.
         log.error("[OUTBOX FAILED] event={}", event.getId(), e);
 
-        event.setStatus(OutboxStatus.FAILED);
+        event.markFailed();
       }
 
       // После завершения метода: Spring выполнит COMMIT.

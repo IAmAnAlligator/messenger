@@ -70,13 +70,16 @@ public class MessageServiceImpl implements MessageService {
 
     MessageDto dto = toDto(saved);
 
-    OutboxEvent event =
-        OutboxEvent.builder()
-            .topic("chat.messages")
-            .payload(objectMapper.writeValueAsString(dto))
-            .status(OutboxStatus.NEW)
-            .createdAt(LocalDateTime.now())
-            .build();
+    OutboxEvent event = OutboxEvent.pending("chat.messages",
+        objectMapper.writeValueAsString(dto));
+
+//    OutboxEvent event =
+//        OutboxEvent.builder()
+//            .topic("chat.messages")
+//            .payload(objectMapper.writeValueAsString(dto))
+//            .status(OutboxStatus.NEW)
+//            .createdAt(LocalDateTime.now())
+//            .build();
 
     outboxRepository.save(event);
 
