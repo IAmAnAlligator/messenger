@@ -1,21 +1,26 @@
 package com.jeannimi.messenger.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.util.Objects;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Embeddable
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Username {
 
-  private String value;
+  private static final int MAX_USERNAME_LENGTH = 100;
 
-  protected Username() {} // нужен для JPA
+  @Column(nullable = false, length = MAX_USERNAME_LENGTH)
+  private String value;
 
   public Username(String value) {
 
     if (value == null) {
-      throw new IllegalArgumentException("Username must not be blank");
+      throw new IllegalArgumentException("Username must not be null");
     }
 
     value = value.trim();
@@ -24,24 +29,23 @@ public class Username {
       throw new IllegalArgumentException("Username must not be blank");
     }
 
-    if (value.length() > 100) {
+    if (value.length() > MAX_USERNAME_LENGTH) {
       throw new IllegalArgumentException("Username too long");
     }
 
     this.value = value;
   }
 
-  // важно для JPA / коллекций
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Username that)) return false;
-    return value.equals(that.value);
+    return Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return Objects.hashCode(value);
   }
 
   @Override

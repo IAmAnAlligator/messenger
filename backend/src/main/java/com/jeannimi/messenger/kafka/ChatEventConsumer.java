@@ -60,7 +60,7 @@ public class ChatEventConsumer {
 
       try {
 
-        processedRepository.save(new ProcessedMessage(dto.id()));
+        processedRepository.save(ProcessedMessage.of(dto.id()));
 
       } catch (DataIntegrityViolationException e) {
 

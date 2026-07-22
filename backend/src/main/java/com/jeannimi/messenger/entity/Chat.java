@@ -32,7 +32,6 @@ import org.hibernate.annotations.BatchSize;
 @Table(name = "chats")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class Chat {
 
   private static final int MAX_CHAT_NAME_LENGTH = 100;
