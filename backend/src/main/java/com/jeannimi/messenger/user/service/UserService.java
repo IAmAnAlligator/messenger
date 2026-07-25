@@ -1,0 +1,38 @@
+package com.jeannimi.messenger.user.service;
+
+import com.jeannimi.messenger.user.dto.UserDto;
+import com.jeannimi.messenger.user.entity.User;
+import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.user.repository.UserRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+  private final UserRepository userRepository;
+
+  public UserDto getCurrentUser(Long userId) {
+
+    User user =
+        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+
+    return new UserDto(user.getId(), user.getUsername().getValue(), user.getRole());
+  }
+
+  public List<UserDto> searchUsers(String query, Long currentUserId) {
+
+    if (query == null || query.trim().length() < 2) {
+      return List.of();
+    }
+
+    List<User> users = userRepository.searchByUsername(query);
+
+    return users.stream()
+        .filter(u -> !u.getId().equals(currentUserId)) // исключаем себя
+        .map(u -> new UserDto(u.getId(), u.getUsername().getValue(), u.getRole()))
+        .toList();
+  }
+}

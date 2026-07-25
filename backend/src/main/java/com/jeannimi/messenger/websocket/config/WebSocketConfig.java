@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.websocket.config;
 
-import com.jeannimi.messenger.websocket.interceptor.JwtChannelInterceptor;
+import com.jeannimi.messenger.security.websocker.JwtChannelInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;

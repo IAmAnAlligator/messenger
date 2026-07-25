@@ -1,11 +1,9 @@
 package com.jeannimi.messenger.websocket.controller;
 
-import com.jeannimi.messenger.dto.DeleteMessageDto;
-import com.jeannimi.messenger.dto.MessageDto;
-import com.jeannimi.messenger.dto.ReadResult;
-import com.jeannimi.messenger.kafka.ChatEventProducer;
-import com.jeannimi.messenger.service.MessageService;
-import com.jeannimi.messenger.websocket.security.WsUserPrincipal;
+import com.jeannimi.messenger.message.dto.DeleteMessageDto;
+import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.message.service.MessageService;
+import com.jeannimi.messenger.security.websocker.WsUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Controller;
 public class ChatWebSocketController {
 
   private final MessageService messageService;
-  private final ChatEventProducer producer;
 
   @MessageMapping("/chat.send")
   public void sendMessage(MessageDto dto, Authentication authentication) {
@@ -36,11 +33,7 @@ public class ChatWebSocketController {
 
     validateReadMessage(dto);
 
-    ReadResult result = messageService.markAsRead(dto.chatId(), dto.id(), principal.userId());
-
-    if (result.changed()) {
-      producer.readMessage(result.message());
-    }
+    messageService.markAsRead(dto.chatId(), dto.id(), principal.userId());
   }
 
   @MessageMapping("/chat.delete")
@@ -52,7 +45,6 @@ public class ChatWebSocketController {
 
     messageService.deleteMessage(dto.chatId(), dto.id(), principal.userId());
 
-    producer.deleteMessage(dto);
   }
 
   private void validateDeleteMessage(DeleteMessageDto dto) {
