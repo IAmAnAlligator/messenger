@@ -12,7 +12,7 @@ import com.jeannimi.messenger.kafka.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.kafka.event.ChatMemberRemovedEvent;
 import com.jeannimi.messenger.kafka.event.ChatRenamedEvent;
 import com.jeannimi.messenger.chat.entity.Chat;
-import com.jeannimi.messenger.common.constants.EventType;
+import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.ConflictException;

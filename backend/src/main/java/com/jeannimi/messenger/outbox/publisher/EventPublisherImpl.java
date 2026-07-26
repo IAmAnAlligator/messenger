@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.outbox.publisher;
 
-import com.jeannimi.messenger.common.constants.EventType;
+import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.outbox.service.OutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -34,7 +34,8 @@ import org.hibernate.annotations.BatchSize;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Chat {
 
-  private static final int MAX_CHAT_NAME_LENGTH = 100;
+  public static final int MAX_CHAT_NAME_LENGTH = 100;
+  public static final int MAX_GROUP_MEMBERS = 100;
   private static final String SEPARATOR = "_";
 
   @Id
@@ -117,6 +118,12 @@ public class Chat {
     if (users.isEmpty()) {
       throw new ChatException(
           ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
+    }
+
+    if (users.size() + 1 > MAX_GROUP_MEMBERS) {
+      throw new ChatException(
+          ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
+          "Group cannot contain more than " + MAX_GROUP_MEMBERS + " members");
     }
 
     for (User user : users) {

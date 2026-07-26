@@ -3,7 +3,7 @@ package com.jeannimi.messenger.kafka.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.kafka.event.ChatMemberRemovedEvent;
-import com.jeannimi.messenger.common.constants.EventType;
+import com.jeannimi.messenger.kafka.event.EventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;

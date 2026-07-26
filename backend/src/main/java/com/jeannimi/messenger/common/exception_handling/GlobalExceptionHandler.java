@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.common.exception_handling;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -59,7 +60,20 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().stream()
             .map(err -> err.getField() + ": " + err.getDefaultMessage())
             .findFirst()
-            .orElse("Validation error");
+            .orElse("Method argument not valid, validation error");
+
+    return buildResponse(message, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ResponseEntity<ErrorResponse> handleConstraintViolation(
+      ConstraintViolationException ex) {
+
+    String message =
+        ex.getConstraintViolations().stream()
+            .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+            .findFirst()
+            .orElse("Constraint violation, validation error");
 
     return buildResponse(message, HttpStatus.BAD_REQUEST);
   }

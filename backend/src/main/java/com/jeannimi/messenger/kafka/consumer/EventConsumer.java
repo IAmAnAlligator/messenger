@@ -6,7 +6,7 @@ import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
-import com.jeannimi.messenger.common.constants.EventType;
+import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.entity.ProcessedMessage;
 import com.jeannimi.messenger.kafka.handler.ChatEventHandler;

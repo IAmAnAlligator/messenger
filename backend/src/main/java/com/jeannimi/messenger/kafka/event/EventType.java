@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.constants;
+package com.jeannimi.messenger.kafka.event;
 
 public enum EventType {
   CHAT_CREATED,

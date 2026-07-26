@@ -6,22 +6,26 @@ import com.jeannimi.messenger.chat.dto.ChatMemberDto;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import com.jeannimi.messenger.chat.dto.RenameChatRequest;
 import com.jeannimi.messenger.chat.service.ChatService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
+@Validated
 public class ChatController {
 
   private final ChatService chatService;
 
   @PostMapping
   public ChatDto createChat(
-      @RequestBody ChatCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
+      @RequestBody @Valid ChatCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
     return chatService.createChat(request, user.id());
   }
 
@@ -32,14 +36,14 @@ public class ChatController {
 
   @GetMapping("/{chatId}")
   public ChatDto getChat(
-      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails user) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails user) {
     return chatService.getChat(chatId, user.id());
   }
 
   @PostMapping("/{chatId}/members")
   public ResponseEntity<Void> addMember(
-      @PathVariable Long chatId,
-      @RequestParam Long userId,
+      @PathVariable @Positive Long chatId,
+      @RequestParam @Positive Long userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
     chatService.addMember(chatId, userId, currentUser.id());
     return ResponseEntity.ok().build();
@@ -47,8 +51,8 @@ public class ChatController {
 
   @DeleteMapping("/{chatId}/members/{userId}")
   public ResponseEntity<Void> removeMember(
-      @PathVariable Long chatId,
-      @PathVariable Long userId,
+      @PathVariable @Positive Long chatId,
+      @PathVariable @Positive Long userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
     chatService.removeMember(chatId, userId, currentUser.id());
     return ResponseEntity.ok().build();
@@ -56,7 +60,7 @@ public class ChatController {
 
   @DeleteMapping("/{chatId}")
   public ResponseEntity<Void> deleteChat(
-      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     chatService.deleteChat(chatId, currentUser.id());
 
@@ -65,14 +69,14 @@ public class ChatController {
 
   @GetMapping("/{chatId}/members")
   public List<ChatMemberDto> getMembers(
-      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     return chatService.getMembers(chatId, currentUser.id());
   }
 
   @DeleteMapping("/{chatId}/leave")
   public ResponseEntity<Void> leaveChat(
-      @PathVariable Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     chatService.leaveChat(chatId, currentUser.id());
 
@@ -81,8 +85,8 @@ public class ChatController {
 
   @PatchMapping("/{chatId}/name")
   public ResponseEntity<Void> renameChat(
-      @PathVariable Long chatId,
-      @RequestBody RenameChatRequest request,
+      @PathVariable @Positive Long chatId,
+      @RequestBody @Valid RenameChatRequest request,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     chatService.renameChat(chatId, request.name(), currentUser.id());
