@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Username {
 
-  private static final int MAX_USERNAME_LENGTH = 100;
+  public static final int MAX_USERNAME_LENGTH = 100;
+  public static final int MIN_USERNAME_LENGTH = 3;
 
   @Column(nullable = false, length = MAX_USERNAME_LENGTH)
   private String value;
@@ -27,6 +28,10 @@ public class Username {
 
     if (value.isBlank()) {
       throw new IllegalArgumentException("Username must not be blank");
+    }
+
+    if (value.length() < MIN_USERNAME_LENGTH) {
+      throw new IllegalArgumentException("Username too short");
     }
 
     if (value.length() > MAX_USERNAME_LENGTH) {

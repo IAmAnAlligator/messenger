@@ -1,9 +1,11 @@
 package com.jeannimi.messenger.websocket.controller;
 
-import com.jeannimi.messenger.message.dto.DeleteMessageDto;
-import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.service.MessageService;
 import com.jeannimi.messenger.security.websocker.WsUserPrincipal;
+import com.jeannimi.messenger.websocket.dto.DeleteMessageCommand;
+import com.jeannimi.messenger.websocket.dto.ReadMessageCommand;
+import com.jeannimi.messenger.websocket.dto.SendMessageCommand;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,58 +19,45 @@ public class ChatWebSocketController {
   private final MessageService messageService;
 
   @MessageMapping("/chat.send")
-  public void sendMessage(MessageDto dto, Authentication authentication) {
+  public void sendMessage(
+      @Valid SendMessageCommand dto,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    validateSendMessage(dto);
-
-    messageService.sendMessage(dto.chatId(), principal.userId(), dto.content());
+    messageService.sendMessage(
+        dto.chatId(),
+        principal.userId(),
+        dto.content()
+    );
   }
 
   @MessageMapping("/chat.read")
-  public void read(MessageDto dto, Authentication authentication) {
+  public void read(
+      @Valid ReadMessageCommand dto,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    validateReadMessage(dto);
-
-    messageService.markAsRead(dto.chatId(), dto.id(), principal.userId());
+    messageService.markAsRead(
+        dto.chatId(),
+        dto.messageId(),
+        principal.userId()
+    );
   }
 
   @MessageMapping("/chat.delete")
-  public void delete(DeleteMessageDto dto, Authentication authentication) {
+  public void delete(
+      @Valid DeleteMessageCommand dto,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    validateDeleteMessage(dto);
-
-    messageService.deleteMessage(dto.chatId(), dto.id(), principal.userId());
-
-  }
-
-  private void validateDeleteMessage(DeleteMessageDto dto) {
-
-    if (dto.chatId() == null || dto.id() == null) {
-
-      throw new IllegalArgumentException("Invalid delete DTO");
-    }
-  }
-
-  private void validateSendMessage(MessageDto dto) {
-
-    if (dto.chatId() == null || dto.content() == null || dto.content().isBlank()) {
-
-      throw new IllegalArgumentException("Invalid message DTO");
-    }
-  }
-
-  private void validateReadMessage(MessageDto dto) {
-
-    if (dto.chatId() == null || dto.id() == null) {
-
-      throw new IllegalArgumentException("Invalid message DTO");
-    }
+    messageService.deleteMessage(
+        dto.chatId(),
+        dto.messageId(),
+        principal.userId()
+    );
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {

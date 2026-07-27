@@ -5,7 +5,8 @@ import jakarta.validation.constraints.Size;
 
 public record RenameChatRequest(
 
-    @Size(min = 1, max = Chat.MAX_CHAT_NAME_LENGTH)
+    @Size(min = Chat.MIN_CHAT_NAME_LENGTH, max = Chat.MAX_CHAT_NAME_LENGTH,
+        message = "Chat name must be between {min} and {max} characters")
     String name
 
 ) {}

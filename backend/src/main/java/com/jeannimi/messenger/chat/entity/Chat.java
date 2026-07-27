@@ -35,6 +35,7 @@ import org.hibernate.annotations.BatchSize;
 public class Chat {
 
   public static final int MAX_CHAT_NAME_LENGTH = 100;
+  public static final int MIN_CHAT_NAME_LENGTH = 1;
   public static final int MAX_GROUP_MEMBERS = 100;
   private static final String SEPARATOR = "_";
 
@@ -282,6 +283,10 @@ public class Chat {
     }
 
     name = name.trim();
+
+    if (name.isEmpty()) {
+      throw new ChatException(ChatError.CHAT_NAME_TOO_SHORT, "Chat name is too short");
+    }
 
     if (name.length() > MAX_CHAT_NAME_LENGTH) {
       throw new ChatException(ChatError.CHAT_NAME_TOO_LONG, "Chat name is too long");
