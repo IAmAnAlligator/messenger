@@ -4,17 +4,17 @@ import {
     Route
 } from "react-router-dom";
 
-import AuthPage from "./pages/AuthPage";
+import AuthPage from "./ui/pages/AuthPage";
 
-import ChatsPage from "./pages/ChatsPage";
+import ChatsPage from "./ui/pages/ChatsPage";
 
-import ChatPage from "./pages/ChatPage";
+import ChatPage from "./ui/pages/ChatPage";
 
-import ChatEditPage from "./pages/ChatEditPage";
+import ChatEditPage from "./ui/pages/ChatEditPage";
 
-import ChatCreatePage from "./pages/ChatCreatePage";
+import ChatCreatePage from "./ui/pages/ChatCreatePage";
 
-import ProtectedRoute from "./routes/ProtectedRoute";
+import ProtectedRoute from "./auth/ProtectedRoute";
 
 /**
  * Главный компонент приложения

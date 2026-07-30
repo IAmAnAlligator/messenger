@@ -1,5 +1,5 @@
 import axios from "axios";
-import { refreshToken } from "./refresh";
+import { refreshToken } from "../auth/refresh";
 
 /**
  * 🔧 Базовый axios-инстанс для всего приложения

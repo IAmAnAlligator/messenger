@@ -2,8 +2,10 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.kafka.event.ChatDeletedEvent;
 import com.jeannimi.messenger.kafka.event.ChatMemberAddedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -29,7 +31,12 @@ public class ChatMemberAddedHandler implements ChatEventHandler {
 
       ChatMemberAddedEvent dto = objectMapper.treeToValue(payload, ChatMemberAddedEvent.class);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
+      WebSocketEvent<ChatMemberAddedEvent> event =
+          WebSocketEvent.of(
+              EventType.CHAT_MEMBER_ADDED,
+              dto);
+
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
 
       /*
          Отдельно уведомляем
@@ -37,7 +44,7 @@ public class ChatMemberAddedHandler implements ChatEventHandler {
          чтобы обновить список чатов
       */
 
-      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", dto);
+      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", event);
 
     } catch (Exception e) {
 

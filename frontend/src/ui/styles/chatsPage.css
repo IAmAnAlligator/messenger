@@ -1,0 +1,120 @@
+.chats-page {
+
+    height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+    background: #ffffff;
+
+}
+
+
+
+/*
+    Header списка чатов
+*/
+
+.chats-header {
+
+    height: 60px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 20px;
+
+    border-bottom: 1px solid #ddd;
+
+}
+
+
+
+/*
+    Контейнер списка
+*/
+
+.chat-list {
+
+    flex: 1;
+
+    overflow-y: auto;
+
+}
+
+
+
+/*
+    Элемент списка чатов
+*/
+
+.chat-item {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 15px 20px;
+
+    border-bottom: 1px solid #eee;
+
+    cursor: pointer;
+
+}
+
+
+.chat-item:hover {
+
+    background: #f5f5f5;
+
+}
+
+
+
+/*
+    Название чата
+*/
+
+.chat-name {
+
+    font-size: 16px;
+
+    font-weight: 500;
+
+}
+
+
+
+/*
+    Последнее сообщение
+*/
+
+.chat-last-message {
+
+    margin-top: 4px;
+
+    font-size: 13px;
+
+    color: #777;
+
+}
+
+
+
+/*
+    Время последнего сообщения
+*/
+
+.chat-time {
+
+    font-size: 12px;
+
+    color: #999;
+
+}

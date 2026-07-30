@@ -1,0 +1,290 @@
+.chat-edit-page {
+
+    height:100vh;
+
+    padding:20px;
+
+    background:#efeae2;
+
+    box-sizing:border-box;
+
+    overflow-y:auto;
+
+}
+
+
+
+/*
+    Header
+*/
+
+.chat-edit-header {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:20px;
+
+}
+
+
+.chat-edit-header h2 {
+
+    margin:0;
+
+}
+
+
+
+
+.chat-edit-header button {
+
+    padding:8px 14px;
+
+    border:none;
+
+    border-radius:6px;
+
+    cursor:pointer;
+
+    background:white;
+
+}
+
+
+
+/*
+    Rename
+*/
+
+.chat-rename-form {
+
+    display:flex;
+
+    gap:10px;
+
+    margin-bottom:20px;
+
+}
+
+
+.chat-rename-form input {
+
+    flex:1;
+
+    padding:10px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+    font-size:15px;
+
+}
+
+
+.chat-rename-form button {
+
+    padding:10px 18px;
+
+    border:none;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+}
+
+
+
+
+/*
+    Add member
+*/
+
+.add-member-form {
+
+    background:white;
+
+    padding:15px;
+
+    border-radius:10px;
+
+    margin-bottom:20px;
+
+}
+
+
+.add-member-form h3 {
+
+    margin-top:0;
+
+}
+
+
+
+.add-member-form input {
+
+    width:100%;
+
+    box-sizing:border-box;
+
+    padding:10px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+}
+
+
+
+
+/*
+    Search result
+*/
+
+.user-search-result {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:10px;
+
+    margin-top:8px;
+
+    background:#f7f7f7;
+
+    border-radius:6px;
+
+}
+
+
+.user-search-result button {
+
+    cursor:pointer;
+
+    border:none;
+
+    padding:6px 12px;
+
+    border-radius:6px;
+
+}
+
+
+
+
+/*
+    Members
+*/
+
+.member-list {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+
+
+.member-item {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:14px;
+
+    background:white;
+
+    border-radius:10px;
+
+    border:1px solid #ddd;
+
+}
+
+
+
+.member-info {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:5px;
+
+}
+
+
+
+.member-role {
+
+    font-size:12px;
+
+    color:#777;
+
+}
+
+
+
+.member-item button {
+
+    border:none;
+
+    background:#d33;
+
+    color:white;
+
+    padding:7px 12px;
+
+    border-radius:6px;
+
+    cursor:pointer;
+
+}
+
+
+
+/*
+    Actions
+*/
+
+.chat-actions {
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+
+
+.leave-button {
+
+    background:#f0ad4e;
+
+    color:white;
+
+}
+
+
+
+.delete-button {
+
+    background:#d33;
+
+    color:white;
+
+}

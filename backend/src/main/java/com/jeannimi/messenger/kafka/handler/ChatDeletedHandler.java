@@ -2,8 +2,10 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.kafka.event.ChatCreatedEvent;
 import com.jeannimi.messenger.kafka.event.ChatDeletedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -29,18 +31,23 @@ public class ChatDeletedHandler implements ChatEventHandler {
 
       ChatDeletedEvent dto = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
 
+      WebSocketEvent<ChatDeletedEvent> event =
+          WebSocketEvent.of(
+              EventType.CHAT_DELETED,
+              dto);
+
       /*
          Сообщаем участникам,
          что чат удален
       */
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
 
       /*
          Глобальное событие удаления
       */
 
-      messagingTemplate.convertAndSend("/topic/chat.deleted", dto);
+      messagingTemplate.convertAndSend("/topic/chat.deleted", event);
 
     } catch (Exception e) {
 

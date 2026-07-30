@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.kafka.event.ChatCreatedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -29,12 +30,17 @@ public class ChatCreatedHandler implements ChatEventHandler {
 
       ChatCreatedEvent dto = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
 
+      WebSocketEvent<ChatCreatedEvent> event =
+          WebSocketEvent.of(
+              EventType.CHAT_CREATED,
+              dto);
+
       /*
          Уведомляем подписчиков,
          которые слушают создание чатов
       */
 
-      messagingTemplate.convertAndSend("/topic/chat.created", dto);
+      messagingTemplate.convertAndSend("/topic/chat.created", event);
 
       /*
          Обновляем список чатов
@@ -43,7 +49,7 @@ public class ChatCreatedHandler implements ChatEventHandler {
 
       for (Long memberId : dto.memberIds()) {
 
-        messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", dto);
+        messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", event);
       }
 
     } catch (Exception e) {

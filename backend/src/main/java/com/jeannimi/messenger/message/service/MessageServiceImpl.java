@@ -69,7 +69,7 @@ public class MessageServiceImpl implements MessageService {
         MessageSentEvent.from(saved);
 
     eventPublisher.publish(KafkaTopics.CHAT_MESSAGES,
-        EventType.MESSAGE_SENT,
+        EventType.MESSAGE_CREATED,
         String.valueOf(chatId),
         messageSentEvent);
 

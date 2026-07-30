@@ -68,14 +68,8 @@ public class Message {
     }
   }
 
-  public void markDelivered() {
-    if (this.status == MessageStatus.SENT) {
-      this.status = MessageStatus.DELIVERED;
-    }
-  }
-
   public void markRead() {
-    if (this.status == MessageStatus.SENT || this.status == MessageStatus.DELIVERED) {
+    if (this.status == MessageStatus.SENT) {
       this.status = MessageStatus.READ;
     }
   }

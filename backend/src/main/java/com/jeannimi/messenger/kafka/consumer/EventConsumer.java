@@ -2,6 +2,7 @@ package com.jeannimi.messenger.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
@@ -80,7 +81,7 @@ public class EventConsumer {
 
           messagingTemplate.convertAndSend(
               "/topic/chat/" + dto.chatId(),
-              dto
+              WebSocketEvent.of(EventType.MESSAGE_CREATED, dto)
           );
         });
   }
@@ -100,7 +101,10 @@ public class EventConsumer {
         MessageReadEvent.class,
         event ->
             messagingTemplate.convertAndSend("/topic/chat/"
-                + event.chatId(), event));
+                + event.chatId(), WebSocketEvent.of(
+                EventType.MESSAGE_READ,
+                event
+            )));
   }
 
   /*
@@ -118,7 +122,10 @@ public class EventConsumer {
         MessageDeletedEvent.class,
         event ->
             messagingTemplate.convertAndSend(
-                "/topic/chat/" + event.chatId(), event
+                "/topic/chat/" + event.chatId(), WebSocketEvent.of(
+                    EventType.MESSAGE_DELETED,
+                    event
+                )
             )
     );
   }

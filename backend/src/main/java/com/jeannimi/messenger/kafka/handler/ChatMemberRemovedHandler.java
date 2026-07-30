@@ -2,8 +2,10 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.kafka.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.kafka.event.ChatMemberRemovedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -27,18 +29,23 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
 
       ChatMemberRemovedEvent dto = objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
 
+      WebSocketEvent<ChatMemberRemovedEvent> event =
+          WebSocketEvent.of(
+              EventType.CHAT_MEMBER_REMOVED,
+              dto);
+
       /*
        * Уведомляем всех участников чата
        */
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
 
       /*
        * Обновляем список чатов
        * удаленного пользователя
        */
 
-      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", dto);
+      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", event);
 
     } catch (Exception e) {
 

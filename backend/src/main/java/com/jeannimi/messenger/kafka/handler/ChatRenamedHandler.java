@@ -2,8 +2,10 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.kafka.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.kafka.event.ChatRenamedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,12 @@ public class ChatRenamedHandler implements ChatEventHandler {
 
       ChatRenamedEvent dto = objectMapper.treeToValue(payload, ChatRenamedEvent.class);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), dto);
+      WebSocketEvent<ChatRenamedEvent> event =
+          WebSocketEvent.of(
+              EventType.CHAT_RENAMED,
+              dto);
+
+      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
 
     } catch (Exception e) {
 

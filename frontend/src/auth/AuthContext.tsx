@@ -6,11 +6,11 @@ import {
     useState,
 } from "react";
 
-import { api } from "../api/client";
+import { api } from "../services/client";
 import {
     connectSocket,
     disconnectSocket
-} from "../websocket/chatSocket";
+} from "../services/chatSocket";
 
 type User = {
     id: number;
