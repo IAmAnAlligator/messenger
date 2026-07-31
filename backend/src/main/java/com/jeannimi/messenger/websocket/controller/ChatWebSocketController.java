@@ -16,6 +16,10 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class ChatWebSocketController {
 
+  // 1. Клиент → Сервер (@MessageMapping)
+  //
+  //Это команды пользователя. Именно их обрабатывает ChatWebSocketController.
+
   private final MessageService messageService;
 
   @MessageMapping("/chat.send")

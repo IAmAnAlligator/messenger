@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useMemo,
     useState
@@ -100,139 +101,7 @@ export function useChatEdit(
 
 
 
-
-
-
-    useEffect(()=>{
-
-
-        if(!chatId)
-            return;
-
-
-
-        const token =
-            localStorage.getItem(
-                "accessToken"
-            );
-
-
-        if(token)
-            connectSocket(token);
-
-
-
-        load();
-
-
-
-        const topic =
-            `/topic/chat/${chatId}`;
-
-
-
-        subscribe(
-            topic,
-            frame=>{
-
-
-                const event =
-                    JSON.parse(
-                        frame.body
-                    );
-
-
-                if(
-                    event.type === "CHAT_DELETED"
-                ){
-
-                    navigate(
-                        "/chats",
-                        {
-                            replace:true
-                        }
-                    );
-
-                }
-
-
-            }
-        );
-
-
-
-        return ()=>{
-
-            unsubscribe(topic);
-
-        };
-
-
-    },[chatId]);
-
-
-
-
-
-
-
-
-    /*
-        Автоматический поиск пользователей
-    */
-    useEffect(()=>{
-
-
-        const timer =
-            setTimeout(()=>{
-
-
-                const query =
-                    searchUsername.trim();
-
-
-
-                if(
-                    query.length > 0
-                ){
-
-                    searchUsers();
-
-
-                } else {
-
-
-                    setUsers([]);
-
-                }
-
-
-
-            },300);
-
-
-
-        return ()=>{
-
-            clearTimeout(timer);
-
-        };
-
-
-    },[
-        searchUsername,
-        members
-    ]);
-
-
-
-
-
-
-
-
-
-    async function load(){
+       const load = useCallback(async () => {
 
 
         if(!chatId)
@@ -324,13 +193,177 @@ export function useChatEdit(
         }
 
 
+    }, [chatId]);
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        if(!chatId)
+            return;
+
+
+
+        const token =
+            localStorage.getItem(
+                "accessToken"
+            );
+
+
+        if(token)
+            connectSocket(token);
+
+
+
+        load();
+
+
+
+        const topic =
+            `/topic/chat/${chatId}`;
+
+
+
+subscribe(
+    topic,
+    async frame => {
+
+        const event =
+            JSON.parse(
+                frame.body
+            );
+
+        switch (event.type) {
+
+            case "CHAT_DELETED":
+
+                navigate(
+                    "/chats",
+                    {
+                        replace: true
+                    }
+                );
+
+                break;
+
+
+case "CHAT_MEMBER_REMOVED": {
+
+    if (
+        event.payload.chatId !== Number(chatId)
+    ) {
+        break;
     }
 
+    if (
+        currentUserId !== null &&
+        event.payload.userId === currentUserId
+    ) {
+
+        navigate(
+            "/chats",
+            {
+                replace: true
+            }
+        );
+
+        return;
+    }
+
+    await load();
+
+    break;
+}
+
+case "CHAT_MEMBER_ADDED":
+case "CHAT_MEMBER_LEFT":
+case "CHAT_RENAMED":
+
+    await load();
+
+    break;
+
+            
+
+            default:
+                break;
+        }
+
+    }
+);
+
+
+
+        return ()=>{
+
+            unsubscribe(topic);
+
+        };
+
+
+    }, [
+    load,
+    navigate,
+    currentUserId
+]);
 
 
 
 
 
+
+
+
+    /*
+        Автоматический поиск пользователей
+    */
+    useEffect(()=>{
+
+
+        const timer =
+            setTimeout(()=>{
+
+
+                const query =
+                    searchUsername.trim();
+
+
+
+                if(
+                    query.length > 0
+                ){
+
+                    searchUsers();
+
+
+                } else {
+
+
+                    setUsers([]);
+
+                }
+
+
+
+            },300);
+
+
+
+        return ()=>{
+
+            clearTimeout(timer);
+
+        };
+
+
+    },[
+        searchUsername,
+        members
+    ]);
 
 
 

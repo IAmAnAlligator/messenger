@@ -429,6 +429,29 @@ if (getSocket()?.connected) {
                     }
 
 
+case "CHAT_MEMBER_REMOVED": {
+
+    if (event.payload.chatId !== chatId) {
+        break;
+    }
+
+    if (event.payload.userId === user?.id) {
+
+        navigate(
+            "/chats",
+            {
+                replace: true
+            }
+        );
+
+        return;
+    }
+
+    reloadMessages?.();
+
+    break;
+
+}
 
 
 
@@ -436,7 +459,6 @@ if (getSocket()?.connected) {
                     case "CHAT_CREATED":
                     case "CHAT_RENAMED":
                     case "CHAT_MEMBER_ADDED":
-                    case "CHAT_MEMBER_REMOVED":
                     case "CHAT_MEMBER_LEFT":
 
                         break;
