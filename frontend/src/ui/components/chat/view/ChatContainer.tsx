@@ -1,15 +1,31 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+    useState
+} from "react";
 
-import { useChat } from "../../../../hooks/useChat";
-import { useChatSocket } from "../../../../hooks/useChatSocket";
+import {
+    useNavigate
+} from "react-router-dom";
+
+
+import {
+    useChat
+} from "../../../../hooks/useChat";
+
+
+import {
+    useChatSocket
+} from "../../../../hooks/useChatSocket";
+
 
 import ChatContent
     from "./ChatContent";
 
 
+
 type Props = {
+
     chatId?: number;
+
 };
 
 
@@ -40,13 +56,19 @@ export default function ChatContainer({
 
         loading,
 
+        loadingMore,
+
+        hasMore,
+
         addMessage,
 
         removeMessage,
 
         updateMessageStatus,
 
-        reloadMessages
+        reloadMessages,
+
+        loadMoreMessages
 
 
     } = useChat(chatId);
@@ -67,19 +89,19 @@ export default function ChatContainer({
 
     } = useChatSocket({
 
-    chatId,
+        chatId,
 
-    messages,
+        messages,
 
-    onMessage:addMessage,
+        onMessage: addMessage,
 
-    onDelete:removeMessage,
+        onDelete: removeMessage,
 
-    onRead:updateMessageStatus,
+        onRead: updateMessageStatus,
 
-    reloadMessages
+        reloadMessages
 
-});
+    });
 
 
 
@@ -96,6 +118,13 @@ export default function ChatContainer({
             messages={messages}
 
             loading={loading}
+
+            loadingMore={loadingMore}
+
+            hasMore={hasMore}
+
+            onLoadMore={loadMoreMessages}
+
 
             text={text}
 
@@ -115,8 +144,9 @@ export default function ChatContainer({
 
 
 
-                if (!content)
+                if (!content) {
                     return;
+                }
 
 
 

@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState
+} from "react";
+
 
 import {
     getChat
 } from "../services/chatService";
+
 
 import {
     getMessages
@@ -12,6 +17,7 @@ import {
 import type {
     ChatDto
 } from "../types/chat";
+
 
 import type {
     MessageDto
@@ -23,16 +29,35 @@ export function useChat(
     chatId?: number
 ) {
 
+
     const [chat, setChat] =
         useState<ChatDto | null>(null);
+
 
 
     const [messages, setMessages] =
         useState<MessageDto[]>([]);
 
 
+
     const [loading, setLoading] =
         useState(true);
+
+
+
+    const [loadingMore, setLoadingMore] =
+        useState(false);
+
+
+
+    const [cursor, setCursor] =
+        useState<number | null>(null);
+
+
+
+    const [hasMore, setHasMore] =
+        useState(true);
+
 
 
 
@@ -42,9 +67,12 @@ export function useChat(
             return;
         }
 
+
         load();
 
+
     }, [chatId]);
+
 
 
 
@@ -57,15 +85,22 @@ export function useChat(
 
         try {
 
+
+            setLoading(true);
+
+
+
             const [
                 chatData,
-                messagesData
+                messagesPage
 
             ] = await Promise.all([
+
 
                 getChat(
                     chatId
                 ),
+
 
                 getMessages(
                     chatId
@@ -74,14 +109,30 @@ export function useChat(
             ]);
 
 
+
             setChat(
                 chatData
             );
 
 
+
             setMessages(
-                messagesData
+                messagesPage.items
+                    .reverse()
             );
+
+
+
+            setCursor(
+                messagesPage.nextCursor
+            );
+
+
+
+            setHasMore(
+                messagesPage.hasMore
+            );
+
 
 
         } finally {
@@ -95,35 +146,118 @@ export function useChat(
 
 
 
+    async function loadMoreMessages() {
+
+
+        if (
+            !chatId ||
+            !hasMore ||
+            loadingMore ||
+            !cursor
+        ) {
+            return;
+        }
+
+
+
+        try {
+
+
+            setLoadingMore(true);
+
+
+
+            const page =
+                await getMessages(
+                    chatId,
+                    cursor
+                );
+
+
+
+            setMessages(prev => [
+
+                ...page.items.reverse(),
+
+                ...prev
+
+            ]);
+
+
+
+            setCursor(
+                page.nextCursor
+            );
+
+
+
+            setHasMore(
+                page.hasMore
+            );
+
+
+
+        } catch(error) {
+
+
+            console.error(
+                "Failed to load more messages",
+                error
+            );
+
+
+        } finally {
+
+
+            setLoadingMore(false);
+
+        }
+
+    }
+
+
+
+
+
     async function reloadMessages() {
+
 
         if (!chatId) {
             return;
         }
 
 
+
         try {
 
-            const messagesData =
+
+            const page =
                 await getMessages(
                     chatId
                 );
 
 
-                        console.log(
-            "RELOADED MESSAGES",
-            messagesData.find(
-                m => m.id === 39
-            )
-        );
-
 
             setMessages(
-                messagesData
+                page.items.reverse()
             );
 
 
-        } catch (error) {
+
+            setCursor(
+                page.nextCursor
+            );
+
+
+
+            setHasMore(
+                page.hasMore
+            );
+
+
+
+        } catch(error) {
+
 
             console.error(
                 "Failed to reload messages",
@@ -137,9 +271,12 @@ export function useChat(
 
 
 
+
+
     function addMessage(
         message: MessageDto
     ) {
+
 
         setMessages(prev => {
 
@@ -151,17 +288,25 @@ export function useChat(
                 );
 
 
+
             if (exists) {
+
                 return prev;
+
             }
 
 
+
             return [
+
                 ...prev,
+
                 message
+
             ];
 
         });
+
 
     }
 
@@ -169,15 +314,19 @@ export function useChat(
 
 
 
+
     function removeMessage(
-        id: number
+        id:number
     ) {
 
+
         setMessages(prev =>
+
             prev.filter(
                 m =>
                     m.id !== id
             )
+
         );
 
     }
@@ -186,18 +335,28 @@ export function useChat(
 
 
 
+
     function updateMessageStatus(
-        messageId: number
+        messageId:number
     ) {
 
+
         setMessages(prev =>
+
             prev.map(message => {
 
-                if (message.id === messageId) {
+
+                if (
+                    message.id === messageId
+                ) {
+
 
                     return {
+
                         ...message,
-                        status: "READ"
+
+                        status:"READ"
+
                     };
 
                 }
@@ -205,7 +364,9 @@ export function useChat(
 
                 return message;
 
+
             })
+
         );
 
     }
@@ -216,19 +377,36 @@ export function useChat(
 
     return {
 
+
         chat,
+
 
         messages,
 
+
         loading,
+
+
+        loadingMore,
+
+
+        hasMore,
+
 
         addMessage,
 
+
         removeMessage,
+
 
         updateMessageStatus,
 
-        reloadMessages
+
+        reloadMessages,
+
+
+        loadMoreMessages
+
 
     };
 

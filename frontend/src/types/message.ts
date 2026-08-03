@@ -20,3 +20,9 @@ export interface MessageDto {
 
     status: MessageStatus;
 }
+
+export type MessagePageDto = {
+    items: MessageDto[];
+    nextCursor: number | null;
+    hasMore: boolean;
+};

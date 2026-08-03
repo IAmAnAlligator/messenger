@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.message.service;
 
 import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.message.dto.MessagePageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
@@ -35,6 +36,8 @@ public class MessageServiceImpl implements MessageService {
   private final ChatMemberRepository chatMemberRepository;
   private final UserRepository userRepository;
   private final EventPublisher eventPublisher;
+
+  private static final int MAX_MESSAGE_PAGE_SIZE = 100;
 
   // =========================
   // SEND
@@ -83,18 +86,43 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<MessageDto> getMessages(Long chatId, Long userId, Long cursor) {
+  public MessagePageDto getMessages(
+      Long chatId,
+      Long userId,
+      Long cursor,
+      int limit
+  ) {
 
     checkMembership(chatId, userId);
 
-    PageRequest pageable = PageRequest.of(0, 50);
+    int pageSize =
+        Math.min(limit, MAX_MESSAGE_PAGE_SIZE);
+
+    PageRequest pageable = PageRequest.of(0, pageSize + 1);
 
     List<Message> messages =
-        (cursor == null)
+        cursor == null
             ? messageRepository.findWithSenderByChatId(chatId, pageable)
             : messageRepository.findWithSenderByChatIdAndCursor(chatId, cursor, pageable);
 
-    return messages.stream().map(this::toDto).toList();
+    boolean hasMore = messages.size() > limit;
+
+    if (hasMore) {
+      messages.remove(limit);
+    }
+
+    Long nextCursor =
+        hasMore
+            ? messages.get(messages.size() - 1).getId()
+            : null;
+
+    return new MessagePageDto(
+        messages.stream()
+            .map(this::toDto)
+            .toList(),
+        nextCursor,
+        hasMore
+    );
   }
 
   // =========================

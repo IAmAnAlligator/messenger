@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.message.controller;
 
+import com.jeannimi.messenger.message.dto.MessagePageDto;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.MessageSendRequest;
@@ -41,11 +42,12 @@ public class MessageController {
 
   // GET LIST
   @GetMapping
-  public List<MessageDto> getMessages(
+  public MessagePageDto getMessages(
       @PathVariable @Positive Long chatId,
       @RequestParam(required = false) @Positive Long cursor,
+      @RequestParam(defaultValue = "30") @Positive int limit,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.getMessages(chatId, user.id(), cursor);
+    return messageService.getMessages(chatId, user.id(), cursor, limit);
   }
 
   // GET ONE
