@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login as loginRequest, register } from "../../auth/authService";
-import { useAuth } from "../../auth/AuthContext";
+import { login as loginRequest, register } from "../../services/authService";
+import { useAuth } from "../../contexts/AuthContext.tsx";
 import AuthLayout from "../layouts/AuthLayout.tsx";
 import AuthForm from "../components/auth/AuthForm.tsx";
 

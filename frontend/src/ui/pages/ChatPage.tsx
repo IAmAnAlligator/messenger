@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 
-import ChatContainer from "../containers/ChatContainer";
+import ChatContainer from "../components/chat/view/ChatContainer";
 
 export default function ChatPage() {
 

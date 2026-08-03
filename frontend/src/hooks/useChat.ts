@@ -11,11 +11,11 @@ import {
 
 import type {
     ChatDto
-} from "../services/dto/chat";
+} from "../types/chat";
 
 import type {
     MessageDto
-} from "../services/dto/message";
+} from "../types/message";
 
 
 

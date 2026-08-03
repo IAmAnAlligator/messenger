@@ -8,9 +8,9 @@ import MessageItem
 
 import type {
     MessageDto
-} from "../../../services/dto/message";
+} from "../../../../types/message";
 
-import "../../styles/chatPage.css";
+import "../../../styles/chatPage.css";
 
 
 type Props = {

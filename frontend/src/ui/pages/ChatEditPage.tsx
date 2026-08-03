@@ -10,19 +10,19 @@ import {
 
 
 import ChatEditHeader
-from "../components/chat/ChatEditHeader";
+from "../components/chat/edit/ChatEditHeader";
 
 
 import MemberList
-from "../components/chat/MemberList";
+from "../components/chat/edit/MemberList";
 
 
 import AddMemberForm
-from "../components/chat/AddMemberForm";
+from "../components/chat/edit/AddMemberForm";
 
 
 import ChatRenameForm
-from "../components/chat/ChatRenameForm";
+from "../components/chat/edit/ChatRenameForm";
 
 
 import "../styles/chatEditPage.css";

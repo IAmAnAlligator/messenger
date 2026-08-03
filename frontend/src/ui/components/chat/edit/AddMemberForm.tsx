@@ -1,6 +1,6 @@
 import type {
     UserDto
-} from "../../../hooks/useChatEdit";
+} from "../../../../hooks/useChatEdit";
 
 
 

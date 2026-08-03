@@ -1,6 +1,6 @@
 import type {
  UserDto
-} from "../../../hooks/useChatCreate";
+} from "../../../../hooks/useChatCreate";
 
 
 type Props={

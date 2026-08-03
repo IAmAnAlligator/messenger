@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import type { ReactElement } from "react";
 
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 /**
  * 🔐 ProtectedRoute — компонент-защитник маршрутов

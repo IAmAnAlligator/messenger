@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { api } from "../services/client";
+import { api } from "../api/client";
 
 import {
     connectSocket,
@@ -8,7 +8,7 @@ import {
     unsubscribe
 } from "../services/chatSocket";
 
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export type UserDto = {
     id: number;

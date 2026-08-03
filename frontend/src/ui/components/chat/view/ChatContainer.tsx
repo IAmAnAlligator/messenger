@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useChat } from "../../hooks/useChat";
-import { useChatSocket } from "../../hooks/useChatSocket";
+import { useChat } from "../../../../hooks/useChat";
+import { useChatSocket } from "../../../../hooks/useChatSocket";
 
 import ChatContent
-    from "../components/chat/ChatContent";
+    from "./ChatContent";
 
 
 type Props = {

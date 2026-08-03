@@ -1,4 +1,4 @@
-import { api } from "../services/client";
+import { api } from "../api/client";
 
 /**
  * 📦 Типы запросов/ответов авторизации
@@ -10,7 +10,7 @@ import type {
     LoginRequest,
     RegisterRequest,
     AuthResponse
-} from "./auth";
+} from "../api/auth";
 
 /**
  * 🔐 LOGIN REQUEST

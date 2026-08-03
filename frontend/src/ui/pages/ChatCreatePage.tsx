@@ -1,13 +1,14 @@
 import ChatCreateContainer
-from "../containers/ChatCreateContainer";
+from "../components/chat/create/ChatCreateContainer";
 
+import "../styles/chatCreatePage.css";
 
-export default function ChatCreatePage(){
+export default function ChatCreatePage() {
 
     return (
-
-        <ChatCreateContainer/>
-
+        <main className="chat-create-page">
+            <ChatCreateContainer />
+        </main>
     );
 
 }

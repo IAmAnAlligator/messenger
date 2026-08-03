@@ -4,7 +4,7 @@ from "./MemberItem";
 
 import type {
     ChatMemberDto
-} from "../../../hooks/useChatEdit";
+} from "../../../../hooks/useChatEdit";
 
 
 

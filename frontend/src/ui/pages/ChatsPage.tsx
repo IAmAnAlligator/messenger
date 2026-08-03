@@ -5,7 +5,7 @@ import {
 
 import {
     useAuth
-} from "../../auth/AuthContext";
+} from "../../contexts/AuthContext";
 
 
 import {
@@ -14,11 +14,11 @@ import {
 
 
 import ChatsHeader
-from "../components/chat/ChatsHeader";
+from "../components/chat/view/ChatsHeader";
 
 
 import ChatList
-from "../components/chat/ChatList";
+from "../components/chat/list/ChatList";
 
 
 

@@ -2,7 +2,7 @@ import ChatItem from "./ChatItem";
 
 import type {
     ChatDto
-} from "../../../hooks/useChats";
+} from "../../../../hooks/useChats";
 
 
 type Props = {

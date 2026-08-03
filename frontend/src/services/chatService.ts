@@ -1,5 +1,5 @@
-import { api } from "./client";
-import type { ChatDto } from "./dto/chat";
+import { api } from "../api/client";
+import type { ChatDto } from "../types/chat";
 
 
 export async function getChat(

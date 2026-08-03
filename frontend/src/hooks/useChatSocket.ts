@@ -11,7 +11,7 @@ import {
 
 import {
     useAuth
-} from "../auth/AuthContext";
+} from "../contexts/AuthContext";
 
 
 import {
@@ -25,14 +25,14 @@ import {
 
 import type {
     MessageDto
-} from "../services/dto/message";
+} from "../types/message";
 
 
 import type {
     ChatSocketEvent,
     WebSocketErrorResponse
 
-} from "../services/dto/socket";
+} from "../types/events";
 
 
 

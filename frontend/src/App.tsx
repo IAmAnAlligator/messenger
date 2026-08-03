@@ -14,7 +14,7 @@ import ChatEditPage from "./ui/pages/ChatEditPage";
 
 import ChatCreatePage from "./ui/pages/ChatCreatePage";
 
-import ProtectedRoute from "./auth/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 /**
  * Главный компонент приложения

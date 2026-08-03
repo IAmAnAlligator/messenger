@@ -1,4 +1,4 @@
-import type { ChatType } from "../../../hooks/useChatCreate";
+import type { ChatType } from "../../../../hooks/useChatCreate";
 
 
 type Props = {

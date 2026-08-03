@@ -1,5 +1,5 @@
-import { api } from "./client";
-import type { MessageDto } from "./dto/message";
+import { api } from "../api/client";
+import type { MessageDto } from "../types/message";
 
 export async function getMessages(
     chatId: number,

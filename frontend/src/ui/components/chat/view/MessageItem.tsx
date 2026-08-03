@@ -1,8 +1,8 @@
 import type {
     MessageDto
-} from "../../../services/dto/message";
+} from "../../../../types/message";
 
-import { useAuth } from "../../../auth/AuthContext";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 
 type Props = {

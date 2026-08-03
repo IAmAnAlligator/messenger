@@ -1,10 +1,10 @@
-import ChatHeader from "./ChatHeader";
+import ChatHeader from "../list/ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
-import WsError from "./WsError";
+import WsError from "../../common/WsError";
 
-import type { ChatDto } from "../../../services/dto/chat";
-import type { MessageDto } from "../../../services/dto/message";
+import type { ChatDto } from "../../../../types/chat";
+import type { MessageDto } from "../../../../types/message";
 
 type Props = {
 

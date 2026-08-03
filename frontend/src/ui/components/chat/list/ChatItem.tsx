@@ -1,6 +1,6 @@
 import type {
     ChatDto
-} from "../../../hooks/useChats";
+} from "../../../../hooks/useChats";
 
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
 
 export default function ChatItem({
 
-    chat,
+  //  chat,
 
     name,
 

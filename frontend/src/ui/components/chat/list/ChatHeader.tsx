@@ -1,4 +1,4 @@
-import type { ChatDto } from "../../../services/dto/chat";
+import type { ChatDto } from "../../../../types/chat";
 
 
 interface Props {
