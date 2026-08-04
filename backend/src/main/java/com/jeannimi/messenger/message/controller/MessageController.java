@@ -1,13 +1,14 @@
 package com.jeannimi.messenger.message.controller;
 
-import com.jeannimi.messenger.message.dto.MessagePageDto;
-import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.message.dto.MessagePageDto;
 import com.jeannimi.messenger.message.dto.MessageSendRequest;
 import com.jeannimi.messenger.message.service.MessageService;
+import com.jeannimi.messenger.message.service.MessageServiceImpl;
+import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -45,7 +46,8 @@ public class MessageController {
   public MessagePageDto getMessages(
       @PathVariable @Positive Long chatId,
       @RequestParam(required = false) @Positive Long cursor,
-      @RequestParam(defaultValue = "30") @Positive int limit,
+      @RequestParam(defaultValue = "30") @Positive @Max(MessageServiceImpl.MAX_MESSAGE_PAGE_SIZE)
+          int limit,
       @AuthenticationPrincipal CustomUserDetails user) {
     return messageService.getMessages(chatId, user.id(), cursor, limit);
   }
@@ -60,12 +62,12 @@ public class MessageController {
   }
 
   // DELETE
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping("/{messageId}")
-    public void deleteMessage(
-        @PathVariable @Positive Long chatId,
-        @PathVariable @Positive Long messageId,
-        @AuthenticationPrincipal CustomUserDetails user) {
-      messageService.deleteMessage(chatId, messageId, user.id());
-    }
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @DeleteMapping("/{messageId}")
+  public void deleteMessage(
+      @PathVariable @Positive Long chatId,
+      @PathVariable @Positive Long messageId,
+      @AuthenticationPrincipal CustomUserDetails user) {
+    messageService.deleteMessage(chatId, messageId, user.id());
+  }
 }

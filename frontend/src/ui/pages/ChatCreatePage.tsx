@@ -1,5 +1,5 @@
 import ChatCreateContainer
-from "../components/chat/create/ChatCreateContainer";
+from "../containers/ChatCreateContainer";
 
 import "../styles/chatCreatePage.css";
 

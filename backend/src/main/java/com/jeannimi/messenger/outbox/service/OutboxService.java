@@ -2,10 +2,10 @@ package com.jeannimi.messenger.outbox.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.kafka.event.EventType;
-import com.jeannimi.messenger.outbox.entity.OutboxEvent;
 import com.jeannimi.messenger.common.exception_handling.OutboxException;
 import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
+import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.outbox.entity.OutboxEvent;
 import com.jeannimi.messenger.outbox.repository.OutboxRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.security.websocker;
 
-import com.jeannimi.messenger.security.jwt.JwtService;
 import com.jeannimi.messenger.chat.service.ChatService;
+import com.jeannimi.messenger.security.jwt.JwtService;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

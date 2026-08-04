@@ -33,7 +33,8 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds()).toString())
+            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
+                .toString())
         .body(new AuthAccessResponse(auth.accessToken()));
   }
 
@@ -45,7 +46,8 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds()).toString())
+            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
+                .toString())
         .body(new AuthAccessResponse(auth.accessToken()));
   }
 
@@ -58,7 +60,8 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds()).toString())
+            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
+                .toString())
         .body(new AuthAccessResponse(auth.accessToken()));
   }
 

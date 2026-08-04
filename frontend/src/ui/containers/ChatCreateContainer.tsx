@@ -5,23 +5,23 @@ useNavigate
 
 import {
 useChatCreate
-} from "../../../../hooks/useChatCreate";
+} from "../../hooks/useChatCreate";
 
 
 import ChatTypeSelector
-from "./ChatTypeSelector";
+from "../components/chat/create/ChatTypeSelector";
 
 
 import ChatNameInput
-from "./ChatNameInput";
+from "../components/chat/create/ChatNameInput";
 
 
 import UserSearch
-from "./UserSearch";
+from "../components/chat/create/UserSearch";
 
 
 import SelectedUsers
-from "./SelectedUsers";
+from "../components/chat/create/SelectedUsers";
 
 
 

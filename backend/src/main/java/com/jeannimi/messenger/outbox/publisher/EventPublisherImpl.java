@@ -12,16 +12,8 @@ public class EventPublisherImpl implements EventPublisher {
   private final OutboxService outboxService;
 
   @Override
-  public void publish(
-      String topic,
-      EventType type,
-      String aggregateId,
-      Object payload) {
+  public void publish(String topic, EventType type, String aggregateId, Object payload) {
 
-    outboxService.saveEvent(
-        topic,
-        type,
-        aggregateId,
-        payload);
+    outboxService.saveEvent(topic, type, aggregateId, payload);
   }
 }

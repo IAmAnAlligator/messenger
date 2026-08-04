@@ -69,7 +69,7 @@ public class JwtService {
     return extractClaims(token).get(CLAIM_TOKEN_TYPE, String.class);
   }
 
-Claims extractClaims(String token) {
+  Claims extractClaims(String token) {
 
     return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getBody();
   }

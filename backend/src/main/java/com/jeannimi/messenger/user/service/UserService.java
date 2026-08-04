@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.user.service;
 
+import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.user.dto.UserDto;
 import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

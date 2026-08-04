@@ -12,6 +12,16 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
 
   @Query(
       """
+SELECT DISTINCT c
+FROM Chat c
+LEFT JOIN FETCH c.members m
+LEFT JOIN FETCH m.user
+WHERE c.id IN :ids
+""")
+  List<Chat> findByIdsWithMembers(@Param("ids") List<Long> ids);
+
+  @Query(
+      """
   SELECT DISTINCT c FROM Chat c
   JOIN FETCH c.members m
   JOIN FETCH m.user

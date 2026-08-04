@@ -66,8 +66,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<ErrorResponse> handleConstraintViolation(
-      ConstraintViolationException ex) {
+  public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
 
     String message =
         ex.getConstraintViolations().stream()

@@ -3,9 +3,11 @@ package com.jeannimi.messenger.chat.controller;
 import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.chat.dto.ChatDto;
 import com.jeannimi.messenger.chat.dto.ChatMemberDto;
-import com.jeannimi.messenger.user.dto.CustomUserDetails;
+import com.jeannimi.messenger.chat.dto.ChatPageDto;
+import com.jeannimi.messenger.chat.dto.ChatPageRequest;
 import com.jeannimi.messenger.chat.dto.RenameChatRequest;
 import com.jeannimi.messenger.chat.service.ChatService;
+import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
@@ -25,13 +27,18 @@ public class ChatController {
 
   @PostMapping
   public ChatDto createChat(
-      @RequestBody @Valid ChatCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
+      @RequestBody @Valid ChatCreateRequest request,
+      @AuthenticationPrincipal CustomUserDetails user) {
     return chatService.createChat(request, user.id());
   }
 
   @GetMapping
-  public List<ChatDto> getUserChats(@AuthenticationPrincipal CustomUserDetails user) {
-    return chatService.getUserChats(user.id());
+  public ChatPageDto getUserChats(
+      @Valid @ModelAttribute ChatPageRequest request,
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    return chatService.getUserChats(
+        user.id(), request.cursorTime(), request.cursorId(), request.limit());
   }
 
   @GetMapping("/{chatId}")

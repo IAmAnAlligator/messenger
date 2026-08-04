@@ -12,15 +12,13 @@ public class WebSocketExceptionHandler {
 
   @MessageExceptionHandler(MethodArgumentNotValidException.class)
   @SendToUser("/queue/errors")
-  public WebSocketErrorResponse handle(
-      MethodArgumentNotValidException ex) {
+  public WebSocketErrorResponse handle(MethodArgumentNotValidException ex) {
 
-    String message = ex.getBindingResult()
-        .getFieldErrors()
-        .stream()
-        .findFirst()
-        .map(DefaultMessageSourceResolvable::getDefaultMessage)
-        .orElse("Validation error");
+    String message =
+        ex.getBindingResult().getFieldErrors().stream()
+            .findFirst()
+            .map(DefaultMessageSourceResolvable::getDefaultMessage)
+            .orElse("Validation error");
 
     return new WebSocketErrorResponse(message);
   }

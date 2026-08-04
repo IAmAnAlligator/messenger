@@ -1,8 +1,9 @@
 package com.jeannimi.messenger.chat.entity;
 
-import com.jeannimi.messenger.user.entity.User;
+import com.jeannimi.messenger.chat.ChatConstants;
 import com.jeannimi.messenger.common.exception_handling.ChatError;
 import com.jeannimi.messenger.common.exception_handling.ChatException;
+import com.jeannimi.messenger.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,11 +34,6 @@ import org.hibernate.annotations.BatchSize;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Chat {
-
-  public static final int MAX_CHAT_NAME_LENGTH = 100;
-  public static final int MIN_CHAT_NAME_LENGTH = 1;
-  public static final int MAX_GROUP_MEMBERS = 100;
-  private static final String SEPARATOR = "_";
 
   @Id
   @Column(name = "id")
@@ -77,7 +73,7 @@ public class Chat {
     long min = Math.min(u1, u2);
     long max = Math.max(u1, u2);
 
-    return min + SEPARATOR + max;
+    return min + ChatConstants.SEPARATOR + max;
   }
 
   @Override
@@ -121,10 +117,10 @@ public class Chat {
           ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
     }
 
-    if (users.size() + 1 > MAX_GROUP_MEMBERS) {
+    if (users.size() + 1 > ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than " + MAX_GROUP_MEMBERS + " members");
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     for (User user : users) {
@@ -288,7 +284,7 @@ public class Chat {
       throw new ChatException(ChatError.CHAT_NAME_TOO_SHORT, "Chat name is too short");
     }
 
-    if (name.length() > MAX_CHAT_NAME_LENGTH) {
+    if (name.length() > ChatConstants.MAX_CHAT_NAME_LENGTH) {
       throw new ChatException(ChatError.CHAT_NAME_TOO_LONG, "Chat name is too long");
     }
 

@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.message.dto;
 
-import com.jeannimi.messenger.user.dto.UserDto;
 import com.jeannimi.messenger.message.entity.Message;
 import com.jeannimi.messenger.message.entity.MessageStatus;
+import com.jeannimi.messenger.user.dto.UserDto;
 import java.time.Instant;
 
 public record MessageDto(

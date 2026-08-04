@@ -3,7 +3,6 @@ package com.jeannimi.messenger.message.service;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.MessagePageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
-import java.util.List;
 
 public interface MessageService {
 

@@ -2,7 +2,6 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.kafka.event.ChatCreatedEvent;
 import com.jeannimi.messenger.kafka.event.ChatDeletedEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.kafka.event.WebSocketEvent;
@@ -31,10 +30,7 @@ public class ChatDeletedHandler implements ChatEventHandler {
 
       ChatDeletedEvent dto = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
 
-      WebSocketEvent<ChatDeletedEvent> event =
-          WebSocketEvent.of(
-              EventType.CHAT_DELETED,
-              dto);
+      WebSocketEvent<ChatDeletedEvent> event = WebSocketEvent.of(EventType.CHAT_DELETED, dto);
 
       /*
          Сообщаем участникам,

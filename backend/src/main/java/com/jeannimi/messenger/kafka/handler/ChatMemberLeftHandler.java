@@ -2,7 +2,6 @@ package com.jeannimi.messenger.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.kafka.event.ChatMemberAddedEvent;
 import com.jeannimi.messenger.kafka.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.kafka.event.WebSocketEvent;
@@ -30,9 +29,7 @@ public class ChatMemberLeftHandler implements ChatEventHandler {
       ChatMemberLeftEvent dto = objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
 
       WebSocketEvent<ChatMemberLeftEvent> event =
-          WebSocketEvent.of(
-              EventType.CHAT_MEMBER_LEFT,
-              dto);
+          WebSocketEvent.of(EventType.CHAT_MEMBER_LEFT, dto);
 
       messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
 

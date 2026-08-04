@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.security.jwt;
 
-import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import com.jeannimi.messenger.common.exception_handling.JwtAuthenticationException;
+import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;

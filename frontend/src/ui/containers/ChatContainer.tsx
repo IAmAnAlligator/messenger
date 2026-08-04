@@ -9,16 +9,16 @@ import {
 
 import {
     useChat
-} from "../../../../hooks/useChat";
+} from "../../hooks/useChat";
 
 
 import {
     useChatSocket
-} from "../../../../hooks/useChatSocket";
+} from "../../hooks/useChatSocket";
 
 
 import ChatContent
-    from "./ChatContent";
+    from "../components/chat/view/ChatContent";
 
 
 

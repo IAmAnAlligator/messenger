@@ -3,13 +3,15 @@ package com.jeannimi.messenger.chat.service;
 import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.chat.dto.ChatDto;
 import com.jeannimi.messenger.chat.dto.ChatMemberDto;
+import com.jeannimi.messenger.chat.dto.ChatPageDto;
+import java.time.Instant;
 import java.util.List;
 
 public interface ChatService {
 
   ChatDto createChat(ChatCreateRequest request, Long currentUserId);
 
-  List<ChatDto> getUserChats(Long userId);
+  ChatPageDto getUserChats(Long userId, Instant cursorTime, Long cursorId, int limit);
 
   ChatDto getChat(Long chatId, Long userId);
 

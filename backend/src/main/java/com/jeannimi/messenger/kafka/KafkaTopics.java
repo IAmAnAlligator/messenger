@@ -11,5 +11,4 @@ public final class KafkaTopics {
   public static final String CHAT_READ = "chat.read";
 
   public static final String CHAT_MESSAGE_DELETED = "chat.delete";
-
 }

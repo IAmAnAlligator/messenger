@@ -2,17 +2,17 @@ package com.jeannimi.messenger.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.kafka.event.WebSocketEvent;
-import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.kafka.KafkaTopics;
+import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
+import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
-import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.WebSocketEvent;
+import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
+import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.entity.ProcessedMessage;
-import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
-import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
-import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.message.repository.ProcessedMessageRepository;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -66,8 +66,6 @@ public class EventConsumer {
         ack,
         MessageSentEvent.class,
         event -> {
-
-
           MessageDto dto =
               new MessageDto(
                   event.messageId(),
@@ -75,14 +73,10 @@ public class EventConsumer {
                   event.sender(),
                   event.content(),
                   event.createdAt(),
-                  MessageStatus.SENT
-              );
-
+                  MessageStatus.SENT);
 
           messagingTemplate.convertAndSend(
-              "/topic/chat/" + dto.chatId(),
-              WebSocketEvent.of(EventType.MESSAGE_CREATED, dto)
-          );
+              "/topic/chat/" + dto.chatId(), WebSocketEvent.of(EventType.MESSAGE_CREATED, dto));
         });
   }
 
@@ -100,11 +94,8 @@ public class EventConsumer {
         ack,
         MessageReadEvent.class,
         event ->
-            messagingTemplate.convertAndSend("/topic/chat/"
-                + event.chatId(), WebSocketEvent.of(
-                EventType.MESSAGE_READ,
-                event
-            )));
+            messagingTemplate.convertAndSend(
+                "/topic/chat/" + event.chatId(), WebSocketEvent.of(EventType.MESSAGE_READ, event)));
   }
 
   /*
@@ -122,12 +113,8 @@ public class EventConsumer {
         MessageDeletedEvent.class,
         event ->
             messagingTemplate.convertAndSend(
-                "/topic/chat/" + event.chatId(), WebSocketEvent.of(
-                    EventType.MESSAGE_DELETED,
-                    event
-                )
-            )
-    );
+                "/topic/chat/" + event.chatId(),
+                WebSocketEvent.of(EventType.MESSAGE_DELETED, event)));
   }
 
   /*
@@ -143,7 +130,6 @@ public class EventConsumer {
         payload,
         ack,
         envelope -> {
-
           EventType eventType = EventType.valueOf(envelope.eventType());
 
           ChatEventHandler handler = handlerMap.get(eventType);
@@ -159,21 +145,18 @@ public class EventConsumer {
         });
   }
 
-/*
- =========================
-     COMMON PROCESSOR
- =========================
-*/
+  /*
+   =========================
+       COMMON PROCESSOR
+   =========================
+  */
 
   private void processEnvelope(
-      String payload,
-      Acknowledgment ack,
-      Consumer<KafkaEventEnvelope> consumer) {
+      String payload, Acknowledgment ack, Consumer<KafkaEventEnvelope> consumer) {
 
     try {
 
-      KafkaEventEnvelope envelope =
-          objectMapper.readValue(payload, KafkaEventEnvelope.class);
+      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
       UUID eventId = envelope.eventId();
 
@@ -203,16 +186,12 @@ public class EventConsumer {
   }
 
   private <T> void process(
-      String payload,
-      Acknowledgment ack,
-      Class<T> type,
-      EventHandler<T> handler) {
+      String payload, Acknowledgment ack, Class<T> type, EventHandler<T> handler) {
 
     processEnvelope(
         payload,
         ack,
         envelope -> {
-
           T event = null;
           try {
             event = objectMapper.treeToValue(envelope.payload(), type);

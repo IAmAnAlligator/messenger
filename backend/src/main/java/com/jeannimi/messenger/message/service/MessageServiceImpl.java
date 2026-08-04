@@ -1,24 +1,24 @@
 package com.jeannimi.messenger.message.service;
 
-import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.dto.MessagePageDto;
-import com.jeannimi.messenger.message.dto.ReadResult;
-import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
-import com.jeannimi.messenger.kafka.event.MessageReadEvent;
-import com.jeannimi.messenger.kafka.event.MessageSentEvent;
 import com.jeannimi.messenger.chat.entity.Chat;
-import com.jeannimi.messenger.kafka.event.EventType;
-import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.message.entity.MessageStatus;
-import com.jeannimi.messenger.user.entity.User;
+import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
+import com.jeannimi.messenger.chat.repository.ChatRepository;
 import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.kafka.KafkaTopics;
-import com.jeannimi.messenger.outbox.publisher.EventPublisher;
-import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
-import com.jeannimi.messenger.chat.repository.ChatRepository;
+import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
+import com.jeannimi.messenger.kafka.event.MessageReadEvent;
+import com.jeannimi.messenger.kafka.event.MessageSentEvent;
+import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.message.dto.MessagePageDto;
+import com.jeannimi.messenger.message.dto.ReadResult;
+import com.jeannimi.messenger.message.entity.Message;
+import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.repository.MessageRepository;
+import com.jeannimi.messenger.outbox.publisher.EventPublisher;
+import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +37,7 @@ public class MessageServiceImpl implements MessageService {
   private final UserRepository userRepository;
   private final EventPublisher eventPublisher;
 
-  private static final int MAX_MESSAGE_PAGE_SIZE = 100;
+  public static final int MAX_MESSAGE_PAGE_SIZE = 100;
 
   // =========================
   // SEND
@@ -68,10 +68,10 @@ public class MessageServiceImpl implements MessageService {
 
     chat.updateLastMessageTime();
 
-    MessageSentEvent messageSentEvent =
-        MessageSentEvent.from(saved);
+    MessageSentEvent messageSentEvent = MessageSentEvent.from(saved);
 
-    eventPublisher.publish(KafkaTopics.CHAT_MESSAGES,
+    eventPublisher.publish(
+        KafkaTopics.CHAT_MESSAGES,
         EventType.MESSAGE_CREATED,
         String.valueOf(chatId),
         messageSentEvent);
@@ -86,17 +86,11 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public MessagePageDto getMessages(
-      Long chatId,
-      Long userId,
-      Long cursor,
-      int limit
-  ) {
+  public MessagePageDto getMessages(Long chatId, Long userId, Long cursor, int limit) {
 
     checkMembership(chatId, userId);
 
-    int pageSize =
-        Math.min(limit, MAX_MESSAGE_PAGE_SIZE);
+    int pageSize = Math.min(limit, MAX_MESSAGE_PAGE_SIZE);
 
     PageRequest pageable = PageRequest.of(0, pageSize + 1);
 
@@ -111,18 +105,9 @@ public class MessageServiceImpl implements MessageService {
       messages.remove(limit);
     }
 
-    Long nextCursor =
-        hasMore
-            ? messages.get(messages.size() - 1).getId()
-            : null;
+    Long nextCursor = hasMore ? messages.get(messages.size() - 1).getId() : null;
 
-    return new MessagePageDto(
-        messages.stream()
-            .map(this::toDto)
-            .toList(),
-        nextCursor,
-        hasMore
-    );
+    return new MessagePageDto(messages.stream().map(this::toDto).toList(), nextCursor, hasMore);
   }
 
   // =========================
@@ -168,15 +153,11 @@ public class MessageServiceImpl implements MessageService {
 
       message.markRead();
 
-      MessageReadEvent messageReadEvent = new MessageReadEvent(message.getId(),
-          chatId,
-          userId,
-          Instant.now());
+      MessageReadEvent messageReadEvent =
+          new MessageReadEvent(message.getId(), chatId, userId, Instant.now());
 
-      eventPublisher.publish(KafkaTopics.CHAT_READ,
-          EventType.MESSAGE_READ,
-          String.valueOf(chatId),
-          messageReadEvent);
+      eventPublisher.publish(
+          KafkaTopics.CHAT_READ, EventType.MESSAGE_READ, String.valueOf(chatId), messageReadEvent);
 
       changed = true;
     }
@@ -204,16 +185,12 @@ public class MessageServiceImpl implements MessageService {
     }
 
     MessageDeletedEvent messageDeletedEvent =
-        new MessageDeletedEvent(
-            message.getId(),
-            chatId,
-            userId,
-            Instant.now()
-        );
+        new MessageDeletedEvent(message.getId(), chatId, userId, Instant.now());
 
     messageRepository.delete(message);
 
-    eventPublisher.publish(KafkaTopics.CHAT_MESSAGE_DELETED,
+    eventPublisher.publish(
+        KafkaTopics.CHAT_MESSAGE_DELETED,
         EventType.MESSAGE_DELETED,
         String.valueOf(chatId),
         messageDeletedEvent);
