@@ -3,6 +3,7 @@ package com.jeannimi.messenger.message.entity;
 import com.jeannimi.messenger.chat.entity.Chat;
 import com.jeannimi.messenger.common.exception_handling.MessageError;
 import com.jeannimi.messenger.common.exception_handling.MessageException;
+import com.jeannimi.messenger.message.MessageConstants;
 import com.jeannimi.messenger.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,8 +36,6 @@ import org.hibernate.annotations.BatchSize;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Message {
-
-  public static final int MAX_CONTENT_LENGTH = 2000;
 
   @Id
   @Column(name = "id")
@@ -81,10 +80,10 @@ public class Message {
 
     content = content.trim();
 
-    if (content.length() > MAX_CONTENT_LENGTH) {
+    if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
       throw new MessageException(
           MessageError.CONTENT_TOO_LONG,
-          "Message content exceeds " + MAX_CONTENT_LENGTH + " characters");
+          "Message content exceeds " + MessageConstants.MAX_CONTENT_LENGTH + " characters");
     }
 
     Message message = new Message();

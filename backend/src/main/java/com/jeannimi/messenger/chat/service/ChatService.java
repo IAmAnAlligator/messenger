@@ -3,15 +3,16 @@ package com.jeannimi.messenger.chat.service;
 import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.chat.dto.ChatDto;
 import com.jeannimi.messenger.chat.dto.ChatMemberDto;
-import com.jeannimi.messenger.chat.dto.ChatPageDto;
-import java.time.Instant;
+import com.jeannimi.messenger.common.pagination.CursorDto;
+import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import java.util.List;
 
 public interface ChatService {
 
   ChatDto createChat(ChatCreateRequest request, Long currentUserId);
 
-  ChatPageDto getUserChats(Long userId, Instant cursorTime, Long cursorId, int limit);
+  CursorPageResponse<ChatDto, CursorDto> getUserChats(Long userId, CursorPageRequest request);
 
   ChatDto getChat(Long chatId, Long userId);
 

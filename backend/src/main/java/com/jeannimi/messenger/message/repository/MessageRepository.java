@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.message.repository;
 
 import com.jeannimi.messenger.message.entity.Message;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -15,23 +16,36 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
   @Query(
       """
-  SELECT m FROM Message m
-  JOIN FETCH m.sender
-  WHERE m.chat.id = :chatId
-  ORDER BY m.id DESC
+SELECT m
+FROM Message m
+JOIN FETCH m.sender
+WHERE m.chat.id = :chatId
+ORDER BY m.createdAt DESC,
+         m.id DESC
 """)
   List<Message> findWithSenderByChatId(@Param("chatId") Long chatId, Pageable pageable);
 
   @Query(
       """
-  SELECT m FROM Message m
-  JOIN FETCH m.sender
-  WHERE m.chat.id = :chatId
-    AND m.id < :cursor
-  ORDER BY m.id DESC
+SELECT m
+FROM Message m
+JOIN FETCH m.sender
+WHERE m.chat.id = :chatId
+AND (
+    m.createdAt < :createdAt
+    OR
+    (
+        m.createdAt = :createdAt
+        AND m.id < :id
+    )
+)
+ORDER BY m.createdAt DESC, m.id DESC
 """)
   List<Message> findWithSenderByChatIdAndCursor(
-      @Param("chatId") Long chatId, @Param("cursor") Long cursor, Pageable pageable);
+      @Param("chatId") Long chatId,
+      @Param("createdAt") Instant createdAt,
+      @Param("id") Long id,
+      Pageable pageable);
 
   @Modifying
   @Query("""

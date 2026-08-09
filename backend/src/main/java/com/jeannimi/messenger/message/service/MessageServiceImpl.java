@@ -6,13 +6,16 @@ import com.jeannimi.messenger.chat.repository.ChatRepository;
 import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.common.pagination.CursorDto;
+import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.event.EventType;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
+import com.jeannimi.messenger.message.MessageConstants;
 import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.dto.MessagePageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
 import com.jeannimi.messenger.message.entity.Message;
 import com.jeannimi.messenger.message.entity.MessageStatus;
@@ -24,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +40,6 @@ public class MessageServiceImpl implements MessageService {
   private final ChatMemberRepository chatMemberRepository;
   private final UserRepository userRepository;
   private final EventPublisher eventPublisher;
-
-  public static final int MAX_MESSAGE_PAGE_SIZE = 100;
 
   // =========================
   // SEND
@@ -86,28 +88,42 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public MessagePageDto getMessages(Long chatId, Long userId, Long cursor, int limit) {
+  public CursorPageResponse<MessageDto, CursorDto> getMessages(
+      Long chatId, Long userId, CursorPageRequest request) {
 
     checkMembership(chatId, userId);
 
-    int pageSize = Math.min(limit, MAX_MESSAGE_PAGE_SIZE);
+    int pageSize = Math.min(request.limit(), MessageConstants.MAX_MESSAGE_PAGE_SIZE);
 
-    PageRequest pageable = PageRequest.of(0, pageSize + 1);
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
 
     List<Message> messages =
-        cursor == null
+        request.cursorTime() == null
             ? messageRepository.findWithSenderByChatId(chatId, pageable)
-            : messageRepository.findWithSenderByChatIdAndCursor(chatId, cursor, pageable);
+            : messageRepository.findWithSenderByChatIdAndCursor(
+                chatId, request.cursorTime(), request.cursorId(), pageable);
 
-    boolean hasMore = messages.size() > limit;
+    boolean hasMore = messages.size() > pageSize;
 
     if (hasMore) {
-      messages.remove(limit);
+      messages = messages.subList(0, pageSize);
     }
 
-    Long nextCursor = hasMore ? messages.get(messages.size() - 1).getId() : null;
+    CursorDto nextCursor = createNextCursor(messages, hasMore);
 
-    return new MessagePageDto(messages.stream().map(this::toDto).toList(), nextCursor, hasMore);
+    return new CursorPageResponse<>(
+        messages.stream().map(this::toDto).toList(), nextCursor, hasMore);
+  }
+
+  private CursorDto createNextCursor(List<Message> messages, boolean hasMore) {
+
+    if (!hasMore || messages.isEmpty()) {
+      return null;
+    }
+
+    Message last = messages.get(messages.size() - 1);
+
+    return new CursorDto(last.getCreatedAt(), last.getId());
   }
 
   // =========================

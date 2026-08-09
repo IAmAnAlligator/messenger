@@ -3,10 +3,11 @@ package com.jeannimi.messenger.chat.controller;
 import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.chat.dto.ChatDto;
 import com.jeannimi.messenger.chat.dto.ChatMemberDto;
-import com.jeannimi.messenger.chat.dto.ChatPageDto;
-import com.jeannimi.messenger.chat.dto.ChatPageRequest;
 import com.jeannimi.messenger.chat.dto.RenameChatRequest;
 import com.jeannimi.messenger.chat.service.ChatService;
+import com.jeannimi.messenger.common.pagination.CursorDto;
+import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -33,12 +34,10 @@ public class ChatController {
   }
 
   @GetMapping
-  public ChatPageDto getUserChats(
-      @Valid @ModelAttribute ChatPageRequest request,
+  public CursorPageResponse<ChatDto, CursorDto> getUserChats(
+      @Valid @ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
-
-    return chatService.getUserChats(
-        user.id(), request.cursorTime(), request.cursorId(), request.limit());
+    return chatService.getUserChats(user.id(), request);
   }
 
   @GetMapping("/{chatId}")

@@ -2,36 +2,27 @@ import {
     useNavigate
 } from "react-router-dom";
 
-
 import {
     useAuth
 } from "../../contexts/AuthContext";
-
 
 import {
     useChats
 } from "../../hooks/useChats";
 
-
 import ChatsHeader
 from "../components/chat/view/ChatsHeader";
-
 
 import ChatList
 from "../components/chat/list/ChatList";
 
-
-
 import "../styles/chatsPage.css";
-
 
 
 export default function ChatsPage(){
 
-
     const navigate =
         useNavigate();
-
 
 
     const {
@@ -43,11 +34,12 @@ export default function ChatsPage(){
 
     const {
         chats,
-        loading
-    } =
-    useChats();
+        loading,
+        loadingMore,
+        hasNext,
+        loadMore
 
-
+    } = useChats();
 
 
 
@@ -56,35 +48,29 @@ export default function ChatsPage(){
 
         await logout();
 
-
         navigate(
             "/",
             {
                 replace:true
             }
         );
-
     }
-
-
 
 
 
 
     function getChatName(chat:any){
 
-
-        if(chat.type === "GROUP")
+        if(chat.type === "GROUP") {
             return chat.name;
-
+        }
 
 
         const other =
             chat.members.find(
-                (m:any)=>
+                (m:any) =>
                     m.user.id !== user?.id
             );
-
 
 
         return (
@@ -92,83 +78,111 @@ export default function ChatsPage(){
             ??
             chat.name
         );
-
     }
 
 
 
 
+    return (
+
+        <div className="chats-page">
+
+
+            <ChatsHeader
+                onLogout={
+                    handleLogout
+                }
+            />
 
 
 
-return (
+            <button
 
-<div className="chats-page">
+                className="create-chat-btn"
 
+                onClick={() =>
+                    navigate(
+                        "/chats/create"
+                    )
+                }
 
-    <ChatsHeader
+            >
 
-        onLogout={
-            handleLogout
-        }
+                Create chat
 
-    />
-
-
-
-    <button
-        className="create-chat-btn"
-        onClick={() =>
-            navigate(
-                "/chats/create"
-            )
-        }
-    >
-        Create chat
-    </button>
+            </button>
 
 
 
 
-    {
-        loading &&
-        <p>
-            Loading...
-        </p>
-    }
+            <div className="chat-content">
+
+
+                {
+                    loading && (
+
+                        <div className="chat-loading">
+
+                            Loading...
+
+                        </div>
+
+                    )
+                }
 
 
 
-    {
-        !loading &&
-        chats.length === 0 &&
-        <p>
-            No chats
-        </p>
-    }
+                {
+                    !loading &&
+                    chats.length === 0 && (
+
+                        <div className="empty-chats">
+
+                            No chats
+
+                        </div>
+
+                    )
+                }
 
 
 
-    <ChatList
 
-        chats={chats}
+                {
+                    !loading &&
+                    chats.length > 0 && (
 
-        getName={getChatName}
+                        <ChatList
 
-        onOpen={
-            id =>
-                navigate(
-                    `/chats/${id}`
-                )
-        }
+                            chats={chats}
 
-    />
+                            getName={getChatName}
+
+                            onOpen={
+                                id =>
+                                    navigate(
+                                        `/chats/${id}`
+                                    )
+                            }
+
+                            hasNext={hasNext}
+
+                            loadingMore={loadingMore}
+
+                            loadMore={loadMore}
+
+                        />
+
+                    )
+                }
+                
 
 
+            </div>
 
-</div>
 
-);
+        </div>
 
+    );
 
 }

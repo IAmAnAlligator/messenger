@@ -1,19 +1,15 @@
 import { api } from "../api/client";
 
+
 import type {
-    MessageDto
+    MessagePageDto
 } from "../types/message";
 
 
-export type MessagePageDto = {
+import type {
+    CursorDto
+} from "../types/pagination";
 
-    items: MessageDto[];
-
-    nextCursor: number | null;
-
-    hasMore: boolean;
-
-};
 
 
 
@@ -21,7 +17,7 @@ export async function getMessages(
 
     chatId: number,
 
-    cursor?: number,
+    cursor?: CursorDto,
 
     limit: number = 50
 
@@ -34,7 +30,13 @@ export async function getMessages(
             {
                 params: {
 
-                    cursor,
+                    cursorTime:
+                        cursor?.cursorTime,
+
+
+                    cursorId:
+                        cursor?.cursorId,
+
 
                     limit
 

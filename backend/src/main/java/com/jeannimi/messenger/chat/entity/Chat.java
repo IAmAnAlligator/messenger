@@ -106,7 +106,7 @@ public class Chat {
     chat.setName(name);
     chat.type = ChatType.GROUP;
     chat.createdAt = now;
-    chat.lastMessageAt = now;
+    chat.lastMessageAt = null;
 
     chat.addMemberInternal(creator, ChatRole.ADMIN);
 
@@ -147,7 +147,7 @@ public class Chat {
 
     chat.type = ChatType.PRIVATE;
     chat.createdAt = now;
-    chat.lastMessageAt = now;
+    chat.lastMessageAt = null;
 
     chat.privateKey = buildPrivateKey(userA.getId(), userB.getId());
 

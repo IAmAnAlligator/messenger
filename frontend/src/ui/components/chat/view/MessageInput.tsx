@@ -1,60 +1,37 @@
-type Props={
-
-value:string;
-
-onChange(value:string):void;
-
-onSend():void;
-
+type Props = {
+    value: string;
+    onChange(value: string): void;
+    onSend(): void;
 };
 
-
 export default function MessageInput({
+    value,
+    onChange,
+    onSend
+}: Props) {
 
-value,
+    return (
+        <div className="message-input">
 
-onChange,
+            <input
+                value={value}
+                onChange={e =>
+                    onChange(e.target.value)
+                }
+                onKeyDown={e => {
+                    if (e.key === "Enter") {
+                        onSend();
+                    }
+                }}
+                placeholder="Message..."
+            />
 
-onSend
+            <button
+                onClick={onSend}
+            >
+                ➤
+            </button>
 
-}:Props){
-
-
-return (
-
-<div className="message-input">
-
-
-<input
-
-value={value}
-
-onChange={e=>
-onChange(e.target.value)
-}
-
-onKeyDown={e=>{
-
-if(e.key==="Enter")
-onSend();
-
-}}
-
-placeholder="Message..."
-
-
-/>
-
-
-<button
-onClick={onSend}
->
-➤
-</button>
-
-
-</div>
-
-);
-
+        </div>
+    );
 }

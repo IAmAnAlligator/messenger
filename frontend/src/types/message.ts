@@ -1,9 +1,11 @@
 import type { UserDto } from "./user";
+import type { CursorPageResponse } from "./pagination";
 
 
 export type MessageStatus =
     | "SENT"
     | "READ";
+
 
 
 export interface MessageDto {
@@ -19,10 +21,10 @@ export interface MessageDto {
     createdAt: string;
 
     status: MessageStatus;
+
 }
 
-export type MessagePageDto = {
-    items: MessageDto[];
-    nextCursor: number | null;
-    hasMore: boolean;
-};
+
+
+export type MessagePageDto =
+    CursorPageResponse<MessageDto>;

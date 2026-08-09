@@ -67,8 +67,23 @@ export default function MessageList({
 
 
 
-    const previousCount =
+    const previousLastMessageId =
+        useRef<number | null>(null);
+
+
+
+    const previousScrollHeight =
         useRef(0);
+
+
+
+    const previousMessagesLength =
+        useRef(0);
+
+
+
+    const loadingMoreRef =
+        useRef(false);
 
 
 
@@ -95,8 +110,10 @@ export default function MessageList({
 
 
 
-            previousCount.current =
-                messages.length;
+            previousLastMessageId.current =
+                messages[
+                    messages.length - 1
+                ].id;
 
         }
 
@@ -107,17 +124,40 @@ export default function MessageList({
 
 
 
+
+
     /*
         Новое сообщение:
-        двигаем вниз
+        прокручиваем вниз.
+        Старые сообщения не трогаем.
     */
     useEffect(() => {
 
 
+        if (!initialized.current) {
+            return;
+        }
+
+
+
+        const lastMessage =
+            messages[
+                messages.length - 1
+            ];
+
+
+
         if (
-            initialized.current &&
-            messages.length >
-                previousCount.current
+
+            lastMessage &&
+
+            previousLastMessageId.current !== null &&
+
+            lastMessage.id !==
+                previousLastMessageId.current &&
+
+            !loadingMoreRef.current
+
         ) {
 
 
@@ -127,13 +167,81 @@ export default function MessageList({
 
             });
 
-
         }
 
 
 
-        previousCount.current =
-            messages.length;
+        previousLastMessageId.current =
+            lastMessage?.id ?? null;
+
+
+
+    }, [messages]);
+
+
+
+
+
+
+
+    /*
+        Восстановление позиции после загрузки
+        старых сообщений
+    */
+    useEffect(() => {
+
+
+        const container =
+            containerRef.current;
+
+
+
+        if (
+            !container ||
+            !loadingMoreRef.current
+        ) {
+            return;
+        }
+
+
+
+        const addedMessages =
+            messages.length >
+            previousMessagesLength.current;
+
+
+
+        if (addedMessages) {
+
+
+            const newScrollHeight =
+                container.scrollHeight;
+
+
+
+            requestAnimationFrame(() => {
+
+
+                container.scrollTop =
+                    newScrollHeight -
+                    previousScrollHeight.current;
+
+
+
+                loadingMoreRef.current =
+                    false;
+
+
+            });
+
+
+        } else {
+
+
+            loadingMoreRef.current =
+                false;
+
+        }
 
 
 
@@ -147,7 +255,6 @@ export default function MessageList({
 
     /*
         Загрузка старых сообщений
-        при прокрутке вверх
     */
     useEffect(() => {
 
@@ -158,9 +265,7 @@ export default function MessageList({
 
 
         if (!container) {
-
             return;
-
         }
 
 
@@ -170,17 +275,33 @@ export default function MessageList({
 
             if (
 
-                container.scrollTop <= 100 &&
+                container.scrollTop <= 20 &&
 
                 hasMore &&
 
-                !loadingMore
+                !loadingMore &&
+
+                messages.length > 0
 
             ) {
 
 
-                onLoadMore();
+                previousScrollHeight.current =
+                    container.scrollHeight;
 
+
+
+                previousMessagesLength.current =
+                    messages.length;
+
+
+
+                loadingMoreRef.current =
+                    true;
+
+
+
+                onLoadMore();
 
             }
 
@@ -217,9 +338,12 @@ export default function MessageList({
 
         loadingMore,
 
-        onLoadMore
+        onLoadMore,
+
+        messages.length
 
     ]);
+
 
 
 
@@ -239,7 +363,6 @@ export default function MessageList({
 
         );
 
-
     }
 
 
@@ -248,7 +371,6 @@ export default function MessageList({
 
 
     return (
-
 
         <div
 
@@ -261,7 +383,7 @@ export default function MessageList({
 
 
             {
-                loadingMore && (
+                loadingMore && hasMore && (
 
                     <div className="messages-loader">
 
@@ -278,21 +400,15 @@ export default function MessageList({
             {
                 messages.map(message => (
 
-
                     <MessageItem
-
 
                         key={message.id}
 
-
                         message={message}
-
 
                         onDelete={onDelete}
 
-
                     />
-
 
                 ))
             }
@@ -306,8 +422,6 @@ export default function MessageList({
 
         </div>
 
-
     );
-
 
 }

@@ -1,5 +1,6 @@
 import type { UserDto } from "./user";
 
+
 export type ChatType =
     | "PRIVATE"
     | "GROUP";
@@ -10,6 +11,7 @@ export type ChatRole =
     | "MEMBER";
 
 
+
 export interface ChatMemberDto {
 
     user: UserDto;
@@ -17,7 +19,9 @@ export interface ChatMemberDto {
     chatRole: ChatRole;
 
     joinedAt: string;
+
 }
+
 
 
 export interface ChatDto {
@@ -32,5 +36,6 @@ export interface ChatDto {
 
     createdAt: string;
 
-    lastMessageAt: string;
+    lastMessageAt: string | null;
+
 }

@@ -25,6 +25,9 @@ import type {
 } from "../../../../types/message";
 
 
+import {
+    useEffect
+} from "react";
 
 type Props = {
 
@@ -76,6 +79,8 @@ type Props = {
 
     onEdit(): void;
 
+    
+
 };
 
 
@@ -86,6 +91,79 @@ export default function ChatContent(
     props: Props
 ) {
 
+    
+useEffect(() => {
+    const page = document.querySelector(".chat-page");
+
+    if (!page) {
+        return;
+    }
+
+    let element: HTMLElement | null =
+        page.parentElement;
+
+    while (element) {
+
+        // const rect =
+        //     element.getBoundingClientRect();
+
+        // const style =
+        //     getComputedStyle(element);
+
+         const root = document.querySelector("#root");
+const app = document.querySelector(".app");
+
+console.log({
+    viewport: window.innerHeight,
+
+    html: document.documentElement.getBoundingClientRect().height,
+
+    body: document.body.getBoundingClientRect().height,
+
+    root: root?.getBoundingClientRect().height,
+
+    app: app?.getBoundingClientRect().height,
+
+    appParent: app?.parentElement,
+
+    rootChild: root?.firstElementChild
+});
+
+        // console.log(
+        //     "PARENT",
+        //     element.className || element.tagName,
+        //     {
+                
+        //         height: rect.height,
+        //         width: rect.width,
+        //         top: rect.top,
+        //         bottom: rect.bottom,
+
+        //         display: style.display,
+        //         position: style.position,
+
+        //         flex:
+        //             style.flex,
+
+        //         flexDirection:
+        //             style.flexDirection,
+
+        //         minHeight:
+        //             style.minHeight,
+
+        //         heightCss:
+        //             style.height,
+
+        //         overflow:
+        //             style.overflow
+        //     }
+        // );
+
+        element =
+            element.parentElement;
+    }
+
+}, []);
 
     return (
 

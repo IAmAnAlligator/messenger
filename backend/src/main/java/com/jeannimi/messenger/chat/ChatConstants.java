@@ -4,7 +4,7 @@ public class ChatConstants {
 
   private ChatConstants() {}
 
-  public static final int MAX_CHAT_PAGE_SIZE = 100;
+  public static final int MAX_CHAT_PAGE_SIZE = 50;
 
   public static final int MAX_CHAT_NAME_LENGTH = 100;
   public static final int MIN_CHAT_NAME_LENGTH = 1;

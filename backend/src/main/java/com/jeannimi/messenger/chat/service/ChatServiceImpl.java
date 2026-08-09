@@ -4,10 +4,8 @@ import static com.jeannimi.messenger.chat.entity.Chat.buildPrivateKey;
 
 import com.jeannimi.messenger.chat.ChatConstants;
 import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
-import com.jeannimi.messenger.chat.dto.ChatCursorDto;
 import com.jeannimi.messenger.chat.dto.ChatDto;
 import com.jeannimi.messenger.chat.dto.ChatMemberDto;
-import com.jeannimi.messenger.chat.dto.ChatPageDto;
 import com.jeannimi.messenger.chat.entity.Chat;
 import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
 import com.jeannimi.messenger.chat.repository.ChatRepository;
@@ -15,6 +13,9 @@ import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.ConflictException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.common.pagination.CursorDto;
+import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.event.ChatCreatedEvent;
 import com.jeannimi.messenger.kafka.event.ChatDeletedEvent;
@@ -34,10 +35,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -158,16 +161,18 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public ChatPageDto getUserChats(Long userId, Instant cursorTime, Long cursorId, int limit) {
+  public CursorPageResponse<ChatDto, CursorDto> getUserChats(
+      Long userId, CursorPageRequest request) {
 
-    int pageSize = Math.min(limit, ChatConstants.MAX_CHAT_PAGE_SIZE);
+    int pageSize = Math.min(request.limit(), ChatConstants.MAX_CHAT_PAGE_SIZE);
 
-    PageRequest pageable = PageRequest.of(0, pageSize + 1);
+    Pageable pageable = PageRequest.of(0, pageSize + 1);
 
     List<Long> ids =
-        cursorTime == null
+        request.cursorTime() == null
             ? chatMemberRepository.findFirstPageIds(userId, pageable)
-            : chatMemberRepository.findNextPageIds(userId, cursorTime, cursorId, pageable);
+            : chatMemberRepository.findNextPageIds(
+                userId, request.cursorTime(), request.cursorId(), pageable);
 
     if (ids.isEmpty()) {
       return emptyPage();
@@ -181,9 +186,10 @@ public class ChatServiceImpl implements ChatService {
 
     List<Chat> orderedChats = restoreOrder(ids, chats);
 
-    ChatCursorDto nextCursor = createNextCursor(orderedChats, hasMore);
+    CursorDto nextCursor = createNextCursor(orderedChats, hasMore);
 
-    return new ChatPageDto(orderedChats.stream().map(this::toDto).toList(), nextCursor, hasMore);
+    return new CursorPageResponse<>(
+        orderedChats.stream().map(this::toDto).toList(), nextCursor, hasMore);
   }
 
   private List<Long> takePage(List<Long> ids, int pageSize) {
@@ -193,23 +199,30 @@ public class ChatServiceImpl implements ChatService {
     return ids.subList(0, pageSize);
   }
 
-  private ChatPageDto emptyPage() {
-    return new ChatPageDto(List.of(), null, false);
+  private CursorPageResponse<ChatDto, CursorDto> emptyPage() {
+    return new CursorPageResponse<>(List.of(), null, false);
   }
 
   private List<Chat> restoreOrder(List<Long> ids, List<Chat> chats) {
-    Map<Long, Chat> chatMap = chats.stream().collect(Collectors.toMap(Chat::getId, c -> c));
+
+    Map<Long, Chat> chatMap =
+        chats.stream().collect(Collectors.toMap(Chat::getId, Function.identity()));
+
     return ids.stream().map(chatMap::get).filter(Objects::nonNull).toList();
   }
 
-  private ChatCursorDto createNextCursor(List<Chat> chats, boolean hasMore) {
+  private CursorDto createNextCursor(List<Chat> chats, boolean hasMore) {
+
     if (!hasMore || chats.isEmpty()) {
       return null;
     }
 
-    Chat last = chats.get(chats.size() - 1);
+    Chat lastChat = chats.get(chats.size() - 1);
 
-    return new ChatCursorDto(last.getLastMessageAt(), last.getId());
+    Instant cursorTime =
+        lastChat.getLastMessageAt() != null ? lastChat.getLastMessageAt() : lastChat.getCreatedAt();
+
+    return new CursorDto(cursorTime, lastChat.getId());
   }
 
   // =========================

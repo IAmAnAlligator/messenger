@@ -1,6 +1,6 @@
 .chat-page {
 
-    height: 100vh;
+    height: 590px;
 
     display: flex;
 
@@ -41,15 +41,13 @@
 */
 
 .messages-loader {
-
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
     text-align: center;
-
-    padding: 10px;
-
     color: #777;
-
     font-size: 14px;
-
 }
 
 

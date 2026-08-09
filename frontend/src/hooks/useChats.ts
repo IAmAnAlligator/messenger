@@ -1,5 +1,7 @@
 import {
+    useCallback,
     useEffect,
+    useRef,
     useState
 } from "react";
 
@@ -14,13 +16,14 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 
 
+
 export type UserDto = {
 
-    id: number;
+    id:number;
 
-    username: string;
+    username:string;
 
-    role: string;
+    role:string;
 
 };
 
@@ -28,11 +31,11 @@ export type UserDto = {
 
 export type ChatMemberDto = {
 
-    user: UserDto;
+    user:UserDto;
 
-    chatRole: string;
+    chatRole:string;
 
-    joinedAt: string;
+    joinedAt:string;
 
 };
 
@@ -40,17 +43,17 @@ export type ChatMemberDto = {
 
 export type ChatDto = {
 
-    id: number;
+    id:number;
 
-    name: string;
+    name:string;
 
-    type: "PRIVATE" | "GROUP";
+    type:"PRIVATE" | "GROUP";
 
-    members: ChatMemberDto[];
+    members:ChatMemberDto[];
 
-    createdAt: string;
+    createdAt:string;
 
-    lastMessageAt: string | null;
+    lastMessageAt:string | null;
 
 };
 
@@ -58,9 +61,9 @@ export type ChatDto = {
 
 type ChatCursor = {
 
-    lastMessageAt: string;
+    cursorTime:string;
 
-    id: number;
+    cursorId:number;
 
 };
 
@@ -68,11 +71,11 @@ type ChatCursor = {
 
 type ChatPageResponse = {
 
-    items: ChatDto[];
+    content:ChatDto[];
 
-    nextCursor: ChatCursor | null;
+    nextCursor:ChatCursor | null;
 
-    hasMore: boolean;
+    hasNext:boolean;
 
 };
 
@@ -80,9 +83,9 @@ type ChatPageResponse = {
 
 type ChatMemberEvent = {
 
-    chatId: number;
+    chatId:number;
 
-    userId: number;
+    userId:number;
 
 };
 
@@ -90,60 +93,493 @@ type ChatMemberEvent = {
 
 type WebSocketEvent<T> = {
 
-    type: string;
+    type:string;
 
-    payload: T;
+    payload:T;
 
 };
 
 
 
 
-export function useChats() {
+function mergeChats(
+
+    oldChats:ChatDto[],
+
+    newChats:ChatDto[]
+
+):ChatDto[] {
 
 
-    const { user } = useAuth();
+    const ids =
+        new Set(
+            oldChats.map(
+                chat => chat.id
+            )
+        );
 
 
 
-    const [chats, setChats] =
+    return [
+
+        ...oldChats,
+
+        ...newChats.filter(
+            chat =>
+                !ids.has(chat.id)
+        )
+
+    ];
+
+}
+
+
+
+
+
+export function useChats(){
+
+
+    const { user } =
+        useAuth();
+
+
+
+
+    const [chats,setChats] =
         useState<ChatDto[]>([]);
 
 
 
-    const [loading, setLoading] =
+    const [loading,setLoading] =
         useState(true);
 
 
 
-    const [loadingMore, setLoadingMore] =
+    const [loadingMore,setLoadingMore] =
         useState(false);
 
 
 
-    const [hasMore, setHasMore] =
+    const [hasNext,setHasNext] =
         useState(true);
 
 
 
-    const [cursor, setCursor] =
+    const [cursor,setCursor] =
         useState<ChatCursor | null>(null);
 
 
 
 
+    const loadingMoreRef =
+        useRef(false);
 
-    useEffect(() => {
+
+
+
+
+
+
+    const loadChats =
+        useCallback(
+            async()=>{
+
+
+                console.log(
+                    "[loadChats] start"
+                );
+
+
+
+                try {
+
+
+                    setLoading(true);
+
+
+
+                    const response =
+                        await api.get<ChatPageResponse>(
+                            "/chats",
+                            {
+                                params:{
+                                    limit:30
+                                }
+                            }
+                        );
+
+
+
+
+                    console.log(
+                        "[loadChats] response",
+                        {
+
+                            size:
+                                response.data.content.length,
+
+                            ids:
+                                response.data.content.map(
+                                    chat =>
+                                        chat.id
+                                ),
+
+                            hasNext:
+                                response.data.hasNext,
+
+                            nextCursor:
+                                response.data.nextCursor
+
+                        }
+                    );
+
+
+
+
+                    setChats(
+                        response.data.content ?? []
+                    );
+
+
+
+                    setCursor(
+                        response.data.nextCursor
+                    );
+
+
+
+                    setHasNext(
+                        response.data.hasNext
+                    );
+
+
+                }
+                catch(error){
+
+
+                    console.error(
+                        "[loadChats] error",
+                        error
+                    );
+
+
+                    setChats([]);
+
+
+                }
+                finally{
+
+
+                    setLoading(false);
+
+
+
+                    console.log(
+                        "[loadChats] finished"
+                    );
+
+
+                }
+
+
+            },
+            []
+
+        );
+
+
+
+
+
+
+
+
+
+    const loadMore =
+        useCallback(
+            async()=>{
+
+
+                console.log(
+                    "[loadMore] called",
+                    {
+
+                        loadingMore:
+
+                            loadingMoreRef.current,
+
+                        stateLoadingMore:
+                            loadingMore,
+
+                        hasNext,
+
+                        cursor
+
+                    }
+                );
+
+
+
+
+                if(
+
+                    loadingMoreRef.current ||
+
+                    loadingMore ||
+
+                    !hasNext ||
+
+                    !cursor
+
+                ){
+
+
+                    console.log(
+                        "[loadMore] blocked"
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+                try {
+
+
+
+                    loadingMoreRef.current =
+                        true;
+
+
+
+                    setLoadingMore(true);
+
+
+
+
+                    console.log(
+                        "[loadMore] request",
+                        {
+
+                            cursorTime:
+                                cursor.cursorTime,
+
+                            cursorId:
+                                cursor.cursorId
+
+                        }
+                    );
+
+
+
+
+
+                    const response =
+                        await api.get<ChatPageResponse>(
+                            "/chats",
+                            {
+                                params:{
+
+                                    cursorTime:
+                                        cursor.cursorTime,
+
+                                    cursorId:
+                                        cursor.cursorId,
+
+                                    limit:30
+
+                                }
+                            }
+                        );
+
+
+
+
+
+                    console.log(
+                        "[loadMore] response",
+                        {
+
+                            size:
+                                response.data.content.length,
+
+
+                            ids:
+                                response.data.content.map(
+                                    chat =>
+                                        chat.id
+                                ),
+
+
+                            hasNext:
+                                response.data.hasNext,
+
+
+                            nextCursor:
+                                response.data.nextCursor
+
+                        }
+                    );
+
+
+
+
+
+                    setChats(prev =>{
+
+
+                        const merged =
+                            mergeChats(
+                                prev,
+                                response.data.content ?? []
+                            );
+
+
+
+                        console.log(
+                            "[loadMore] merged",
+                            {
+
+                                before:
+                                    prev.length,
+
+                                after:
+                                    merged.length
+
+                            }
+                        );
+
+
+
+                        return merged;
+
+                    });
+
+
+
+
+
+                    setCursor(
+                        response.data.nextCursor
+                    );
+
+
+
+                    setHasNext(
+                        response.data.hasNext
+                    );
+
+
+
+                }
+                catch(error){
+
+
+                    console.error(
+                        "[loadMore] error",
+                        error
+                    );
+
+
+                }
+                finally{
+
+
+                    loadingMoreRef.current =
+                        false;
+
+
+
+                    setLoadingMore(false);
+
+
+
+                    console.log(
+                        "[loadMore] finished"
+                    );
+
+
+                }
+
+
+            },
+            [
+
+                cursor,
+
+                hasNext,
+
+                loadingMore
+
+            ]
+
+        );
+
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        console.log(
+            "[pagination state]",
+            {
+
+                chats:
+                    chats.length,
+
+                cursor,
+
+                hasNext,
+
+                loadingMore
+
+            }
+        );
+
+
+    },[
+        chats,
+        cursor,
+        hasNext,
+        loadingMore
+    ]);
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
 
         loadChats();
 
-    }, []);
+
+    },[
+        loadChats
+    ]);
 
 
 
 
 
-    useEffect(() => {
+
+
+
+
+    useEffect(()=>{
 
 
         const token =
@@ -152,9 +588,13 @@ export function useChats() {
             );
 
 
-        if (!token || !user) {
+
+        if(!token || !user){
+
             return;
+
         }
+
 
 
 
@@ -166,7 +606,7 @@ export function useChats() {
 
         subscribe(
             "/topic/chat.created",
-            () => {
+            ()=>{
 
                 loadChats();
 
@@ -179,19 +619,23 @@ export function useChats() {
 
         subscribe(
             "/topic/chat.deleted",
-            message => {
+            message=>{
 
 
                 const event =
-                    JSON.parse(message.body);
+                    JSON.parse(
+                        message.body
+                    );
 
 
 
                 setChats(prev =>
+
                     prev.filter(
                         chat =>
                             chat.id !== event.chatId
                     )
+
                 );
 
 
@@ -202,69 +646,69 @@ export function useChats() {
 
 
 
+
+
+
+        const userTopic =
+            `/topic/user/${user.id}/chats`;
+
+
+
+
+
+
         subscribe(
-            `/topic/user/${user.id}/chats`,
-            async message => {
+            userTopic,
+            async message=>{
 
 
                 const event:
                     WebSocketEvent<ChatMemberEvent> =
-                    JSON.parse(message.body);
+                    JSON.parse(
+                        message.body
+                    );
 
 
 
 
-                switch(event.type) {
+                switch(event.type){
 
 
+                    case "CHAT_MEMBER_ADDED":{
 
-                    case "CHAT_MEMBER_ADDED": {
 
-
-                        try {
+                        try{
 
 
                             const response =
-                                await api.get(
+                                await api.get<ChatDto>(
                                     `/chats/${event.payload.chatId}`
                                 );
 
 
 
-                            const chat:ChatDto =
+                            const chat =
                                 response.data;
 
 
 
-                            setChats(prev => {
+                            setChats(prev =>
+
+                                mergeChats(
+                                    [
+                                        chat,
+                                        ...prev
+                                    ],
+                                    []
+                                )
+
+                            );
 
 
-                                if (
-                                    prev.some(
-                                        c =>
-                                            c.id === chat.id
-                                    )
-                                ) {
-                                    return prev;
-                                }
-
-
-
-                                return [
-                                    chat,
-                                    ...prev
-                                ];
-
-
-                            });
-
-
-
-                        } catch(error) {
-
+                        }
+                        catch(error){
 
                             console.error(error);
-
 
                         }
 
@@ -276,14 +720,18 @@ export function useChats() {
 
 
 
-                    case "CHAT_MEMBER_REMOVED": {
+
+                    case "CHAT_MEMBER_REMOVED":{
 
 
                         setChats(prev =>
+
                             prev.filter(
                                 chat =>
-                                    chat.id !== event.payload.chatId
+                                    chat.id !==
+                                    event.payload.chatId
                             )
+
                         );
 
 
@@ -293,8 +741,12 @@ export function useChats() {
 
 
 
+
+
                     default:
+
                         break;
+
 
                 }
 
@@ -307,7 +759,9 @@ export function useChats() {
 
 
 
-        return () => {
+
+
+        return ()=>{
 
 
             unsubscribe(
@@ -320,175 +774,20 @@ export function useChats() {
             );
 
 
-
             unsubscribe(
-                `/topic/user/${user.id}/chats`
+                userTopic
             );
 
 
         };
 
 
-    }, [user]);
 
+    },[
+        user,
+        loadChats
+    ]);
 
-
-
-
-
-
-
-    async function loadChats() {
-
-
-        try {
-
-
-            setLoading(true);
-
-
-
-            const response =
-                await api.get<ChatPageResponse>(
-                    "/chats",
-                    {
-                        params: {
-                            limit: 30
-                        }
-                    }
-                );
-
-
-
-            setChats(
-                response.data.items
-            );
-
-
-
-            setCursor(
-                response.data.nextCursor
-            );
-
-
-
-            setHasMore(
-                response.data.hasMore
-            );
-
-
-
-        } catch(error) {
-
-
-            console.error(
-                error
-            );
-
-
-        } finally {
-
-
-            setLoading(false);
-
-
-        }
-
-    }
-
-
-
-
-
-
-
-    async function loadMore() {
-
-
-        if (
-            loadingMore ||
-            !hasMore ||
-            !cursor
-        ) {
-            return;
-        }
-
-
-
-
-
-        try {
-
-
-            setLoadingMore(true);
-
-
-
-
-            const response =
-                await api.get<ChatPageResponse>(
-                    "/chats",
-                    {
-                        params: {
-
-                            cursorTime:
-                                cursor.lastMessageAt,
-
-                            cursorId:
-                                cursor.id,
-
-                            limit:30
-
-                        }
-                    }
-                );
-
-
-
-
-
-            setChats(prev => [
-
-                ...prev,
-
-                ...response.data.items
-
-            ]);
-
-
-
-
-
-            setCursor(
-                response.data.nextCursor
-            );
-
-
-
-            setHasMore(
-                response.data.hasMore
-            );
-
-
-
-        } catch(error) {
-
-
-            console.error(
-                error
-            );
-
-
-        } finally {
-
-
-            setLoadingMore(false);
-
-
-        }
-
-
-    }
 
 
 
@@ -500,22 +799,16 @@ export function useChats() {
 
         chats,
 
-
         loading,
-
 
         loadingMore,
 
-
-        hasMore,
-
+        hasNext,
 
         loadMore,
 
-
         reload:
             loadChats
-
 
     };
 

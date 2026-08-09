@@ -22,51 +22,68 @@ import ProtectedRoute from "./components/ProtectedRoute";
 function App() {
 
     return (
-        <BrowserRouter>
 
-            <Routes>
+        <div className="app">
 
-                {/* Публичная страница */}
-                <Route
-                    path="/"
-                    element={<AuthPage />}
-                />
+            <BrowserRouter>
 
-                {/* Защищённые страницы */}
-                <Route
-                    path="/chats"
-                    element={
-                        <ProtectedRoute>
-                            <ChatsPage />
-                        </ProtectedRoute>
-                    }
-                />
+                <Routes>
 
-                <Route
-                    path="/chats/:chatId"
-                    element={
-                        <ProtectedRoute>
-                            <ChatPage />
-                        </ProtectedRoute>
-                    }
-                />
 
-                <Route
-    path="/chats/create"
-    element={<ChatCreatePage />}
-/>
+                    <Route
+                        path="/"
+                        element={<AuthPage />}
+                    />
 
-                <Route
-    path="/chats/:chatId/edit"
-    element={
-        <ChatEditPage />
-    }
-/>
 
-            </Routes>
+                    <Route
+                        path="/chats"
+                        element={
+                            <ProtectedRoute>
+                                <ChatsPage />
+                            </ProtectedRoute>
+                        }
+                    />
 
-        </BrowserRouter>
+
+                    <Route
+                        path="/chats/:chatId"
+                        element={
+                            <ProtectedRoute>
+                                <ChatPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                    <Route
+                        path="/chats/create"
+                        element={
+                            <ProtectedRoute>
+                                <ChatCreatePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                    <Route
+                        path="/chats/:chatId/edit"
+                        element={
+                            <ProtectedRoute>
+                                <ChatEditPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                </Routes>
+
+            </BrowserRouter>
+
+        </div>
+
     );
+
 }
 
 export default App;

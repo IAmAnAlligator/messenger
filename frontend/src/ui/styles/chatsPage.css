@@ -1,12 +1,14 @@
 .chats-page {
 
-    height: 100vh;
+    flex:1;
 
-    display: flex;
+    min-height:0;
 
-    flex-direction: column;
+    display:flex;
 
-    background: #ffffff;
+    flex-direction:column;
+
+    overflow:hidden;
 
 }
 
@@ -18,19 +20,19 @@
 
 .chats-header {
 
-    height: 60px;
+    height:60px;
 
-    display: flex;
+    display:flex;
 
-    align-items: center;
+    align-items:center;
 
-    justify-content: space-between;
+    justify-content:space-between;
 
-    padding: 0 20px;
+    padding:0 20px;
 
-    border-bottom: 1px solid #ddd;
+    border-bottom:1px solid #ddd;
 
-    flex-shrink: 0;
+    flex-shrink:0;
 
 }
 
@@ -44,15 +46,17 @@
 
 .create-chat-btn {
 
-    margin: 10px 20px;
+    margin:10px 20px;
 
-    padding: 10px 15px;
+    padding:10px 15px;
 
-    border: none;
+    border:none;
 
-    border-radius: 8px;
+    border-radius:8px;
 
-    cursor: pointer;
+    cursor:pointer;
+
+    flex-shrink:0;
 
 }
 
@@ -61,15 +65,16 @@
 
 
 /*
-    Контейнер списка
-    Именно здесь работает scroll pagination
+    Единственный контейнер со scroll
 */
 
 .chat-list-container {
 
-    flex: 1;
+    flex:1;
 
-    overflow-y: auto;
+    min-height:0;
+
+    overflow-y:auto;
 
 }
 
@@ -83,9 +88,9 @@
 
 .chat-list {
 
-    display: flex;
+    display:flex;
 
-    flex-direction: column;
+    flex-direction:column;
 
 }
 
@@ -99,17 +104,17 @@
 
 .chat-item {
 
-    display: flex;
+    display:flex;
 
-    align-items: center;
+    align-items:center;
 
-    justify-content: space-between;
+    justify-content:space-between;
 
-    padding: 15px 20px;
+    padding:15px 20px;
 
-    border-bottom: 1px solid #eee;
+    border-bottom:1px solid #eee;
 
-    cursor: pointer;
+    cursor:pointer;
 
 }
 
@@ -119,57 +124,45 @@
 
 .chat-item:hover {
 
-    background: #f5f5f5;
+    background:#f5f5f5;
 
 }
 
 
 
 
-
-/*
-    Название чата
-*/
 
 .chat-name {
 
-    font-size: 16px;
+    font-size:16px;
 
-    font-weight: 500;
+    font-weight:500;
 
 }
 
 
 
 
-
-/*
-    Последнее сообщение
-*/
 
 .chat-last-message {
 
-    margin-top: 4px;
+    margin-top:4px;
 
-    font-size: 13px;
+    font-size:13px;
 
-    color: #777;
+    color:#777;
 
 }
 
 
 
 
-
-/*
-    Время последнего сообщения
-*/
 
 .chat-time {
 
-    font-size: 12px;
+    font-size:12px;
 
-    color: #999;
+    color:#999;
 
 }
 
@@ -177,16 +170,20 @@
 
 
 
-/*
-    Индикатор загрузки следующей страницы
-*/
-
 .chat-loader {
 
-    padding: 15px;
+    padding:15px;
 
-    text-align: center;
+    text-align:center;
 
-    color: #777;
+    color:#777;
+
+}
+
+.chat-loading {
+
+    flex-shrink:0;
+
+    padding:20px;
 
 }

@@ -24,6 +24,11 @@ import type {
 } from "../types/message";
 
 
+import type {
+    CursorDto
+} from "../types/pagination";
+
+
 
 export function useChat(
     chatId?: number
@@ -51,7 +56,7 @@ export function useChat(
 
 
     const [cursor, setCursor] =
-        useState<number | null>(null);
+        useState<CursorDto | null>(null);
 
 
 
@@ -76,6 +81,7 @@ export function useChat(
 
 
 
+
     async function load() {
 
         if (!chatId) {
@@ -96,15 +102,9 @@ export function useChat(
 
             ] = await Promise.all([
 
+                getChat(chatId),
 
-                getChat(
-                    chatId
-                ),
-
-
-                getMessages(
-                    chatId
-                )
+                getMessages(chatId)
 
             ]);
 
@@ -117,7 +117,7 @@ export function useChat(
 
 
             setMessages(
-                messagesPage.items
+                [...messagesPage.content]
                     .reverse()
             );
 
@@ -130,18 +130,19 @@ export function useChat(
 
 
             setHasMore(
-                messagesPage.hasMore
+                messagesPage.hasNext
             );
 
 
-
         } finally {
+
 
             setLoading(false);
 
         }
 
     }
+
 
 
 
@@ -175,13 +176,37 @@ export function useChat(
 
 
 
-            setMessages(prev => [
+setMessages(prev => {
 
-                ...page.items.reverse(),
 
-                ...prev
+    const oldIds =
+        new Set(
+            prev.map(
+                m => m.id
+            )
+        );
 
-            ]);
+
+    const newMessages =
+        [...page.content]
+            .reverse()
+            .filter(
+                message =>
+                    !oldIds.has(
+                        message.id
+                    )
+            );
+
+
+    return [
+
+        ...newMessages,
+
+        ...prev
+
+    ];
+
+});
 
 
 
@@ -192,7 +217,7 @@ export function useChat(
 
 
             setHasMore(
-                page.hasMore
+                page.hasNext
             );
 
 
@@ -219,6 +244,7 @@ export function useChat(
 
 
 
+
     async function reloadMessages() {
 
 
@@ -239,7 +265,8 @@ export function useChat(
 
 
             setMessages(
-                page.items.reverse()
+                [...page.content]
+                    .reverse()
             );
 
 
@@ -251,7 +278,7 @@ export function useChat(
 
 
             setHasMore(
-                page.hasMore
+                page.hasNext
             );
 
 
@@ -267,6 +294,7 @@ export function useChat(
         }
 
     }
+
 
 
 
@@ -290,9 +318,7 @@ export function useChat(
 
 
             if (exists) {
-
                 return prev;
-
             }
 
 
@@ -355,7 +381,7 @@ export function useChat(
 
                         ...message,
 
-                        status:"READ"
+                        status: "READ"
 
                     };
 
@@ -377,36 +403,25 @@ export function useChat(
 
     return {
 
-
         chat,
-
 
         messages,
 
-
         loading,
-
 
         loadingMore,
 
-
         hasMore,
-
 
         addMessage,
 
-
         removeMessage,
-
 
         updateMessageStatus,
 
-
         reloadMessages,
 
-
         loadMoreMessages
-
 
     };
 
