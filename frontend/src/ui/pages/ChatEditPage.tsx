@@ -1,7 +1,9 @@
+
 import {
     useParams,
     useNavigate
 } from "react-router-dom";
+
 
 
 import {
@@ -9,27 +11,35 @@ import {
 } from "../../hooks/useChatEdit";
 
 
+
 import ChatEditHeader
 from "../components/chat/edit/ChatEditHeader";
+
 
 
 import MemberList
 from "../components/chat/edit/MemberList";
 
 
+
 import AddMemberForm
 from "../components/chat/edit/AddMemberForm";
+
 
 
 import ChatRenameForm
 from "../components/chat/edit/ChatRenameForm";
 
 
+
 import "../styles/chatEditPage.css";
 
 
 
+
+
 export default function ChatEditPage(){
+
 
 
 const {
@@ -37,17 +47,23 @@ const {
     members,
     loading,
 
+
     chatName,
     setChatName,
+
 
     searchUsername,
     setSearchUsername,
 
+
     users,
+
 
     currentUserId,
 
+
     permissions,
+
 
     renameChat,
     addMember,
@@ -55,9 +71,12 @@ const {
     leaveChat,
     deleteChat
 
+
 }=useChatEdit(
     useParams().chatId
 );
+
+
 
 
 
@@ -66,17 +85,54 @@ const navigate =
 
 
 
+
+
 if(loading)
     return <p>Loading...</p>;
 
 
 
+
+
+const sortedMembers =
+    [...members].sort((a, b) => {
+
+        const aIsAdmin =
+            a.chatRole === "ADMIN";
+
+        const bIsAdmin =
+            b.chatRole === "ADMIN";
+
+
+        if(aIsAdmin && !bIsAdmin)
+            return -1;
+
+
+        if(!aIsAdmin && bIsAdmin)
+            return 1;
+
+
+        return new Date(b.joinedAt).getTime()
+            - new Date(a.joinedAt).getTime();
+
+    });
+
+
+
+
+
 return (
+
+
 
 <div className="chat-edit-page">
 
 
+
+
 <ChatEditHeader
+
+
 
 title={
 chat?.type==="PRIVATE"
@@ -84,79 +140,150 @@ chat?.type==="PRIVATE"
 :"Group Settings"
 }
 
+
+
 onBack={()=>
 navigate(`/chats/${chat?.id}`)
 }
 
+
+
 onLeave={leaveChat}
 
+
+
 onDelete={deleteChat}
+
+
 
 canLeave={
 permissions.canLeave
 }
 
+
+
 canDelete={
 permissions.canDelete
 }
 
+
+
 />
+
+
 
 
 
 {
 permissions.canRename &&
 
+
+
 <ChatRenameForm
+
+
 
 value={chatName}
 
+
+
 onChange={setChatName}
+
+
 
 onSave={renameChat}
 
+
+
 />
 
+
+
 }
+
+
 
 
 
 {
 permissions.canAdd &&
 
+
+
 <AddMemberForm
+
+
 
 value={searchUsername}
 
+
+
 onChange={setSearchUsername}
+
+
 
 users={users}
 
+
+
 onAdd={addMember}
+
+
 
 />
 
+
+
 }
+
+
+
+
+
+<div className="chat-members-count">
+
+
+    Members: {members.length}
+
+
+</div>
+
 
 
 
 <MemberList
 
-members={members}
+
+
+members={sortedMembers}
+
+
 
 currentUserId={currentUserId}
+
+
 
 canRemove={
 permissions.canRemove
 }
 
+
+
 onRemove={removeMember}
+
+
 
 />
 
 
+
+
 </div>
 
+
+
 );
+
+
 
 }

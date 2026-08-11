@@ -100,6 +100,14 @@ public class Chat {
 
   public static Chat createGroup(String name, User creator, List<User> users) {
 
+    Objects.requireNonNull(creator, "creator");
+    Objects.requireNonNull(users, "users");
+
+    if (users.isEmpty()) {
+      throw new ChatException(
+          ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
+    }
+
     Instant now = Instant.now();
 
     Chat chat = new Chat();
@@ -110,21 +118,16 @@ public class Chat {
 
     chat.addMemberInternal(creator, ChatRole.ADMIN);
 
-    Objects.requireNonNull(users, "users");
-
-    if (users.isEmpty()) {
-      throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
-    }
-
-    if (users.size() + 1 > ChatConstants.MAX_GROUP_MEMBERS) {
-      throw new ChatException(
-          ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
-    }
-
     for (User user : users) {
+
       if (!user.getId().equals(creator.getId())) {
+
+        if (chat.members.size() >= ChatConstants.MAX_GROUP_MEMBERS) {
+          throw new ChatException(
+              ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
+              "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
+        }
+
         chat.addMemberInternal(user, ChatRole.MEMBER);
       }
     }
@@ -191,6 +194,12 @@ public class Chat {
 
     if (hasMember(user.getId())) {
       throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "User already in chat");
+    }
+
+    if (members.size() >= ChatConstants.MAX_GROUP_MEMBERS) {
+      throw new ChatException(
+          ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     addMemberInternal(user, ChatRole.MEMBER);
