@@ -1,3 +1,4 @@
+
 import type {
     MessageDto
 } from "../../../../types/message";
@@ -9,7 +10,7 @@ type Props = {
 
     message: MessageDto;
 
-    onDelete(id:number): void;
+    onDelete(id: number): void;
 
 };
 
@@ -32,24 +33,47 @@ export default function MessageItem({
         user?.id === message.sender.id;
 
 
-        console.log(
-    "MESSAGE ITEM",
-    message.id,
-    message.status,
-    "mine:",
-    mine,
-    "user:",
-    user?.id,
-    "sender:",
-    message.sender.id
-);
+
+    console.log(
+        "MESSAGE ITEM",
+        message.id,
+        message.status,
+        "mine:",
+        mine,
+        "user:",
+        user?.id,
+        "sender:",
+        message.sender.id
+    );
 
 
-console.log(
-    "RENDER STATUS",
-    message.id,
-    message.status === "READ" ? "✓✓" : "✓"
-);
+    console.log(
+        "RENDER STATUS",
+        message.id,
+        message.status === "READ"
+            ? "✓✓"
+            : "✓"
+    );
+
+
+
+    const messageDate =
+        new Date(message.createdAt);
+
+
+
+    const formattedDate =
+        new Intl.DateTimeFormat(
+            "en-US",
+            {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            }
+        ).format(messageDate);
 
 
 
@@ -119,18 +143,7 @@ console.log(
 
                     <span className="message-time">
 
-                        {
-                            new Date(
-                                message.createdAt
-                            )
-                            .toLocaleTimeString(
-                                [],
-                                {
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                }
-                            )
-                        }
+                        {formattedDate}
 
                     </span>
 
@@ -166,3 +179,4 @@ console.log(
     );
 
 }
+
