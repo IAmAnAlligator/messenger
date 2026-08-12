@@ -103,11 +103,6 @@ public class Chat {
     Objects.requireNonNull(creator, "creator");
     Objects.requireNonNull(users, "users");
 
-    if (users.isEmpty()) {
-      throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
-    }
-
     Instant now = Instant.now();
 
     Chat chat = new Chat();
@@ -132,10 +127,19 @@ public class Chat {
       }
     }
 
+    if (chat.members.size() < ChatConstants.MIN_GROUP_MEMBERS) {
+      throw new ChatException(
+          ChatError.GROUP_MUST_HAVE_MINIMUM_MEMBERS,
+          "Group must contain at least " + ChatConstants.MIN_GROUP_MEMBERS + " members");
+    }
+
     return chat;
   }
 
   public static Chat createPrivate(User userA, User userB) {
+
+    Objects.requireNonNull(userA, "userA");
+    Objects.requireNonNull(userB, "userB");
 
     if (userA.getId().equals(userB.getId())) {
       throw new ChatException(

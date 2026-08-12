@@ -3,6 +3,7 @@ package com.jeannimi.messenger.common.exception_handling;
 public enum ChatError {
   GROUP_MUST_HAVE_MEMBERS,
   GROUP_MEMBER_LIMIT_EXCEEDED,
+  GROUP_MUST_HAVE_MINIMUM_MEMBERS,
   CANNOT_CREATE_PRIVATE_WITH_YOURSELF,
   CANNOT_REMOVE_YOURSELF,
 
