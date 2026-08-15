@@ -5,6 +5,7 @@ import com.jeannimi.messenger.common.exception_handling.MessageError;
 import com.jeannimi.messenger.common.exception_handling.MessageException;
 import com.jeannimi.messenger.message.MessageConstants;
 import com.jeannimi.messenger.user.entity.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -50,7 +52,7 @@ public class Message {
   @JoinColumn(name = "sender_id", nullable = false)
   private User sender;
 
-  @Column(name = "content", nullable = false, updatable = false, length = 2000)
+  @Column(name = "content", updatable = false, length = 2000)
   private String content;
 
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -59,6 +61,17 @@ public class Message {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   private MessageStatus status;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "type", nullable = false)
+  private MessageType type;
+
+  @OneToOne(
+      cascade = CascadeType.ALL,
+      orphanRemoval = true
+  )
+  @JoinColumn(name = "file_attachment_id")
+  private FileAttachment attachment;
 
   @PrePersist
   private void prePersist() {
@@ -93,6 +106,26 @@ public class Message {
     message.sender = Objects.requireNonNull(sender, "sender");
 
     message.content = content;
+
+    message.type = MessageType.TEXT;
+
+    message.status = MessageStatus.SENT;
+
+    return message;
+  }
+
+  public static Message file(Chat chat, User sender, FileAttachment attachment) {
+
+    Message message = new Message();
+
+    message.chat = Objects.requireNonNull(chat, "chat");
+
+    message.sender = Objects.requireNonNull(sender, "sender");
+
+    message.attachment =
+        Objects.requireNonNull(attachment, "attachment");
+
+    message.type = MessageType.FILE;
 
     message.status = MessageStatus.SENT;
 
