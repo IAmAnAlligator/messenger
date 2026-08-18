@@ -9,7 +9,6 @@ import java.util.List;
 
 public record ChatCreateRequest(
     @NotNull(message = "Chat type is required") ChatType type,
-
     @Size(
             min = ChatConstants.MIN_CHAT_NAME_LENGTH,
             max = ChatConstants.MAX_CHAT_NAME_LENGTH,

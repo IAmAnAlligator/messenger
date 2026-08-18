@@ -4,7 +4,10 @@ import com.jeannimi.messenger.chat.entity.Chat;
 import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
 import com.jeannimi.messenger.chat.repository.ChatRepository;
 import com.jeannimi.messenger.common.exception_handling.BadRequestException;
+import com.jeannimi.messenger.common.exception_handling.FileStorageException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
+import com.jeannimi.messenger.common.exception_handling.MessageError;
+import com.jeannimi.messenger.common.exception_handling.MessageException;
 import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
@@ -15,21 +18,31 @@ import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
 import com.jeannimi.messenger.message.MessageConstants;
+import com.jeannimi.messenger.message.dto.FileDownload;
+import com.jeannimi.messenger.message.dto.FileUpload;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
+import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
 import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.repository.MessageRepository;
+import com.jeannimi.messenger.message.storage.FileStorageService;
+import com.jeannimi.messenger.message.storage.StoredFile;
 import com.jeannimi.messenger.outbox.publisher.EventPublisher;
 import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.user.repository.UserRepository;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +53,172 @@ public class MessageServiceImpl implements MessageService {
   private final ChatMemberRepository chatMemberRepository;
   private final UserRepository userRepository;
   private final EventPublisher eventPublisher;
+  private final FileStorageService fileStorageService;
+
+
+  @Override
+  @Transactional(readOnly = true)
+  public FileDownload getFile(
+      Long chatId,
+      Long messageId,
+      Long userId) {
+
+    // Проверяем, что пользователь участник чата
+    checkMembership(chatId, userId);
+
+    // Получаем сообщение
+    Message message =
+        messageRepository
+            .findByIdAndChatId(messageId, chatId)
+            .orElseThrow(
+                () -> new NotFoundException(
+                    "Message not found"));
+
+    // Получаем attachment
+    FileAttachment attachment =
+        message.getAttachment();
+
+    if (attachment == null) {
+      throw new NotFoundException(
+          "Message does not contain a file");
+    }
+
+    // Загружаем физический файл
+    InputStream inputStream =
+        fileStorageService.load(
+            attachment.getStorageFileName());
+
+    return new FileDownload(
+        inputStream,
+        attachment.getOriginalFileName(),
+        attachment.getContentType(),
+        attachment.getSize());
+  }
+
+  @Override
+  @Transactional
+  public MessageDto sendFile(
+      Long chatId,
+      Long senderId,
+      FileUpload file) {
+
+    // 1. Проверка HTTP-входа
+
+    if (file == null || file.size() <= 0) {
+      throw new MessageException(
+          MessageError.FILE_EMPTY,
+          "File must not be empty");
+    }
+
+    // 2. Проверяем чат
+
+    Chat chat =
+        chatRepository
+            .findById(chatId)
+            .orElseThrow(
+                () -> new NotFoundException(
+                    "Chat not found"));
+
+    // 3. Проверяем участника
+
+    checkMembership(chatId, senderId);
+
+    // 4. Получаем отправителя
+
+    User sender =
+        userRepository
+            .findById(senderId)
+            .orElseThrow(
+                () -> new NotFoundException(
+                    "User not found"));
+
+    // 5. Имя файла
+
+    String originalFileName =
+        file.originalFileName();
+
+    if (originalFileName == null) {
+      throw new MessageException(
+          MessageError.FILE_NAME_INVALID,
+          "File name must not be empty");
+    }
+
+    originalFileName =
+        Paths.get(originalFileName)
+            .getFileName()
+            .toString();
+
+    // 6. Content-Type
+
+    String contentType =
+        file.contentType();
+
+    if (contentType == null
+        || contentType.isBlank()) {
+
+      contentType =
+          "application/octet-stream";
+    }
+
+    // 7. Сохраняем физический файл
+
+    StoredFile storedFile;
+
+    try (InputStream inputStream = file.inputStream()) {
+
+      storedFile =
+          fileStorageService.store(
+              inputStream,
+              originalFileName);
+
+    } catch (IOException e) {
+
+      throw new MessageException(
+          MessageError.FILE_STORAGE_FAILED,
+          "Failed to read uploaded file");
+    }
+
+    // 8. Создаём attachment + message
+    //
+    // Если что-то после физического сохранения
+    // упадёт — удаляем физический файл.
+
+    try {
+
+      FileAttachment attachment =
+          FileAttachment.create(
+              originalFileName,
+              storedFile.storageFileName(),
+              contentType,
+              file.size(),
+              storedFile.storagePath());
+
+      Message message =
+          Message.ofFile(
+              chat,
+              sender,
+              attachment);
+
+      Message savedMessage =
+          messageRepository.save(message);
+
+      return toDto(savedMessage);
+
+    } catch (RuntimeException e) {
+
+      try {
+
+        fileStorageService.delete(
+            storedFile.storageFileName());
+
+      } catch (FileStorageException cleanupException) {
+
+        e.addSuppressed(cleanupException);
+      }
+
+      throw e;
+    }
+  }
 
   // =========================
   // SEND
@@ -63,7 +242,7 @@ public class MessageServiceImpl implements MessageService {
             .orElseThrow(() -> new NotFoundException("User not found"));
 
     // 4. Создаём сообщение
-    Message message = Message.of(chat, sender, content);
+    Message message = Message.ofText(chat, sender, content);
 
     // 5. Сохраняем
     Message saved = messageRepository.save(message);

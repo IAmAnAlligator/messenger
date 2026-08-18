@@ -7,23 +7,23 @@ export type MessageStatus =
     | "READ";
 
 
-
-export interface MessageDto {
-
-    id: number;
-
-    chatId: number;
-
-    sender: UserDto;
-
-    content: string;
-
-    createdAt: string;
-
-    status: MessageStatus;
-
+export interface FileAttachmentDto {
+    id: string;
+    originalFileName: string;
+    contentType: string;
+    size: number;
+    url: string;
 }
 
+export interface MessageDto {
+    id: number;
+    chatId: number;
+    sender: UserDto;
+    content: string | null;
+    createdAt: string;
+    status: MessageStatus;
+    attachment: FileAttachmentDto | null;
+}
 
 
 export type MessagePageDto =

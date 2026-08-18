@@ -13,120 +13,238 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  // =========================
+  // 401 - Unauthorized
+  // =========================
+
   @ExceptionHandler(UnauthorizedException.class)
-  public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
-    return buildResponse(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+  public ResponseEntity<ErrorResponse> handleUnauthorized(
+      UnauthorizedException ex) {
+
+    return buildResponse(
+        ex.getMessage(),
+        HttpStatus.UNAUTHORIZED);
   }
 
   // =========================
   // 400 - Bad Request
   // =========================
+
   @ExceptionHandler(BadRequestException.class)
-  public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
-    return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+  public ResponseEntity<ErrorResponse> handleBadRequest(
+      BadRequestException ex) {
+
+    return buildResponse(
+        ex.getMessage(),
+        HttpStatus.BAD_REQUEST);
   }
 
   // =========================
   // 403 - Forbidden
   // =========================
+
   @ExceptionHandler(ForbiddenException.class)
-  public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
-    return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+  public ResponseEntity<ErrorResponse> handleForbidden(
+      ForbiddenException ex) {
+
+    return buildResponse(
+        ex.getMessage(),
+        HttpStatus.FORBIDDEN);
   }
 
   // =========================
   // 404 - Not Found
   // =========================
+
   @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
-    return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
+  public ResponseEntity<ErrorResponse> handleNotFound(
+      NotFoundException ex) {
+
+    return buildResponse(
+        ex.getMessage(),
+        HttpStatus.NOT_FOUND);
   }
 
   // =========================
   // 409 - Conflict
   // =========================
+
   @ExceptionHandler(ConflictException.class)
-  public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
-    return buildResponse(ex.getMessage(), HttpStatus.CONFLICT);
+  public ResponseEntity<ErrorResponse> handleConflict(
+      ConflictException ex) {
+
+    return buildResponse(
+        ex.getMessage(),
+        HttpStatus.CONFLICT);
   }
 
   // =========================
   // Validation (@Valid)
   // =========================
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+  public ResponseEntity<ErrorResponse> handleValidation(
+      MethodArgumentNotValidException ex) {
 
     String message =
-        ex.getBindingResult().getFieldErrors().stream()
-            .map(err -> err.getField() + ": " + err.getDefaultMessage())
+        ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(
+                err ->
+                    err.getField()
+                        + ": "
+                        + err.getDefaultMessage())
             .findFirst()
-            .orElse("Method argument not valid, validation error");
+            .orElse(
+                "Method argument not valid, validation error");
 
-    return buildResponse(message, HttpStatus.BAD_REQUEST);
+    return buildResponse(
+        message,
+        HttpStatus.BAD_REQUEST);
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+  public ResponseEntity<ErrorResponse> handleConstraintViolation(
+      ConstraintViolationException ex) {
 
     String message =
-        ex.getConstraintViolations().stream()
-            .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+        ex.getConstraintViolations()
+            .stream()
+            .map(
+                v ->
+                    v.getPropertyPath()
+                        + ": "
+                        + v.getMessage())
             .findFirst()
-            .orElse("Constraint violation, validation error");
+            .orElse(
+                "Constraint violation, validation error");
 
-    return buildResponse(message, HttpStatus.BAD_REQUEST);
+    return buildResponse(
+        message,
+        HttpStatus.BAD_REQUEST);
   }
+
+  // =========================
+  // Chat
+  // =========================
 
   @ExceptionHandler(ChatException.class)
-  public ResponseEntity<ErrorResponse> handle(ChatException ex) {
+  public ResponseEntity<ErrorResponse> handleChat(
+      ChatException ex) {
 
     HttpStatus status =
         switch (ex.getError()) {
-          case NOT_CHAT_MEMBER, ONLY_ADMIN_ALLOWED, ADMIN_CANNOT_LEAVE -> HttpStatus.FORBIDDEN;
+
+          case NOT_CHAT_MEMBER,
+               ONLY_ADMIN_ALLOWED,
+               ADMIN_CANNOT_LEAVE ->
+              HttpStatus.FORBIDDEN;
 
           case USER_ALREADY_IN_CHAT,
-              LAST_ADMIN_CANNOT_BE_REMOVED,
-              PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS,
-              PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY -> HttpStatus.CONFLICT;
+               LAST_ADMIN_CANNOT_BE_REMOVED,
+               PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS,
+               PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY ->
+              HttpStatus.CONFLICT;
 
-          case MEMBER_NOT_FOUND -> HttpStatus.NOT_FOUND;
+          case MEMBER_NOT_FOUND ->
+              HttpStatus.NOT_FOUND;
 
-          default -> HttpStatus.BAD_REQUEST;
+          default ->
+              HttpStatus.BAD_REQUEST;
         };
 
-    return ResponseEntity.status(status)
-        .body(new ErrorResponse(ex.getMessage(), status.value(), LocalDateTime.now()));
+    return buildResponse(
+        ex.getMessage(),
+        status);
   }
 
+  // =========================
+  // Message
+  // =========================
+
   @ExceptionHandler(MessageException.class)
-  public ResponseEntity<ErrorResponse> handle(MessageException ex) {
+  public ResponseEntity<ErrorResponse> handleMessage(
+      MessageException ex) {
 
     HttpStatus status =
         switch (ex.getError()) {
-          case CONTENT_BLANK, CONTENT_TOO_LONG -> HttpStatus.BAD_REQUEST;
+
+          case CONTENT_BLANK,
+               CONTENT_TOO_LONG,
+
+               FILE_EMPTY,
+               FILE_TOO_LARGE,
+               FILE_NAME_INVALID,
+               FILE_NAME_TOO_LONG,
+               FILE_STORAGE_NAME_INVALID,
+               FILE_STORAGE_NAME_TOO_LONG,
+               FILE_CONTENT_TYPE_INVALID,
+               FILE_CONTENT_TYPE_TOO_LONG,
+               FILE_STORAGE_PATH_INVALID,
+               FILE_STORAGE_PATH_TOO_LONG ->
+
+              HttpStatus.BAD_REQUEST;
+
+          case FILE_STORAGE_FAILED ->
+              HttpStatus.INTERNAL_SERVER_ERROR;
         };
 
-    return ResponseEntity.status(status)
-        .body(new ErrorResponse(ex.getMessage(), status.value(), LocalDateTime.now()));
+    return buildResponse(
+        ex.getMessage(),
+        status);
+  }
+
+  // =========================
+  // File storage
+  // =========================
+
+  @ExceptionHandler(FileStorageException.class)
+  public ResponseEntity<ErrorResponse> handleFileStorage(
+      FileStorageException ex) {
+
+    log.error(
+        "File storage error",
+        ex);
+
+    return buildResponse(
+        "File storage error",
+        HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   // =========================
   // Fallback (500)
   // =========================
+
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleAll(Exception ex) {
+  public ResponseEntity<ErrorResponse> handleAll(
+      Exception ex) {
 
-    // 👉 логировать ОБЯЗАТЕЛЬНО
-    log.error("Unhandled exception", ex);
+    log.error(
+        "Unhandled exception",
+        ex);
 
-    return buildResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+    return buildResponse(
+        "Internal server error",
+        HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   // =========================
-  // helper
+  // Helper
   // =========================
-  private ResponseEntity<ErrorResponse> buildResponse(String message, HttpStatus status) {
-    ErrorResponse error = new ErrorResponse(message, status.value(), LocalDateTime.now());
-    return new ResponseEntity<>(error, status);
+
+  private ResponseEntity<ErrorResponse> buildResponse(
+      String message,
+      HttpStatus status) {
+
+    ErrorResponse error =
+        new ErrorResponse(
+            message,
+            status.value(),
+            LocalDateTime.now());
+
+    return new ResponseEntity<>(
+        error,
+        status);
   }
 }

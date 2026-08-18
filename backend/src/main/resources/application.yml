@@ -61,3 +61,7 @@ security:
   secret: ${SECRET_KEY}
   access-expiration: ${ACCESS_EXPIRATION}
   refresh-expiration: ${REFRESH_EXPIRATION}
+
+file:
+  storage:
+    location: ./storage/files

@@ -5,12 +5,15 @@ import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.MessageSendRequest;
+import com.jeannimi.messenger.message.mapper.FileDownloadMapper;
+import com.jeannimi.messenger.message.mapper.FileUploadMapper;
 import com.jeannimi.messenger.message.service.MessageService;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +26,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+import com.jeannimi.messenger.message.dto.FileDownload;
+import org.springframework.http.ResponseEntity;
 
 @Slf4j
 @RestController
@@ -32,6 +39,35 @@ import org.springframework.web.bind.annotation.RestController;
 public class MessageController {
 
   private final MessageService messageService;
+  private final FileUploadMapper fileUploadMapper;
+  private final FileDownloadMapper fileDownloadMapper;
+
+  @GetMapping("/{messageId}/file")
+  public ResponseEntity<InputStreamResource> getFile(
+      @PathVariable @Positive Long chatId,
+      @PathVariable @Positive Long messageId,
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    FileDownload file =
+        messageService.getFile(
+            chatId,
+            messageId,
+            user.id());
+
+    return fileDownloadMapper.toResponse(file);
+  }
+
+  @PostMapping("/file")
+  public MessageDto sendFile(
+      @PathVariable @Positive Long chatId,
+      @RequestPart("file") MultipartFile file,
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    return messageService.sendFile(
+        chatId,
+        user.id(),
+        fileUploadMapper.toFileUpload(file));
+  }
 
   @PostMapping
   public MessageDto sendMessage(

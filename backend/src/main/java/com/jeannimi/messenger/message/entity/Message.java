@@ -66,10 +66,7 @@ public class Message {
   @Column(name = "type", nullable = false)
   private MessageType type;
 
-  @OneToOne(
-      cascade = CascadeType.ALL,
-      orphanRemoval = true
-  )
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "file_attachment_id")
   private FileAttachment attachment;
 
@@ -86,7 +83,7 @@ public class Message {
     }
   }
 
-  public static Message of(Chat chat, User sender, String content) {
+  public static Message ofText(Chat chat, User sender, String content) {
     if (content == null || content.isBlank()) {
       throw new MessageException(MessageError.CONTENT_BLANK, "Message content must not be blank");
     }
@@ -114,7 +111,7 @@ public class Message {
     return message;
   }
 
-  public static Message file(Chat chat, User sender, FileAttachment attachment) {
+  public static Message ofFile(Chat chat, User sender, FileAttachment attachment) {
 
     Message message = new Message();
 
@@ -122,11 +119,11 @@ public class Message {
 
     message.sender = Objects.requireNonNull(sender, "sender");
 
-    message.attachment =
-        Objects.requireNonNull(attachment, "attachment");
+    message.content = null;
+
+    message.attachment = Objects.requireNonNull(attachment, "attachment");
 
     message.type = MessageType.FILE;
-
     message.status = MessageStatus.SENT;
 
     return message;
