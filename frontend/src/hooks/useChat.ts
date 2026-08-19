@@ -28,7 +28,9 @@ import type {
     CursorDto
 } from "../types/pagination";
 
-
+import {
+    sendFile as sendFileRequest
+} from "../services/messageService";
 
 export function useChat(
     chatId?: number
@@ -79,7 +81,33 @@ export function useChat(
     }, [chatId]);
 
 
+    async function sendFile(
+    file: File
+) {
 
+    if (!chatId) {
+        return;
+    }
+
+
+    try {
+
+        await sendFileRequest(
+            chatId,
+            file
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Failed to send file",
+            error
+        );
+
+        throw error;
+    }
+
+}
 
 
     async function load() {
@@ -421,7 +449,9 @@ setMessages(prev => {
 
         reloadMessages,
 
-        loadMoreMessages
+        loadMoreMessages,
+
+        sendFile
 
     };
 

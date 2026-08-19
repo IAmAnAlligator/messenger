@@ -7,14 +7,10 @@ import com.jeannimi.messenger.message.dto.FileDownload;
 import com.jeannimi.messenger.message.dto.FileUpload;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface MessageService {
 
-  FileDownload getFile(
-      Long chatId,
-      Long messageId,
-      Long userId);
+  FileDownload getFile(Long chatId, Long messageId, Long userId);
 
   MessageDto sendFile(Long chatId, Long senderId, FileUpload file);
 

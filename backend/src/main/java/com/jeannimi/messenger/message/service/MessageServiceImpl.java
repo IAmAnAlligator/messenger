@@ -14,6 +14,7 @@ import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.kafka.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
 import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
@@ -37,15 +38,15 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MessageServiceImpl implements MessageService {
 
   private final MessageRepository messageRepository;
@@ -55,13 +56,9 @@ public class MessageServiceImpl implements MessageService {
   private final EventPublisher eventPublisher;
   private final FileStorageService fileStorageService;
 
-
   @Override
   @Transactional(readOnly = true)
-  public FileDownload getFile(
-      Long chatId,
-      Long messageId,
-      Long userId) {
+  public FileDownload getFile(Long chatId, Long messageId, Long userId) {
 
     // Проверяем, что пользователь участник чата
     checkMembership(chatId, userId);
@@ -70,23 +67,17 @@ public class MessageServiceImpl implements MessageService {
     Message message =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
-            .orElseThrow(
-                () -> new NotFoundException(
-                    "Message not found"));
+            .orElseThrow(() -> new NotFoundException("Message not found"));
 
     // Получаем attachment
-    FileAttachment attachment =
-        message.getAttachment();
+    FileAttachment attachment = message.getAttachment();
 
     if (attachment == null) {
-      throw new NotFoundException(
-          "Message does not contain a file");
+      throw new NotFoundException("Message does not contain a file");
     }
 
     // Загружаем физический файл
-    InputStream inputStream =
-        fileStorageService.load(
-            attachment.getStorageFileName());
+    InputStream inputStream = fileStorageService.load(attachment.getStorageFileName());
 
     return new FileDownload(
         inputStream,
@@ -97,27 +88,18 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto sendFile(
-      Long chatId,
-      Long senderId,
-      FileUpload file) {
+  public MessageDto sendFile(Long chatId, Long senderId, FileUpload file) {
 
     // 1. Проверка HTTP-входа
 
     if (file == null || file.size() <= 0) {
-      throw new MessageException(
-          MessageError.FILE_EMPTY,
-          "File must not be empty");
+      throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
     // 2. Проверяем чат
 
     Chat chat =
-        chatRepository
-            .findById(chatId)
-            .orElseThrow(
-                () -> new NotFoundException(
-                    "Chat not found"));
+        chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
 
     // 3. Проверяем участника
 
@@ -128,36 +110,25 @@ public class MessageServiceImpl implements MessageService {
     User sender =
         userRepository
             .findById(senderId)
-            .orElseThrow(
-                () -> new NotFoundException(
-                    "User not found"));
+            .orElseThrow(() -> new NotFoundException("User not found"));
 
     // 5. Имя файла
 
-    String originalFileName =
-        file.originalFileName();
+    String originalFileName = file.originalFileName();
 
     if (originalFileName == null) {
-      throw new MessageException(
-          MessageError.FILE_NAME_INVALID,
-          "File name must not be empty");
+      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
     }
 
-    originalFileName =
-        Paths.get(originalFileName)
-            .getFileName()
-            .toString();
+    originalFileName = Paths.get(originalFileName).getFileName().toString();
 
     // 6. Content-Type
 
-    String contentType =
-        file.contentType();
+    String contentType = file.contentType();
 
-    if (contentType == null
-        || contentType.isBlank()) {
+    if (contentType == null || contentType.isBlank()) {
 
-      contentType =
-          "application/octet-stream";
+      contentType = "application/octet-stream";
     }
 
     // 7. Сохраняем физический файл
@@ -166,16 +137,11 @@ public class MessageServiceImpl implements MessageService {
 
     try (InputStream inputStream = file.inputStream()) {
 
-      storedFile =
-          fileStorageService.store(
-              inputStream,
-              originalFileName);
+      storedFile = fileStorageService.store(inputStream, originalFileName);
 
     } catch (IOException e) {
 
-      throw new MessageException(
-          MessageError.FILE_STORAGE_FAILED,
-          "Failed to read uploaded file");
+      throw new MessageException(MessageError.FILE_STORAGE_FAILED, "Failed to read uploaded file");
     }
 
     // 8. Создаём attachment + message
@@ -193,14 +159,19 @@ public class MessageServiceImpl implements MessageService {
               file.size(),
               storedFile.storagePath());
 
-      Message message =
-          Message.ofFile(
-              chat,
-              sender,
-              attachment);
+      Message message = Message.ofFile(chat, sender, attachment);
 
-      Message savedMessage =
-          messageRepository.save(message);
+      Message savedMessage = messageRepository.save(message);
+
+      chat.updateLastMessageTime();
+
+      MessageSentEvent messageSentEvent = MessageSentEvent.from(savedMessage);
+
+      eventPublisher.publish(
+          KafkaTopics.CHAT_MESSAGES,
+          EventType.MESSAGE_CREATED,
+          String.valueOf(chatId),
+          messageSentEvent);
 
       return toDto(savedMessage);
 
@@ -208,8 +179,7 @@ public class MessageServiceImpl implements MessageService {
 
       try {
 
-        fileStorageService.delete(
-            storedFile.storageFileName());
+        fileStorageService.delete(storedFile.storageFileName());
 
       } catch (FileStorageException cleanupException) {
 
@@ -382,7 +352,11 @@ public class MessageServiceImpl implements MessageService {
     MessageDeletedEvent messageDeletedEvent =
         new MessageDeletedEvent(message.getId(), chatId, userId, Instant.now());
 
+    FileAttachment attachment = message.getAttachment();
+
     messageRepository.delete(message);
+
+    publishFileDeletion(attachment);
 
     eventPublisher.publish(
         KafkaTopics.CHAT_MESSAGE_DELETED,
@@ -394,7 +368,29 @@ public class MessageServiceImpl implements MessageService {
   @Override
   @Transactional
   public void deleteAllByChat(Long chatId) {
+
+    List<Message> messages = messageRepository.findAllByChatId(chatId);
+
+    for (Message message : messages) {
+      publishFileDeletion(message.getAttachment());
+    }
+
     messageRepository.deleteByChatId(chatId);
+  }
+
+  private void publishFileDeletion(FileAttachment attachment) {
+
+    if (attachment != null) {
+
+      FileDeletionRequestedEvent event =
+          new FileDeletionRequestedEvent(attachment.getStorageFileName());
+
+      eventPublisher.publish(
+          KafkaTopics.FILE_DELETE,
+          EventType.FILE_DELETION_REQUESTED,
+          attachment.getStorageFileName(),
+          event);
+    }
   }
 
   private void checkMembership(Long chatId, Long userId) {

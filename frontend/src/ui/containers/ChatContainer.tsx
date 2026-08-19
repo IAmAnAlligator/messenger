@@ -2,6 +2,7 @@ import {
     useState
 } from "react";
 
+
 import {
     useNavigate
 } from "react-router-dom";
@@ -47,7 +48,6 @@ export default function ChatContainer({
 
 
 
-
     const {
 
         chat,
@@ -68,12 +68,11 @@ export default function ChatContainer({
 
         reloadMessages,
 
-        loadMoreMessages
+        loadMoreMessages,
 
+        sendFile
 
     } = useChat(chatId);
-
-
 
 
 
@@ -85,7 +84,6 @@ export default function ChatContainer({
         sendMessage,
 
         deleteMessage
-
 
     } = useChatSocket({
 
@@ -106,6 +104,46 @@ export default function ChatContainer({
 
 
 
+    async function handleSendFile(
+        file: File
+    ) {
+
+        try {
+
+            await sendFile(file);
+
+        } catch (error) {
+
+            console.error(
+                "Failed to send file",
+                error
+            );
+
+        }
+
+    }
+
+
+
+    function handleSend() {
+
+        const content =
+            text.trim();
+
+
+        if (!content) {
+            return;
+        }
+
+
+        sendMessage(
+            content
+        );
+
+
+        setText("");
+
+    }
 
 
 
@@ -123,7 +161,15 @@ export default function ChatContainer({
 
             hasMore={hasMore}
 
-            onLoadMore={loadMoreMessages}
+
+            onLoadMore={
+                loadMoreMessages
+            }
+
+
+            onSendFile={
+                handleSendFile
+            }
 
 
             text={text}
@@ -131,35 +177,14 @@ export default function ChatContainer({
             error={error}
 
 
-
-            onTextChange={setText}
-
-
-
-            onSend={() => {
+            onTextChange={
+                setText
+            }
 
 
-                const content =
-                    text.trim();
-
-
-
-                if (!content) {
-                    return;
-                }
-
-
-
-                sendMessage(
-                    content
-                );
-
-
-
-                setText("");
-
-            }}
-
+            onSend={
+                handleSend
+            }
 
 
             onDelete={
@@ -167,13 +192,11 @@ export default function ChatContainer({
             }
 
 
-
             onBack={() =>
                 navigate(
                     "/chats"
                 )
             }
-
 
 
             onEdit={() =>

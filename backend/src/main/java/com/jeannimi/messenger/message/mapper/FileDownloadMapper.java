@@ -12,29 +12,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileDownloadMapper {
 
-  public ResponseEntity<InputStreamResource> toResponse(
-      FileDownload file) {
+  public ResponseEntity<InputStreamResource> toResponse(FileDownload file) {
 
-    InputStreamResource resource =
-        new InputStreamResource(
-            file.inputStream());
+    InputStreamResource resource = new InputStreamResource(file.inputStream());
 
     ContentDisposition contentDisposition =
-        ContentDisposition
-            .inline()
-            .filename(
-                file.fileName(),
-                StandardCharsets.UTF_8)
-            .build();
+        ContentDisposition.inline().filename(file.fileName(), StandardCharsets.UTF_8).build();
 
     return ResponseEntity.ok()
-        .contentType(
-            MediaType.parseMediaType(
-                file.contentType()))
+        .contentType(MediaType.parseMediaType(file.contentType()))
         .contentLength(file.size())
-        .header(
-            HttpHeaders.CONTENT_DISPOSITION,
-            contentDisposition.toString())
+        .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
         .body(resource);
   }
 }

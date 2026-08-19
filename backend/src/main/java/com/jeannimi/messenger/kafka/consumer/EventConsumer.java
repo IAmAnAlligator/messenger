@@ -74,7 +74,7 @@ public class EventConsumer {
                   event.content(),
                   event.createdAt(),
                   MessageStatus.SENT,
-                  null);
+                  event.attachment());
 
           messagingTemplate.convertAndSend(
               "/topic/chat/" + dto.chatId(), WebSocketEvent.of(EventType.MESSAGE_CREATED, dto));

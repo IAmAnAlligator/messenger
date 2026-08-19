@@ -1,5 +1,8 @@
 import { api } from "../api/client";
 
+import type {
+    MessageDto
+} from "../types/message";
 
 import type {
     MessagePageDto
@@ -47,4 +50,42 @@ export async function getMessages(
 
     return response.data;
 
+}
+
+export async function sendFile(
+    chatId: number,
+    file: File
+): Promise<MessageDto> {
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        file
+    );
+
+    const response =
+        await api.post<MessageDto>(
+            `/chats/${chatId}/messages/file`,
+            formData
+        );
+
+    return response.data;
+}
+
+export async function getMessageFile(
+    chatId: number,
+    messageId: number
+): Promise<Blob> {
+
+    const response =
+        await api.get(
+            `/chats/${chatId}/messages/${messageId}/file`,
+            {
+                responseType: "blob"
+            }
+        );
+
+    return response.data;
 }

@@ -7,27 +7,22 @@ import com.jeannimi.messenger.user.dto.UserDto;
 import java.time.Instant;
 
 public record MessageDto(
-    Long id, Long chatId, UserDto sender, String content, Instant createdAt, MessageStatus status
-,FileAttachmentDto attachment) {
+    Long id,
+    Long chatId,
+    UserDto sender,
+    String content,
+    Instant createdAt,
+    MessageStatus status,
+    FileAttachmentDto attachment) {
 
   public static MessageDto toDto(Message message) {
 
-    FileAttachment attachment =
-        message.getAttachment();
+    FileAttachment attachment = message.getAttachment();
 
     FileAttachmentDto attachmentDto =
         attachment == null
             ? null
-            : new FileAttachmentDto(
-                attachment.getId(),
-                attachment.getOriginalFileName(),
-                attachment.getContentType(),
-                attachment.getSize(),
-                "/api/chats/"
-                    + message.getChat().getId()
-                    + "/messages/"
-                    + message.getId()
-                    + "/file");
+            : FileAttachmentDto.toDto(attachment, message.getChat().getId(), message.getId());
 
     return new MessageDto(
         message.getId(),

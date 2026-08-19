@@ -52,7 +52,7 @@ type Props = {
 
     error: string | null;
 
-
+    onSendFile(file: File): Promise<void>;
 
     onLoadMore(): void;
 
@@ -225,6 +225,8 @@ console.log({
 
 
                 onSend={props.onSend}
+
+                onSendFile={props.onSendFile}
 
 
             />

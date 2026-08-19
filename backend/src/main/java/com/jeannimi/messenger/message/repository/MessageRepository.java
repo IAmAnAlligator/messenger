@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
+  List<Message> findAllByChatId(Long chatId);
+
   Optional<Message> findByIdAndChatId(Long messageId, Long chatId);
 
   @Query(

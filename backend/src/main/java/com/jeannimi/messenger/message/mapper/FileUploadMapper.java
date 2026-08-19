@@ -14,15 +14,10 @@ public class FileUploadMapper {
 
     try {
       return new FileUpload(
-          file.getInputStream(),
-          file.getOriginalFilename(),
-          file.getContentType(),
-          file.getSize());
+          file.getInputStream(), file.getOriginalFilename(), file.getContentType(), file.getSize());
 
     } catch (IOException e) {
-      throw new MessageException(
-          MessageError.FILE_STORAGE_FAILED,
-          "Failed to read uploaded file");
+      throw new MessageException(MessageError.FILE_STORAGE_FAILED, "Failed to read uploaded file");
     }
   }
 }
