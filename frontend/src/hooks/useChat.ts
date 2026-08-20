@@ -85,6 +85,13 @@ export function useChat(
     file: File
 ) {
 
+        console.log(
+        "[sendFile]",
+        file.name,
+        file.size,
+        file.type
+    );
+
     if (!chatId) {
         return;
     }

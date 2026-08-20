@@ -291,77 +291,90 @@ export default function MessageItem({
 
 
 
-                            {
-                                !fileLoading &&
-                                !fileError &&
-                                fileUrl && (
+{
+    !fileLoading &&
+    !fileError &&
+    fileUrl && (
 
-                                    <a
-                                        href={fileUrl}
-                                        target={
-                                            isImage
-                                                ? "_blank"
-                                                : undefined
-                                        }
-                                        rel={
-                                            isImage
-                                                ? "noopener noreferrer"
-                                                : undefined
-                                        }
-                                        download={
-                                            isImage
-                                                ? undefined
-                                                : message
-                                                    .attachment
-                                                    .originalFileName
-                                        }
-                                        className="message-file"
-                                    >
+        isImage ? (
 
-                                        <span className="message-file-icon">
+            <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="message-image-link"
+            >
 
-                                            {
-                                                getFileIcon(
-                                                    message
-                                                        .attachment
-                                                        .contentType
-                                                )
-                                            }
+                <img
+                    src={fileUrl}
+                    alt={
+                        message
+                            .attachment
+                            .originalFileName
+                    }
+                    className="message-image-preview"
+                />
 
-                                        </span>
+            </a>
 
+        ) : (
 
-                                        <span className="message-file-info">
+            <a
+                href={fileUrl}
+                download={
+                    message
+                        .attachment
+                        .originalFileName
+                }
+                className="message-file"
+            >
 
-                                            <span className="message-file-name">
+                <span className="message-file-icon">
 
-                                                {
-                                                    message
-                                                        .attachment
-                                                        .originalFileName
-                                                }
+                    {
+                        getFileIcon(
+                            message
+                                .attachment
+                                .contentType
+                        )
+                    }
 
-                                            </span>
+                </span>
 
 
-                                            <span className="message-file-size">
+                <span className="message-file-info">
 
-                                                {
-                                                    formatFileSize(
-                                                        message
-                                                            .attachment
-                                                            .size
-                                                    )
-                                                }
+                    <span className="message-file-name">
 
-                                            </span>
+                        {
+                            message
+                                .attachment
+                                .originalFileName
+                        }
 
-                                        </span>
+                    </span>
 
-                                    </a>
 
-                                )
-                            }
+                    <span className="message-file-size">
+
+                        {
+                            formatFileSize(
+                                message
+                                    .attachment
+                                    .size
+                            )
+                        }
+
+                    </span>
+
+                </span>
+
+            </a>
+
+        )
+
+    )
+}
 
 
                         </div>

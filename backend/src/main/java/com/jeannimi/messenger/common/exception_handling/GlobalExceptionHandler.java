@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -153,6 +154,17 @@ public class GlobalExceptionHandler {
     log.error("File storage error", ex);
 
     return buildResponse("File storage error", HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
+      MaxUploadSizeExceededException ex) {
+
+    log.warn("File upload size exceeded: {}", ex.getMessage());
+
+    return buildResponse(
+        "File size exceeds the maximum allowed size",
+        HttpStatus.CONTENT_TOO_LARGE);
   }
 
   // =========================

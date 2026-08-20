@@ -237,3 +237,21 @@
 
 }
 
+.message-image-link {
+    display: block;
+    width: fit-content;
+    max-width: 500px;
+    max-height: 500px;
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.message-image-preview {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 500px;
+    max-height: 500px;
+    object-fit: contain;
+}

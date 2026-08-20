@@ -29,41 +29,62 @@ export default function MessageInput({
 }: Props) {
 
 
-    const fileInputRef =
-        useRef<HTMLInputElement>(null);
+const fileInputRef =
+    useRef<HTMLInputElement>(null);
+
+const MAX_FILE_SIZE =
+    10 * 1024 * 1024;
 
 
+async function handleFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+) {
 
-    async function handleFileChange(
-        event: React.ChangeEvent<HTMLInputElement>
-    ) {
+    const file =
+        event.target.files?.[0];
 
-        const file =
-            event.target.files?.[0];
-
-        if (!file) {
-            return;
-        }
+    if (!file) {
+        return;
+    }
 
 
-        try {
+    if (file.size > MAX_FILE_SIZE) {
 
-            await onSendFile(file);
+        console.warn(
+            "[handleFileChange] File too large:",
+            file.size
+        );
 
-        } catch (error) {
+        event.target.value = "";
 
-            console.error(
-                "Failed to send file",
-                error
-            );
+        return;
+    }
 
-        } finally {
 
-            event.target.value = "";
+    console.log(
+        "[handleFileChange]",
+        file.name,
+        file.size
+    );
 
-        }
+
+    try {
+
+        await onSendFile(file);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to send file",
+            error
+        );
+
+    } finally {
+
+        event.target.value = "";
 
     }
+}
 
 
 
