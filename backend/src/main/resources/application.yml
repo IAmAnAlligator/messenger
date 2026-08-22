@@ -70,3 +70,9 @@ security:
 file:
   storage:
     location: ./storage/files
+
+file-storage:
+  cleanup:
+    enabled: true
+    interval: 1h
+    orphan-age: 1h

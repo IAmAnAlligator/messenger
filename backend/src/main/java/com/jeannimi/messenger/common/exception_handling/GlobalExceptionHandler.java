@@ -163,8 +163,7 @@ public class GlobalExceptionHandler {
     log.warn("File upload size exceeded: {}", ex.getMessage());
 
     return buildResponse(
-        "File size exceeds the maximum allowed size",
-        HttpStatus.CONTENT_TOO_LARGE);
+        "File size exceeds the maximum allowed size", HttpStatus.CONTENT_TOO_LARGE);
   }
 
   // =========================

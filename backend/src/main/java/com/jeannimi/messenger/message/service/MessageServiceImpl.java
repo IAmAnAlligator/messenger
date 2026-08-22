@@ -26,6 +26,7 @@ import com.jeannimi.messenger.message.dto.ReadResult;
 import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
 import com.jeannimi.messenger.message.entity.MessageStatus;
+import com.jeannimi.messenger.message.repository.FileAttachmentRepository;
 import com.jeannimi.messenger.message.repository.MessageRepository;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import com.jeannimi.messenger.message.storage.StoredFile;
@@ -34,9 +35,12 @@ import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.user.repository.UserRepository;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +59,7 @@ public class MessageServiceImpl implements MessageService {
   private final UserRepository userRepository;
   private final EventPublisher eventPublisher;
   private final FileStorageService fileStorageService;
+  private final FileAttachmentRepository fileAttachmentRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -90,48 +95,46 @@ public class MessageServiceImpl implements MessageService {
   @Transactional
   public MessageDto sendFile(Long chatId, Long senderId, FileUpload file) {
 
-    // 1. Проверка HTTP-входа
+    // =========================
+    // 1. Проверка входных данных
+    // =========================
 
     if (file == null || file.size() <= 0) {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
+    if (file.size() > MessageConstants.MAX_FILE_SIZE_BYTES) {
+      throw new MessageException(
+          MessageError.FILE_TOO_LARGE, "File size exceeds the maximum allowed size");
+    }
+
+    // =========================
     // 2. Проверяем чат
+    // =========================
 
-    Chat chat =
-        chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
+    Chat chat = getChatForSending(chatId, senderId);
 
+    // =========================
     // 3. Проверяем участника
+    // =========================
 
     checkMembership(chatId, senderId);
 
+    // =========================
     // 4. Получаем отправителя
+    // =========================
 
-    User sender =
-        userRepository
-            .findById(senderId)
-            .orElseThrow(() -> new NotFoundException("User not found"));
+    User sender = getUser(senderId);
 
-    // 5. Имя файла
+    // =========================
+    // 5. Проверяем имя файла
+    // =========================
 
-    String originalFileName = file.originalFileName();
+    String originalFileName = sanitizeFileName(file.originalFileName());
 
-    if (originalFileName == null) {
-      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
-    }
-
-    originalFileName = Paths.get(originalFileName).getFileName().toString();
-
-    // 6. Content-Type
-
-    String contentType = file.contentType();
-
-    if (contentType == null || contentType.isBlank()) {
-
-      contentType = "application/octet-stream";
-    }
-
-    // 7. Сохраняем физический файл
+    // =========================
+    // 6. Сохраняем файл
+    // =========================
 
     StoredFile storedFile;
 
@@ -144,10 +147,30 @@ public class MessageServiceImpl implements MessageService {
       throw new MessageException(MessageError.FILE_STORAGE_FAILED, "Failed to read uploaded file");
     }
 
-    // 8. Создаём attachment + message
-    //
-    // Если что-то после физического сохранения
-    // упадёт — удаляем физический файл.
+    // =========================
+    // 7. Определяем MIME type
+    // =========================
+
+    String contentType;
+
+    try {
+
+      contentType = Files.probeContentType(Path.of(storedFile.storagePath()));
+
+    } catch (IOException e) {
+
+      contentType = null;
+    }
+
+    if (contentType == null || contentType.isBlank()) {
+
+      contentType = "application/octet-stream";
+    }
+
+    // =========================
+    // 8. Создаём attachment
+    //    и message
+    // =========================
 
     try {
 
@@ -165,18 +188,17 @@ public class MessageServiceImpl implements MessageService {
 
       chat.updateLastMessageTime();
 
-      MessageSentEvent messageSentEvent = MessageSentEvent.from(savedMessage);
-
-      eventPublisher.publish(
-          KafkaTopics.CHAT_MESSAGES,
-          EventType.MESSAGE_CREATED,
-          String.valueOf(chatId),
-          messageSentEvent);
+      publishMessageCreated(savedMessage);
 
       return toDto(savedMessage);
 
     } catch (RuntimeException e) {
 
+      /*
+       * Если сохранение в БД или создание события
+       * завершилось ошибкой, физический файл больше
+       * не должен оставаться в storage.
+       */
       try {
 
         fileStorageService.delete(storedFile.storageFileName());
@@ -190,6 +212,52 @@ public class MessageServiceImpl implements MessageService {
     }
   }
 
+  private String sanitizeFileName(String fileName) {
+
+    if (fileName == null || fileName.isBlank()) {
+      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
+    }
+
+    /*
+     * Убираем путь, переданный клиентом.
+     *
+     * Например:
+     *
+     * ../../secret.txt
+     * C:\Users\User\secret.txt
+     *
+     * превращается в:
+     *
+     * secret.txt
+     */
+    String sanitizedName = Paths.get(fileName).getFileName().toString();
+
+    if (sanitizedName.isBlank()) {
+      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
+    }
+
+    /*
+     * Дополнительная защита от управляющих символов.
+     */
+    for (int i = 0; i < sanitizedName.length(); i++) {
+
+      if (Character.isISOControl(sanitizedName.charAt(i))) {
+
+        throw new MessageException(
+            MessageError.FILE_NAME_INVALID, "File name contains invalid characters");
+      }
+    }
+
+    /*
+     * Не разрешаем слишком длинные имена.
+     */
+    if (sanitizedName.length() > 255) {
+      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name is too long");
+    }
+
+    return sanitizedName;
+  }
+
   // =========================
   // SEND
   // =========================
@@ -199,17 +267,13 @@ public class MessageServiceImpl implements MessageService {
   public MessageDto sendMessage(Long chatId, Long senderId, String content) {
 
     // 1. Проверка: чат существует
-    Chat chat =
-        chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
+    Chat chat = getChatForSending(chatId, senderId);
 
     // 2. Проверка: пользователь участник чата
     checkMembership(chatId, senderId);
 
     // 3. Получаем sender (можно через getReference для оптимизации)
-    User sender =
-        userRepository
-            .findById(senderId)
-            .orElseThrow(() -> new NotFoundException("User not found"));
+    User sender = getUser(senderId);
 
     // 4. Создаём сообщение
     Message message = Message.ofText(chat, sender, content);
@@ -219,13 +283,7 @@ public class MessageServiceImpl implements MessageService {
 
     chat.updateLastMessageTime();
 
-    MessageSentEvent messageSentEvent = MessageSentEvent.from(saved);
-
-    eventPublisher.publish(
-        KafkaTopics.CHAT_MESSAGES,
-        EventType.MESSAGE_CREATED,
-        String.valueOf(chatId),
-        messageSentEvent);
+    publishMessageCreated(message);
 
     // 6. Возвращаем DTO
     return toDto(saved);
@@ -369,13 +427,30 @@ public class MessageServiceImpl implements MessageService {
   @Transactional
   public void deleteAllByChat(Long chatId) {
 
-    List<Message> messages = messageRepository.findAllByChatId(chatId);
+    List<FileAttachment> attachments = messageRepository.findAttachmentsByChatId(chatId);
 
-    for (Message message : messages) {
-      publishFileDeletion(message.getAttachment());
+    int deletedMessages = messageRepository.deleteByChatId(chatId);
+
+    int deletedAttachments = 0;
+
+    if (!attachments.isEmpty()) {
+
+      List<UUID> attachmentIds = attachments.stream().map(FileAttachment::getId).toList();
+
+      fileAttachmentRepository.deleteAllByIds(attachmentIds);
+
+      deletedAttachments = attachmentIds.size();
+
+      for (FileAttachment attachment : attachments) {
+        publishFileDeletion(attachment);
+      }
     }
 
-    messageRepository.deleteByChatId(chatId);
+    log.info(
+        "Deleted chat messages. chatId={}, messages={}, attachments={}",
+        chatId,
+        deletedMessages,
+        deletedAttachments);
   }
 
   private void publishFileDeletion(FileAttachment attachment) {
@@ -397,6 +472,31 @@ public class MessageServiceImpl implements MessageService {
     if (!chatMemberRepository.existsByChatIdAndUserId(chatId, userId)) {
       throw new ForbiddenException("You are not a member of this chat");
     }
+  }
+
+  private Chat getChatForSending(Long chatId, Long userId) {
+    Chat chat =
+        chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
+
+    checkMembership(chatId, userId);
+
+    return chat;
+  }
+
+  private User getUser(Long userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new NotFoundException("User not found"));
+  }
+
+  private void publishMessageCreated(Message message) {
+    MessageSentEvent event = MessageSentEvent.from(message);
+
+    eventPublisher.publish(
+        KafkaTopics.CHAT_MESSAGES,
+        EventType.MESSAGE_CREATED,
+        String.valueOf(message.getChat().getId()),
+        event);
   }
 
   private MessageDto toDto(Message m) {

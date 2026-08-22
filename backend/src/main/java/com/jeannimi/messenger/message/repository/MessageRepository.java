@@ -1,16 +1,29 @@
 package com.jeannimi.messenger.message.repository;
 
+import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
+
+  @Query(
+      """
+    select m.attachment
+    from Message m
+    where m.chat.id = :chatId
+    and m.attachment is not null
+""")
+  List<FileAttachment> findAttachmentsByChatId(@Param("chatId") Long chatId);
+
+  Slice<Message> findAllByChatId(Long chatId, Pageable pageable);
 
   List<Message> findAllByChatId(Long chatId);
 
@@ -49,10 +62,10 @@ ORDER BY m.createdAt DESC, m.id DESC
       @Param("id") Long id,
       Pageable pageable);
 
-  @Modifying
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query("""
-DELETE FROM Message m
-WHERE m.chat.id = :chatId
+    DELETE FROM Message m
+    WHERE m.chat.id = :chatId
 """)
   int deleteByChatId(@Param("chatId") Long chatId);
 }
