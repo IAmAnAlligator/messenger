@@ -32,8 +32,10 @@ import org.hibernate.annotations.BatchSize;
 @Table(
     name = "messages",
     indexes = {
-      @Index(name = "idx_chat_created", columnList = "chat_id, created_at DESC"),
-      @Index(name = "idx_chat_id_id", columnList = "chat_id, id DESC")
+      @Index(
+          name = "idx_messages_chat_created_id",
+          columnList = "chat_id, created_at DESC, id DESC"),
+      @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
