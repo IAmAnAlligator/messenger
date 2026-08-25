@@ -1,174 +1,79 @@
 import ChatHeader
     from "../list/ChatHeader";
 
-
 import MessageList
     from "./MessageList";
-
 
 import MessageInput
     from "./MessageInput";
 
-
 import WsError
     from "../../common/WsError";
-
-
 
 import type {
     ChatDto
 } from "../../../../types/chat";
-
 
 import type {
     MessageDto
 } from "../../../../types/message";
 
 
-import {
-    useEffect
-} from "react";
-
 type Props = {
-
 
     chat: ChatDto | null;
 
-
     messages: MessageDto[];
-
 
     loading: boolean;
 
-
     loadingMore: boolean;
-
 
     hasMore: boolean;
 
+    currentUserId: number;
+
+    lastReadMessageId: number | null;
 
     text: string;
 
-
     error: string | null;
 
-    onSendFile(file: File): Promise<void>;
+    onSendFile(
+        file: File
+    ): Promise<void>;
 
-    onLoadMore(): void;
+    onLoadMore():
+        void | Promise<void>;
 
+    onReadUpTo(
+        messageId: number
+    ): void;
 
     onTextChange(
         value: string
     ): void;
 
-
-
     onSend(): void;
-
-
 
     onDelete(
         id: number
     ): void;
 
-
-
     onBack(): void;
-
-
 
     onEdit(): void;
 
-    
-
 };
-
-
-
 
 
 export default function ChatContent(
     props: Props
 ) {
 
-    
-useEffect(() => {
-    const page = document.querySelector(".chat-page");
-
-    if (!page) {
-        return;
-    }
-
-    let element: HTMLElement | null =
-        page.parentElement;
-
-    while (element) {
-
-        // const rect =
-        //     element.getBoundingClientRect();
-
-        // const style =
-        //     getComputedStyle(element);
-
-         const root = document.querySelector("#root");
-const app = document.querySelector(".app");
-
-console.log({
-    viewport: window.innerHeight,
-
-    html: document.documentElement.getBoundingClientRect().height,
-
-    body: document.body.getBoundingClientRect().height,
-
-    root: root?.getBoundingClientRect().height,
-
-    app: app?.getBoundingClientRect().height,
-
-    appParent: app?.parentElement,
-
-    rootChild: root?.firstElementChild
-});
-
-        // console.log(
-        //     "PARENT",
-        //     element.className || element.tagName,
-        //     {
-                
-        //         height: rect.height,
-        //         width: rect.width,
-        //         top: rect.top,
-        //         bottom: rect.bottom,
-
-        //         display: style.display,
-        //         position: style.position,
-
-        //         flex:
-        //             style.flex,
-
-        //         flexDirection:
-        //             style.flexDirection,
-
-        //         minHeight:
-        //             style.minHeight,
-
-        //         heightCss:
-        //             style.height,
-
-        //         overflow:
-        //             style.overflow
-        //     }
-        // );
-
-        element =
-            element.parentElement;
-    }
-
-}, []);
-
     return (
 
         <div className="chat-page">
-
 
             <ChatHeader
 
@@ -181,7 +86,6 @@ console.log({
             />
 
 
-
             <WsError
 
                 message={props.error}
@@ -189,51 +93,68 @@ console.log({
             />
 
 
-
             <MessageList
 
+                loading={
+                    props.loading
+                }
 
-                loading={props.loading}
+                loadingMore={
+                    props.loadingMore
+                }
 
+                hasMore={
+                    props.hasMore
+                }
 
-                loadingMore={props.loadingMore}
+                messages={
+                    props.messages
+                }
 
+                currentUserId={
+                    props.currentUserId
+                }
 
-                hasMore={props.hasMore}
+                lastReadMessageId={
+                    props.lastReadMessageId
+                }
 
+                onLoadMore={
+                    props.onLoadMore
+                }
 
-                messages={props.messages}
+                onReadUpTo={
+                    props.onReadUpTo
+                }
 
-
-                onLoadMore={props.onLoadMore}
-
-
-                onDelete={props.onDelete}
-
+                onDelete={
+                    props.onDelete
+                }
 
             />
-
 
 
             <MessageInput
 
+                value={
+                    props.text
+                }
 
-                value={props.text}
+                onChange={
+                    props.onTextChange
+                }
 
+                onSend={
+                    props.onSend
+                }
 
-                onChange={props.onTextChange}
-
-
-                onSend={props.onSend}
-
-                onSendFile={props.onSendFile}
-
+                onSendFile={
+                    props.onSendFile
+                }
 
             />
-
 
         </div>
 
     );
-
 }

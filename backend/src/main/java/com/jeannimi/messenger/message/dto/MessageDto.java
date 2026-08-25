@@ -2,7 +2,6 @@ package com.jeannimi.messenger.message.dto;
 
 import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.user.dto.UserDto;
 import java.time.Instant;
 
@@ -12,7 +11,6 @@ public record MessageDto(
     UserDto sender,
     String content,
     Instant createdAt,
-    MessageStatus status,
     FileAttachmentDto attachment) {
 
   public static MessageDto toDto(Message message) {
@@ -30,7 +28,6 @@ public record MessageDto(
         UserDto.toDto(message.getSender()),
         message.getContent(),
         message.getCreatedAt(),
-        message.getStatus(),
         attachmentDto);
   }
 }

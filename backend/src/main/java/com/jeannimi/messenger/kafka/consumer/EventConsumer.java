@@ -11,7 +11,6 @@ import com.jeannimi.messenger.kafka.event.MessageSentEvent;
 import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
 import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.entity.ProcessedMessage;
 import com.jeannimi.messenger.message.repository.ProcessedMessageRepository;
 import jakarta.annotation.PostConstruct;
@@ -73,7 +72,6 @@ public class EventConsumer {
                   event.sender(),
                   event.content(),
                   event.createdAt(),
-                  MessageStatus.SENT,
                   event.attachment());
 
           messagingTemplate.convertAndSend(

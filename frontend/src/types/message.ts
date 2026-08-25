@@ -2,11 +2,6 @@ import type { UserDto } from "./user";
 import type { CursorPageResponse } from "./pagination";
 
 
-export type MessageStatus =
-    | "SENT"
-    | "READ";
-
-
 export interface FileAttachmentDto {
     id: string;
     originalFileName: string;
@@ -21,7 +16,6 @@ export interface MessageDto {
     sender: UserDto;
     content: string | null;
     createdAt: string;
-    status: MessageStatus;
     attachment: FileAttachmentDto | null;
 }
 

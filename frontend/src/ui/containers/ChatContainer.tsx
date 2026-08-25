@@ -2,25 +2,24 @@ import {
     useState
 } from "react";
 
-
 import {
     useNavigate
 } from "react-router-dom";
 
+import {
+    useAuth
+} from "../../contexts/AuthContext";
 
 import {
     useChat
 } from "../../hooks/useChat";
 
-
 import {
     useChatSocket
 } from "../../hooks/useChatSocket";
 
-
 import ChatContent
     from "../components/chat/view/ChatContent";
-
 
 
 type Props = {
@@ -30,22 +29,19 @@ type Props = {
 };
 
 
-
 export default function ChatContainer({
-
     chatId
-
 }: Props) {
-
 
     const navigate =
         useNavigate();
 
+    const { user } =
+        useAuth();
 
 
     const [text, setText] =
         useState("");
-
 
 
     const {
@@ -59,6 +55,8 @@ export default function ChatContainer({
         loadingMore,
 
         hasMore,
+
+        otherUserLastReadMessageId,
 
         addMessage,
 
@@ -75,33 +73,32 @@ export default function ChatContainer({
     } = useChat(chatId);
 
 
-
-
     const {
 
         error,
 
         sendMessage,
 
-        deleteMessage
+        deleteMessage,
+
+        sendReadUpTo
 
     } = useChatSocket({
 
         chatId,
 
-        messages,
+        onMessage:
+            addMessage,
 
-        onMessage: addMessage,
+        onDelete:
+            removeMessage,
 
-        onDelete: removeMessage,
-
-        onRead: updateMessageStatus,
+        onRead:
+            updateMessageStatus,
 
         reloadMessages
 
     });
-
-
 
 
     async function handleSendFile(
@@ -110,7 +107,9 @@ export default function ChatContainer({
 
         try {
 
-            await sendFile(file);
+            await sendFile(
+                file
+            );
 
         } catch (error) {
 
@@ -122,7 +121,6 @@ export default function ChatContainer({
         }
 
     }
-
 
 
     function handleSend() {
@@ -146,6 +144,10 @@ export default function ChatContainer({
     }
 
 
+    if (!user) {
+        return null;
+    }
+
 
     return (
 
@@ -161,43 +163,47 @@ export default function ChatContainer({
 
             hasMore={hasMore}
 
+            currentUserId={
+                user.id
+            }
+
+            lastReadMessageId={
+                otherUserLastReadMessageId
+            }
 
             onLoadMore={
                 loadMoreMessages
             }
 
-
             onSendFile={
                 handleSendFile
             }
 
+            onReadUpTo={
+                sendReadUpTo
+            }
 
             text={text}
 
             error={error}
 
-
             onTextChange={
                 setText
             }
-
 
             onSend={
                 handleSend
             }
 
-
             onDelete={
                 deleteMessage
             }
-
 
             onBack={() =>
                 navigate(
                     "/chats"
                 )
             }
-
 
             onEdit={() =>
                 navigate(

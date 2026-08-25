@@ -1,9 +1,10 @@
 package com.jeannimi.messenger.message.service;
 
+import com.jeannimi.messenger.chat.dto.ChatMemberReadDto;
 import com.jeannimi.messenger.chat.entity.Chat;
+import com.jeannimi.messenger.chat.entity.ChatMember;
 import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
 import com.jeannimi.messenger.chat.repository.ChatRepository;
-import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.FileStorageException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.MessageError;
@@ -25,7 +26,6 @@ import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.ReadResult;
 import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.message.entity.MessageStatus;
 import com.jeannimi.messenger.message.repository.FileAttachmentRepository;
 import com.jeannimi.messenger.message.repository.MessageRepository;
 import com.jeannimi.messenger.message.storage.FileStorageService;
@@ -359,33 +359,68 @@ public class MessageServiceImpl implements MessageService {
   @Transactional
   public ReadResult markAsRead(Long chatId, Long messageId, Long userId) {
 
-    checkMembership(chatId, userId);
+    ChatMember chatMember =
+        chatMemberRepository
+            .findByChatIdAndUserId(chatId, userId)
+            .orElseThrow(() -> new NotFoundException("Chat member not found"));
 
     Message message =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
+
+    /*
+     * Пользователь не может пометить
+     * собственное сообщение прочитанным.
+     */
     if (message.getSender().getId().equals(userId)) {
-      throw new BadRequestException("Cannot mark your own message as read");
+
+      return new ReadResult(
+          new ChatMemberReadDto(
+              userId,
+              chatMember.getLastReadMessageId()),
+          false);
     }
 
-    boolean changed = false;
+    int updated =
+        chatMemberRepository.updateLastReadMessageId(
+            chatId,
+            userId,
+            messageId);
 
-    if (message.getStatus() != MessageStatus.READ) {
+    Long lastReadMessageId =
+        updated > 0
+            ? messageId
+            : chatMember.getLastReadMessageId();
 
-      message.markRead();
-
-      MessageReadEvent messageReadEvent =
-          new MessageReadEvent(message.getId(), chatId, userId, Instant.now());
-
-      eventPublisher.publish(
-          KafkaTopics.CHAT_READ, EventType.MESSAGE_READ, String.valueOf(chatId), messageReadEvent);
-
-      changed = true;
+    if (updated == 0) {
+      return new ReadResult(
+          new ChatMemberReadDto(
+              userId,
+              lastReadMessageId),
+          false);
     }
 
-    return new ReadResult(toDto(message), changed);
+    MessageReadEvent event =
+        new MessageReadEvent(
+            message.getId(),
+            chatId,
+            userId,
+            Instant.now(),
+            lastReadMessageId);
+
+    eventPublisher.publish(
+        KafkaTopics.CHAT_READ,
+        EventType.MESSAGE_READ,
+        String.valueOf(chatId),
+        event);
+
+    return new ReadResult(
+        new ChatMemberReadDto(
+            userId,
+            lastReadMessageId),
+        true);
   }
 
   // =========================

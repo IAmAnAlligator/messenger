@@ -1,4 +1,5 @@
 import type { MessageDto } from "./message";
+import type { MessageReadEvent } from "./chat";
 
 
 /**
@@ -12,7 +13,6 @@ export interface WebSocketErrorResponse {
     message: string;
 
 }
-
 
 
 /**
@@ -37,7 +37,6 @@ export interface ChatCreatedSocketEvent {
 }
 
 
-
 /**
  * CHAT DELETED
  */
@@ -52,7 +51,6 @@ export interface ChatDeletedSocketEvent {
     };
 
 }
-
 
 
 /**
@@ -73,7 +71,6 @@ export interface ChatRenamedSocketEvent {
 }
 
 
-
 /**
  * MEMBER ADDED
  */
@@ -90,7 +87,6 @@ export interface ChatMemberAddedSocketEvent {
     };
 
 }
-
 
 
 /**
@@ -111,7 +107,6 @@ export interface ChatMemberRemovedSocketEvent {
 }
 
 
-
 /**
  * MEMBER LEFT
  */
@@ -130,9 +125,8 @@ export interface ChatMemberLeftSocketEvent {
 }
 
 
-
 /**
- * MESSAGE SENT
+ * MESSAGE CREATED
  *
  * Backend:
  * WebSocketEvent.of(
@@ -149,24 +143,26 @@ export interface MessageSentSocketEvent {
 }
 
 
-
 /**
  * MESSAGE READ
+ *
+ * Backend:
+ *
+ * public record MessageReadEvent(
+ *     Long messageId,
+ *     Long chatId,
+ *     Long readerId,
+ *     Instant readAt,
+ *     Long lastReadMessageId
+ * ) {}
  */
 export interface MessageReadSocketEvent {
 
     type: "MESSAGE_READ";
 
-    payload: {
-
-        chatId: number;
-
-        messageId: number;
-
-    };
+    payload: MessageReadEvent;
 
 }
-
 
 
 /**
@@ -187,17 +183,8 @@ export interface MessageDeletedSocketEvent {
 }
 
 
-
 /**
  * Все WebSocket события
- *
- * Используется:
- *
- * const event =
- * JSON.parse(frame.body)
- * as ChatSocketEvent;
- *
- * switch(event.type)
  */
 export type ChatSocketEvent =
     | ChatCreatedSocketEvent

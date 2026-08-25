@@ -3,18 +3,14 @@ import {
     useRef
 } from "react";
 
-
 import MessageItem
     from "./MessageItem";
-
 
 import type {
     MessageDto
 } from "../../../../types/message";
 
-
 import "../../../styles/chatPage.css";
-
 
 
 type Props = {
@@ -27,12 +23,22 @@ type Props = {
 
     messages: MessageDto[];
 
-    onDelete(id: number): void;
+    currentUserId: number;
 
-    onLoadMore(): void;
+    lastReadMessageId: number | null;
+
+    onDelete(
+        id: number
+    ): void;
+
+    onLoadMore():
+        void | Promise<void>;
+
+    onReadUpTo(
+        messageId: number
+    ): void;
 
 };
-
 
 
 export default function MessageList({
@@ -45,99 +51,230 @@ export default function MessageList({
 
     messages,
 
+    currentUserId,
+
+    lastReadMessageId,
+
     onDelete,
 
-    onLoadMore
+    onLoadMore,
+
+    onReadUpTo
 
 }: Props) {
-
 
     const containerRef =
         useRef<HTMLDivElement>(null);
 
-
-
     const bottomRef =
         useRef<HTMLDivElement>(null);
-
-
 
     const initialized =
         useRef(false);
 
-
-
     const previousLastMessageId =
         useRef<number | null>(null);
-
-
 
     const previousScrollHeight =
         useRef(0);
 
-
-
     const previousMessagesLength =
         useRef(0);
-
-
 
     const loadingMoreRef =
         useRef(false);
 
+    const lastSentReadMessageId =
+        useRef<number | null>(null);
 
 
+    function markVisibleMessagesAsRead() {
 
-
-    /*
-        Первый вход в чат:
-        показываем последнее сообщение
-    */
-    useEffect(() => {
+        const container =
+            containerRef.current;
 
 
         if (
-            !initialized.current &&
-            messages.length > 0
+            !container ||
+            messages.length === 0
         ) {
-
-
-            bottomRef.current?.scrollIntoView();
-
-
-
-            initialized.current = true;
-
-
-
-            previousLastMessageId.current =
-                messages[
-                    messages.length - 1
-                ].id;
-
+            return;
         }
 
+
+        const containerRect =
+            container.getBoundingClientRect();
+
+
+        const elements =
+            container.querySelectorAll<HTMLElement>(
+                "[data-message-id]"
+            );
+
+
+        let lastVisibleIncomingId:
+            number | null = null;
+
+
+        elements.forEach(element => {
+
+            const rect =
+                element.getBoundingClientRect();
+
+
+            const visible =
+                rect.bottom >
+                    containerRect.top &&
+                rect.top <
+                    containerRect.bottom;
+
+
+            if (!visible) {
+                return;
+            }
+
+
+            const id =
+                Number(
+                    element.dataset.messageId
+                );
+
+
+            if (Number.isNaN(id)) {
+                return;
+            }
+
+
+            const message =
+                messages.find(
+                    item =>
+                        item.id === id
+                );
+
+
+            if (!message) {
+                return;
+            }
+
+
+            /*
+             * Свои сообщения никогда
+             * не отправляют READ.
+             */
+
+            if (
+                message.sender.id ===
+                currentUserId
+            ) {
+                return;
+            }
+
+
+            if (
+                lastVisibleIncomingId === null ||
+                id > lastVisibleIncomingId
+            ) {
+
+                lastVisibleIncomingId =
+                    id;
+
+            }
+
+        });
+
+
+        if (
+            lastVisibleIncomingId === null
+        ) {
+            return;
+        }
+
+
+        if (
+            lastReadMessageId !== null &&
+            lastVisibleIncomingId <=
+                lastReadMessageId
+        ) {
+            return;
+        }
+
+
+        if (
+            lastSentReadMessageId.current !== null &&
+            lastVisibleIncomingId <=
+                lastSentReadMessageId.current
+        ) {
+            return;
+        }
+
+
+        lastSentReadMessageId.current =
+            lastVisibleIncomingId;
+
+
+        console.log(
+            "[READ] mark incoming as read:",
+            lastVisibleIncomingId
+        );
+
+
+        onReadUpTo(
+            lastVisibleIncomingId
+        );
+
+    }
+
+
+    /*
+     * Первоначальный вход.
+     */
+
+    useEffect(() => {
+
+        if (
+            initialized.current ||
+            messages.length === 0
+        ) {
+            return;
+        }
+
+
+        bottomRef.current?.scrollIntoView();
+
+
+        initialized.current = true;
+
+
+        previousLastMessageId.current =
+            messages[
+                messages.length - 1
+            ].id;
+
+
+        requestAnimationFrame(() => {
+
+            markVisibleMessagesAsRead();
+
+        });
 
     }, [messages]);
 
 
-
-
-
-
-
     /*
-        Новое сообщение:
-        прокручиваем вниз.
-        Старые сообщения не трогаем.
-    */
+     * Новое сообщение.
+     *
+     * Скроллим вниз, но READ отправляем
+     * только если новое сообщение чужое.
+     */
+
     useEffect(() => {
 
-
-        if (!initialized.current) {
+        if (
+            !initialized.current ||
+            messages.length === 0
+        ) {
             return;
         }
-
 
 
         const lastMessage =
@@ -146,54 +283,61 @@ export default function MessageList({
             ];
 
 
+        const isNewMessage =
+            previousLastMessageId.current !== null &&
+            lastMessage.id !==
+                previousLastMessageId.current;
+
 
         if (
-
-            lastMessage &&
-
-            previousLastMessageId.current !== null &&
-
-            lastMessage.id !==
-                previousLastMessageId.current &&
-
+            isNewMessage &&
             !loadingMoreRef.current
-
         ) {
 
-
             bottomRef.current?.scrollIntoView({
-
                 behavior: "smooth"
-
             });
+
+
+            /*
+             * ВАЖНО:
+             * собственное сообщение не READ.
+             */
+
+            if (
+                lastMessage.sender.id !==
+                currentUserId
+            ) {
+
+                requestAnimationFrame(() => {
+
+                    markVisibleMessagesAsRead();
+
+                });
+
+            }
 
         }
 
 
-
         previousLastMessageId.current =
-            lastMessage?.id ?? null;
+            lastMessage.id;
 
 
-
-    }, [messages]);
-
-
-
-
-
+    }, [
+        messages,
+        currentUserId
+    ]);
 
 
     /*
-        Восстановление позиции после загрузки
-        старых сообщений
-    */
-    useEffect(() => {
+     * Восстановление позиции после pagination.
+     */
 
+    useEffect(() => {
 
         const container =
             containerRef.current;
-
 
 
         if (
@@ -204,64 +348,47 @@ export default function MessageList({
         }
 
 
-
         const addedMessages =
             messages.length >
             previousMessagesLength.current;
 
 
-
         if (addedMessages) {
-
 
             const newScrollHeight =
                 container.scrollHeight;
 
 
-
             requestAnimationFrame(() => {
-
 
                 container.scrollTop =
                     newScrollHeight -
                     previousScrollHeight.current;
 
 
-
                 loadingMoreRef.current =
                     false;
 
-
             });
 
-
         } else {
-
 
             loadingMoreRef.current =
                 false;
 
         }
 
-
-
     }, [messages]);
 
 
-
-
-
-
-
     /*
-        Загрузка старых сообщений
-    */
-    useEffect(() => {
+     * Scroll.
+     */
 
+    useEffect(() => {
 
         const container =
             containerRef.current;
-
 
 
         if (!container) {
@@ -269,89 +396,60 @@ export default function MessageList({
         }
 
 
-
         const handleScroll = () => {
 
-
             if (
-
                 container.scrollTop <= 20 &&
-
                 hasMore &&
-
                 !loadingMore &&
-
                 messages.length > 0
-
             ) {
-
 
                 previousScrollHeight.current =
                     container.scrollHeight;
 
-
-
                 previousMessagesLength.current =
                     messages.length;
 
-
-
                 loadingMoreRef.current =
                     true;
-
-
 
                 onLoadMore();
 
             }
 
 
+            markVisibleMessagesAsRead();
+
         };
 
 
-
         container.addEventListener(
-
             "scroll",
-
             handleScroll
-
         );
 
 
-
-        return () =>
+        return () => {
 
             container.removeEventListener(
-
                 "scroll",
-
                 handleScroll
-
             );
 
-
+        };
 
     }, [
-
         hasMore,
-
         loadingMore,
-
         onLoadMore,
-
-        messages.length
-
+        messages,
+        currentUserId,
+        lastReadMessageId
     ]);
 
 
-
-
-
-
-
     if (loading) {
-
 
         return (
 
@@ -366,24 +464,16 @@ export default function MessageList({
     }
 
 
-
-
-
-
     return (
 
         <div
-
             className="messages"
-
             ref={containerRef}
-
         >
 
-
-
             {
-                loadingMore && hasMore && (
+                loadingMore &&
+                hasMore && (
 
                     <div className="messages-loader">
 
@@ -395,33 +485,87 @@ export default function MessageList({
             }
 
 
-
-
             {
-                messages.map(message => (
+                messages.map(
+                    message => {
 
-                    <MessageItem
+                        const isOwnMessage =
+                            message.sender.id ===
+                            currentUserId;
 
-                        key={message.id}
 
-                        message={message}
+                        /*
+                         * Две галочки только если
+                         * ДРУГОЙ пользователь прочитал
+                         * это сообщение.
+                         */
 
-                        onDelete={onDelete}
+                        const isRead =
+                            isOwnMessage &&
+                            otherRead(
+                                message.id,
+                                lastReadMessageId
+                            );
 
-                    />
 
-                ))
+                        return (
+
+                            <div
+                                key={message.id}
+                                data-message-id={
+                                    message.id
+                                }
+                            >
+
+                                <MessageItem
+
+                                    message={
+                                        message
+                                    }
+
+                                    onDelete={
+                                        onDelete
+                                    }
+
+                                    isRead={
+                                        isRead
+                                    }
+
+                                />
+
+                            </div>
+
+                        );
+
+                    }
+                )
             }
-
-
 
 
             <div ref={bottomRef} />
 
-
-
         </div>
 
+    );
+
+}
+
+
+function otherRead(
+    messageId: number,
+    lastReadMessageId: number | null
+): boolean {
+
+    if (
+        lastReadMessageId === null
+    ) {
+        return false;
+    }
+
+
+    return (
+        messageId <=
+        lastReadMessageId
     );
 
 }

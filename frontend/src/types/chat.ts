@@ -20,6 +20,8 @@ export interface ChatMemberDto {
 
     joinedAt: string;
 
+    lastReadMessageId: number | null;
+
 }
 
 
@@ -37,5 +39,24 @@ export interface ChatDto {
     createdAt: string;
 
     lastMessageAt: string | null;
+
+}
+
+export interface ChatMemberReadDto {
+    userId: number;
+    lastReadMessageId: number | null;
+}
+
+export interface MessageReadEvent {
+
+    messageId: number;
+
+    chatId: number;
+
+    readerId: number;
+
+    readAt: string;
+
+    lastReadMessageId: number;
 
 }

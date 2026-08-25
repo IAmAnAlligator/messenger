@@ -27,6 +27,8 @@ type Props = {
         id: number
     ): void;
 
+    isRead: boolean;
+
 };
 
 
@@ -34,7 +36,9 @@ export default function MessageItem({
 
     message,
 
-    onDelete
+    onDelete,
+
+    isRead
 
 }: Props) {
 
@@ -61,10 +65,10 @@ export default function MessageItem({
 
 
     /*
-        Загружаем файл через Axios,
-        чтобы Authorization: Bearer ...
-        был добавлен interceptor'ом.
-    */
+     * Загружаем файл через Axios,
+     * чтобы Authorization: Bearer ...
+     * был добавлен interceptor'ом.
+     */
     useEffect(() => {
 
         if (!message.attachment) {
@@ -79,7 +83,6 @@ export default function MessageItem({
         let objectUrl: string | null = null;
 
         let cancelled = false;
-
 
 
         async function loadFile() {
@@ -173,7 +176,6 @@ export default function MessageItem({
         new Date(
             message.createdAt
         );
-
 
 
     const formattedDate =
@@ -291,90 +293,90 @@ export default function MessageItem({
 
 
 
-{
-    !fileLoading &&
-    !fileError &&
-    fileUrl && (
+                            {
+                                !fileLoading &&
+                                !fileError &&
+                                fileUrl && (
 
-        isImage ? (
+                                    isImage ? (
 
-            <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="message-image-link"
-            >
+                                        <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="message-image-link"
+                                        >
 
-                <img
-                    src={fileUrl}
-                    alt={
-                        message
-                            .attachment
-                            .originalFileName
-                    }
-                    className="message-image-preview"
-                />
+                                            <img
+                                                src={fileUrl}
+                                                alt={
+                                                    message
+                                                        .attachment
+                                                        .originalFileName
+                                                }
+                                                className="message-image-preview"
+                                            />
 
-            </a>
+                                        </a>
 
-        ) : (
+                                    ) : (
 
-            <a
-                href={fileUrl}
-                download={
-                    message
-                        .attachment
-                        .originalFileName
-                }
-                className="message-file"
-            >
+                                        <a
+                                            href={fileUrl}
+                                            download={
+                                                message
+                                                    .attachment
+                                                    .originalFileName
+                                            }
+                                            className="message-file"
+                                        >
 
-                <span className="message-file-icon">
+                                            <span className="message-file-icon">
 
-                    {
-                        getFileIcon(
-                            message
-                                .attachment
-                                .contentType
-                        )
-                    }
+                                                {
+                                                    getFileIcon(
+                                                        message
+                                                            .attachment
+                                                            .contentType
+                                                    )
+                                                }
 
-                </span>
-
-
-                <span className="message-file-info">
-
-                    <span className="message-file-name">
-
-                        {
-                            message
-                                .attachment
-                                .originalFileName
-                        }
-
-                    </span>
+                                            </span>
 
 
-                    <span className="message-file-size">
+                                            <span className="message-file-info">
 
-                        {
-                            formatFileSize(
-                                message
-                                    .attachment
-                                    .size
-                            )
-                        }
+                                                <span className="message-file-name">
 
-                    </span>
+                                                    {
+                                                        message
+                                                            .attachment
+                                                            .originalFileName
+                                                    }
 
-                </span>
+                                                </span>
 
-            </a>
 
-        )
+                                                <span className="message-file-size">
 
-    )
-}
+                                                    {
+                                                        formatFileSize(
+                                                            message
+                                                                .attachment
+                                                                .size
+                                                        )
+                                                    }
+
+                                                </span>
+
+                                            </span>
+
+                                        </a>
+
+                                    )
+
+                                )
+                            }
 
 
                         </div>
@@ -384,37 +386,34 @@ export default function MessageItem({
 
 
 
-                <div className="message-footer">
+<div className="message-footer">
 
+    <span className="message-time">
+        {formattedDate}
+    </span>
 
-                    <span className="message-time">
+    {
+        mine && (
 
-                        {formattedDate}
+            <span
+                className={
+                    isRead
+                        ? "message-read read"
+                        : "message-read"
+                }
+                title={
+                    isRead
+                        ? "Прочитано"
+                        : "Отправлено"
+                }
+            >
+                {isRead ? "✓✓" : "✓"}
+            </span>
 
-                    </span>
+        )
+    }
 
-
-
-                    {
-                        mine && (
-
-                            <span
-                                className="message-status"
-                            >
-
-                                {
-                                    message.status === "READ"
-                                        ? "✓✓"
-                                        : "✓"
-                                }
-
-                            </span>
-
-                        )
-                    }
-
-
-                </div>
+</div>
 
 
             </div>

@@ -27,7 +27,15 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
   List<Message> findAllByChatId(Long chatId);
 
-  Optional<Message> findByIdAndChatId(Long messageId, Long chatId);
+  @Query(
+      """
+    select m
+    from Message m
+    where m.id = :messageId
+      and m.chat.id = :chatId
+""")
+  Optional<Message> findByIdAndChatId(
+      @Param("messageId") Long messageId, @Param("chatId") Long chatId);
 
   @Query(
       """

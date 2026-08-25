@@ -1,439 +1,481 @@
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
-
 
 import {
     getChat
 } from "../services/chatService";
 
-
 import {
-    getMessages
+    getMessages,
+    sendFile as sendFileRequest
 } from "../services/messageService";
 
+import {
+    useAuth
+} from "../contexts/AuthContext";
 
 import type {
-    ChatDto
+    ChatDto,
+    MessageReadEvent
 } from "../types/chat";
-
 
 import type {
     MessageDto
 } from "../types/message";
 
-
 import type {
     CursorDto
 } from "../types/pagination";
 
-import {
-    sendFile as sendFileRequest
-} from "../services/messageService";
 
 export function useChat(
     chatId?: number
 ) {
 
-
-    const [chat, setChat] =
-        useState<ChatDto | null>(null);
-
+    const { user } =
+        useAuth();
 
 
-    const [messages, setMessages] =
-        useState<MessageDto[]>([]);
+    const [
+        chat,
+        setChat
+    ] =
+        useState<ChatDto | null>(
+            null
+        );
 
 
+    const [
+        messages,
+        setMessages
+    ] =
+        useState<MessageDto[]>(
+            []
+        );
 
-    const [loading, setLoading] =
+
+    const [
+        loading,
+        setLoading
+    ] =
         useState(true);
 
 
-
-    const [loadingMore, setLoadingMore] =
+    const [
+        loadingMore,
+        setLoadingMore
+    ] =
         useState(false);
 
 
+    const [
+        cursor,
+        setCursor
+    ] =
+        useState<CursorDto | null>(
+            null
+        );
 
-    const [cursor, setCursor] =
-        useState<CursorDto | null>(null);
 
-
-
-    const [hasMore, setHasMore] =
+    const [
+        hasMore,
+        setHasMore
+    ] =
         useState(true);
 
 
+    /*
+     * Последнее сообщение,
+     * которое прочитал другой участник.
+     *
+     * Именно это значение используется
+     * для двойных галочек у наших сообщений.
+     */
+
+    const [
+        otherUserLastReadMessageId,
+        setOtherUserLastReadMessageId
+    ] =
+        useState<number | null>(
+            null
+        );
+
+
+    const load =
+        useCallback(
+            async () => {
+
+                if (!chatId) {
+                    return;
+                }
+
+
+                try {
+
+                    setLoading(true);
+
+
+                    const [
+                        chatData,
+                        messagesPage
+                    ] =
+                        await Promise.all([
+
+                            getChat(
+                                chatId
+                            ),
+
+                            getMessages(
+                                chatId
+                            )
+
+                        ]);
+
+
+                    setChat(
+                        chatData
+                    );
+
+
+                    setMessages(
+                        [
+                            ...messagesPage.content
+                        ].reverse()
+                    );
+
+
+                    setCursor(
+                        messagesPage.nextCursor
+                    );
+
+
+                    setHasMore(
+                        messagesPage.hasNext
+                    );
+
+
+                    /*
+                     * Получаем READ другого пользователя
+                     * из ChatMemberDto.
+                     */
+
+                    const otherMember =
+                        chatData.members.find(
+                            member =>
+                                member.user.id !==
+                                user?.id
+                        );
+
+
+                    setOtherUserLastReadMessageId(
+                        otherMember
+                            ?.lastReadMessageId
+                            ?? null
+                    );
+
+
+                } finally {
+
+                    setLoading(false);
+
+                }
+
+            },
+            [
+                chatId,
+                user?.id
+            ]
+        );
 
 
     useEffect(() => {
 
-        if (!chatId) {
-            return;
-        }
-
-
         load();
 
-
-    }, [chatId]);
-
-
-    async function sendFile(
-    file: File
-) {
-
-        console.log(
-        "[sendFile]",
-        file.name,
-        file.size,
-        file.type
-    );
-
-    if (!chatId) {
-        return;
-    }
+    }, [load]);
 
 
-    try {
+    const sendFile =
+        useCallback(
+            async (
+                file: File
+            ) => {
 
-        await sendFileRequest(
-            chatId,
-            file
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Failed to send file",
-            error
-        );
-
-        throw error;
-    }
-
-}
+                if (!chatId) {
+                    return;
+                }
 
 
-    async function load() {
-
-        if (!chatId) {
-            return;
-        }
-
-
-        try {
-
-
-            setLoading(true);
-
-
-
-            const [
-                chatData,
-                messagesPage
-
-            ] = await Promise.all([
-
-                getChat(chatId),
-
-                getMessages(chatId)
-
-            ]);
-
-
-
-            setChat(
-                chatData
-            );
-
-
-
-            setMessages(
-                [...messagesPage.content]
-                    .reverse()
-            );
-
-
-
-            setCursor(
-                messagesPage.nextCursor
-            );
-
-
-
-            setHasMore(
-                messagesPage.hasNext
-            );
-
-
-        } finally {
-
-
-            setLoading(false);
-
-        }
-
-    }
-
-
-
-
-
-    async function loadMoreMessages() {
-
-
-        if (
-            !chatId ||
-            !hasMore ||
-            loadingMore ||
-            !cursor
-        ) {
-            return;
-        }
-
-
-
-        try {
-
-
-            setLoadingMore(true);
-
-
-
-            const page =
-                await getMessages(
+                await sendFileRequest(
                     chatId,
-                    cursor
+                    file
                 );
 
-
-
-setMessages(prev => {
-
-
-    const oldIds =
-        new Set(
-            prev.map(
-                m => m.id
-            )
+            },
+            [
+                chatId
+            ]
         );
 
 
-    const newMessages =
-        [...page.content]
-            .reverse()
-            .filter(
-                message =>
-                    !oldIds.has(
-                        message.id
-                    )
-            );
-
-
-    return [
-
-        ...newMessages,
-
-        ...prev
-
-    ];
-
-});
-
-
-
-            setCursor(
-                page.nextCursor
-            );
-
-
-
-            setHasMore(
-                page.hasNext
-            );
-
-
-
-        } catch(error) {
-
-
-            console.error(
-                "Failed to load more messages",
-                error
-            );
-
-
-        } finally {
-
-
-            setLoadingMore(false);
-
-        }
-
-    }
-
-
-
-
-
-
-    async function reloadMessages() {
-
-
-        if (!chatId) {
-            return;
-        }
-
-
-
-        try {
-
-
-            const page =
-                await getMessages(
-                    chatId
-                );
-
-
-
-            setMessages(
-                [...page.content]
-                    .reverse()
-            );
-
-
-
-            setCursor(
-                page.nextCursor
-            );
-
-
-
-            setHasMore(
-                page.hasNext
-            );
-
-
-
-        } catch(error) {
-
-
-            console.error(
-                "Failed to reload messages",
-                error
-            );
-
-        }
-
-    }
-
-
-
-
-
-
-
-    function addMessage(
-        message: MessageDto
-    ) {
-
-
-        setMessages(prev => {
-
-
-            const exists =
-                prev.some(
-                    m =>
-                        m.id === message.id
-                );
-
-
-
-            if (exists) {
-                return prev;
-            }
-
-
-
-            return [
-
-                ...prev,
-
-                message
-
-            ];
-
-        });
-
-
-    }
-
-
-
-
-
-
-    function removeMessage(
-        id:number
-    ) {
-
-
-        setMessages(prev =>
-
-            prev.filter(
-                m =>
-                    m.id !== id
-            )
-
-        );
-
-    }
-
-
-
-
-
-
-    function updateMessageStatus(
-        messageId:number
-    ) {
-
-
-        setMessages(prev =>
-
-            prev.map(message => {
-
+    const loadMoreMessages =
+        useCallback(
+            async () => {
 
                 if (
-                    message.id === messageId
+                    !chatId ||
+                    !hasMore ||
+                    loadingMore ||
+                    !cursor
+                ) {
+                    return;
+                }
+
+
+                try {
+
+                    setLoadingMore(true);
+
+
+                    const page =
+                        await getMessages(
+                            chatId,
+                            cursor
+                        );
+
+
+                    setMessages(prev => {
+
+                        const oldIds =
+                            new Set(
+                                prev.map(
+                                    message =>
+                                        message.id
+                                )
+                            );
+
+
+                        const newMessages =
+                            [
+                                ...page.content
+                            ]
+                                .reverse()
+                                .filter(
+                                    message =>
+                                        !oldIds.has(
+                                            message.id
+                                        )
+                                );
+
+
+                        return [
+                            ...newMessages,
+                            ...prev
+                        ];
+
+                    });
+
+
+                    setCursor(
+                        page.nextCursor
+                    );
+
+
+                    setHasMore(
+                        page.hasNext
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to load more messages",
+                        error
+                    );
+
+                } finally {
+
+                    setLoadingMore(false);
+
+                }
+
+            },
+            [
+                chatId,
+                cursor,
+                hasMore,
+                loadingMore
+            ]
+        );
+
+
+    const reloadMessages =
+        useCallback(
+            async () => {
+
+                if (!chatId) {
+                    return;
+                }
+
+
+                try {
+
+                    const page =
+                        await getMessages(
+                            chatId
+                        );
+
+
+                    setMessages(
+                        [
+                            ...page.content
+                        ].reverse()
+                    );
+
+
+                    setCursor(
+                        page.nextCursor
+                    );
+
+
+                    setHasMore(
+                        page.hasNext
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to reload messages",
+                        error
+                    );
+
+                }
+
+            },
+            [
+                chatId
+            ]
+        );
+
+
+    const addMessage =
+        useCallback(
+            (
+                message: MessageDto
+            ) => {
+
+                setMessages(prev => {
+
+                    if (
+                        prev.some(
+                            current =>
+                                current.id ===
+                                message.id
+                        )
+                    ) {
+
+                        return prev;
+
+                    }
+
+
+                    return [
+                        ...prev,
+                        message
+                    ];
+
+                });
+
+            },
+            []
+        );
+
+
+    const removeMessage =
+        useCallback(
+            (
+                messageId: number
+            ) => {
+
+                setMessages(prev =>
+                    prev.filter(
+                        message =>
+                            message.id !==
+                            messageId
+                    )
+                );
+
+            },
+            []
+        );
+
+
+    const updateMessageStatus =
+        useCallback(
+            (
+                event: MessageReadEvent
+            ) => {
+
+                if (
+                    event.chatId !==
+                    chatId
+                ) {
+                    return;
+                }
+
+
+                /*
+                 * Если читатель — текущий пользователь,
+                 * это НЕ должно менять галочки наших
+                 * исходящих сообщений.
+                 */
+
+                if (
+                    event.readerId ===
+                    user?.id
                 ) {
 
-
-                    return {
-
-                        ...message,
-
-                        status: "READ"
-
-                    };
+                    return;
 
                 }
 
 
-                return message;
+                console.log(
+                    "[READ] other user read:",
+                    event
+                );
 
 
-            })
+                setOtherUserLastReadMessageId(
+                    prev => {
 
+                        if (
+                            prev === null ||
+                            event.lastReadMessageId >
+                                prev
+                        ) {
+
+                            return event
+                                .lastReadMessageId;
+
+                        }
+
+
+                        return prev;
+
+                    }
+                );
+
+            },
+            [
+                chatId,
+                user?.id
+            ]
         );
-
-    }
-
-
-
 
 
     return {
@@ -447,6 +489,8 @@ setMessages(prev => {
         loadingMore,
 
         hasMore,
+
+        otherUserLastReadMessageId,
 
         addMessage,
 

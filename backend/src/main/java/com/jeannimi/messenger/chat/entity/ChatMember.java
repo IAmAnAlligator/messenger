@@ -25,11 +25,12 @@ import lombok.Setter;
 @Entity
 @Table(
     name = "chat_members",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"chat_id", "user_id"}),
-    indexes = {
-      @Index(name = "idx_chat_id", columnList = "chat_id"),
-      @Index(name = "idx_user_id", columnList = "user_id")
-    })
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_chat_members_chat_user",
+          columnNames = {"chat_id", "user_id"})
+    },
+    indexes = {@Index(name = "idx_user_id", columnList = "user_id")})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMember {
@@ -54,6 +55,9 @@ public class ChatMember {
 
   @Column(name = "joined_at", nullable = false)
   private Instant joinedAt;
+
+  @Column(name = "last_read_message_id")
+  private Long lastReadMessageId;
 
   @PrePersist
   private void prePersist() {

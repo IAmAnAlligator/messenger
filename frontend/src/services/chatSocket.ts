@@ -4,125 +4,156 @@ import type {
     StompSubscription
 } from "@stomp/stompjs";
 
+
 type SubscriptionCallback =
     (message: IMessage) => void;
 
+
 let client: Client | null = null;
 
-/*
- * Один destination -> много callback
- */
-const subscriptions =
-    new Map<string, Set<SubscriptionCallback>>();
 
-/*
- * Активные STOMP подписки
- */
+const subscriptions =
+    new Map<
+        string,
+        Set<SubscriptionCallback>
+    >();
+
+
 const activeSubs =
-    new Map<string, StompSubscription>();
+    new Map<
+        string,
+        StompSubscription
+    >();
+
 
 let reconnectAttempts = 0;
 
 const MAX_RECONNECT = 5;
+
 
 export function connectSocket(
     token: string,
     onConnect?: () => void
 ) {
 
-    if (client?.active || client?.connected) {
+    if (client?.active) {
         return client;
     }
 
-    client = new Client({
 
-        brokerURL: "ws://localhost:8080/ws",
+    client =
+        new Client({
 
-        reconnectDelay: 3000,
+            brokerURL:
+                "ws://localhost:8080/ws",
 
-        connectHeaders: {
-            Authorization: `Bearer ${token}`
-        },
+            reconnectDelay:
+                3000,
 
-        debug: msg => {
-            console.log("[STOMP]", msg);
-        },
+            connectHeaders: {
+                Authorization:
+                    `Bearer ${token}`
+            },
 
-        beforeConnect: () => {
-            console.log("[WS] connecting...");
-        },
+            debug: message => {
 
-        onConnect: () => {
+                console.log(
+                    "[STOMP]",
+                    message
+                );
 
-            console.log("[WS] connected");
+            },
 
-            reconnectAttempts = 0;
+            beforeConnect: () => {
 
-            resubscribeAll();
+                console.log(
+                    "[WS] connecting..."
+                );
 
-            onConnect?.();
-        },
+            },
 
-        onDisconnect: () => {
-            console.log("[WS] disconnected");
-        },
+            onConnect: () => {
 
-        onWebSocketClose: () => {
+                console.log(
+                    "[WS] connected"
+                );
 
-            reconnectAttempts++;
+                reconnectAttempts = 0;
 
-            console.log(
-                "[WS] closed attempt:",
-                reconnectAttempts
-            );
+                resubscribeAll();
 
-            if (
-                reconnectAttempts >=
-                MAX_RECONNECT
-            ) {
+                onConnect?.();
 
-                console.warn(
-                    "[WS] max reconnect reached"
+            },
+
+            onDisconnect: () => {
+
+                console.log(
+                    "[WS] disconnected"
+                );
+
+            },
+
+            onWebSocketClose: () => {
+
+                reconnectAttempts++;
+
+                console.log(
+                    "[WS] closed attempt:",
+                    reconnectAttempts
+                );
+
+
+                if (
+                    reconnectAttempts >=
+                    MAX_RECONNECT
+                ) {
+
+                    console.warn(
+                        "[WS] max reconnect reached"
+                    );
+
+                    disconnectSocket();
+
+                }
+
+            },
+
+            onWebSocketError: error => {
+
+                console.error(
+                    "[WS ERROR]",
+                    error
+                );
+
+            },
+
+            onStompError: frame => {
+
+                console.error(
+                    "[STOMP ERROR]",
+                    frame
                 );
 
                 disconnectSocket();
+
+                localStorage.removeItem(
+                    "accessToken"
+                );
+
+                window.location.href =
+                    "/login";
+
             }
-        },
 
-        onWebSocketError: err => {
-            console.error(
-                "[WS ERROR]",
-                err
-            );
-        },
+        });
 
-        onStompError: frame => {
-
-            console.error(
-                "[STOMP ERROR]",
-                frame
-            );
-
-            disconnectSocket();
-
-            localStorage.removeItem(
-                "accessToken"
-            );
-
-            window.location.href =
-                "/login";
-        }
-
-    });
 
     client.activate();
 
     return client;
 }
 
-/*
- * subscribe
- */
 
 export function subscribe(
     destination: string,
@@ -130,11 +161,15 @@ export function subscribe(
 ) {
 
     let callbacks =
-        subscriptions.get(destination);
+        subscriptions.get(
+            destination
+        );
+
 
     if (!callbacks) {
 
-        callbacks = new Set();
+        callbacks =
+            new Set();
 
         subscriptions.set(
             destination,
@@ -143,62 +178,66 @@ export function subscribe(
 
     }
 
-    callbacks.add(callback);
+
+    callbacks.add(
+        callback
+    );
+
 
     if (client?.connected) {
-        createOrReplace(destination);
+
+        createSubscription(
+            destination
+        );
+
     }
 
 }
 
-/*
- * unsubscribe
- */
 
 export function unsubscribe(
     destination: string,
-    callback?: SubscriptionCallback
+    callback: SubscriptionCallback
 ) {
 
-    if (!callback) {
-
-        subscriptions.delete(destination);
-
-        const sub =
-            activeSubs.get(destination);
-
-        if (sub) {
-
-            sub.unsubscribe();
-
-            activeSubs.delete(destination);
-
-        }
-
-        return;
-    }
-
     const callbacks =
-        subscriptions.get(destination);
+        subscriptions.get(
+            destination
+        );
+
 
     if (!callbacks) {
         return;
     }
 
-    callbacks.delete(callback);
 
-    if (callbacks.size === 0) {
+    callbacks.delete(
+        callback
+    );
 
-        subscriptions.delete(destination);
 
-        const sub =
-            activeSubs.get(destination);
+    if (
+        callbacks.size === 0
+    ) {
 
-        if (sub) {
+        subscriptions.delete(
+            destination
+        );
 
-            sub.unsubscribe();
 
-            activeSubs.delete(destination);
+        const subscription =
+            activeSubs.get(
+                destination
+            );
+
+
+        if (subscription) {
+
+            subscription.unsubscribe();
+
+            activeSubs.delete(
+                destination
+            );
 
         }
 
@@ -206,19 +245,29 @@ export function unsubscribe(
 
 }
 
-function createOrReplace(
+
+function createSubscription(
     destination: string
 ) {
 
-    const existing =
-        activeSubs.get(destination);
-
-    if (existing) {
-        existing.unsubscribe();
+    if (!client?.connected) {
+        return;
     }
 
-    const sub =
-        client!.subscribe(
+
+    const existing =
+        activeSubs.get(
+            destination
+        );
+
+
+    if (existing) {
+        return;
+    }
+
+
+    const subscription =
+        client.subscribe(
             destination,
             message => {
 
@@ -227,36 +276,44 @@ function createOrReplace(
                         destination
                     );
 
+
                 if (!callbacks) {
                     return;
                 }
 
-                callbacks.forEach(cb => {
 
-                    try {
+                callbacks.forEach(
+                    callback => {
 
-                        cb(message);
+                        try {
 
-                    } catch (e) {
+                            callback(
+                                message
+                            );
 
-                        console.error(
-                            "[WS CALLBACK ERROR]",
-                            e
-                        );
+                        } catch (error) {
+
+                            console.error(
+                                "[WS CALLBACK ERROR]",
+                                error
+                            );
+
+                        }
 
                     }
-
-                });
+                );
 
             }
         );
 
+
     activeSubs.set(
         destination,
-        sub
+        subscription
     );
 
 }
+
 
 function resubscribeAll() {
 
@@ -264,21 +321,37 @@ function resubscribeAll() {
         return;
     }
 
-    for (const destination of subscriptions.keys()) {
-        createOrReplace(destination);
+
+    activeSubs.forEach(
+        subscription =>
+            subscription.unsubscribe()
+    );
+
+
+    activeSubs.clear();
+
+
+    for (
+        const destination
+        of subscriptions.keys()
+    ) {
+
+        createSubscription(
+            destination
+        );
+
     }
 
 }
 
-/*
- * Полностью закрыть сокет
- */
 
 export function disconnectSocket() {
 
     activeSubs.forEach(
-        sub => sub.unsubscribe()
+        subscription =>
+            subscription.unsubscribe()
     );
+
 
     activeSubs.clear();
 
@@ -286,12 +359,21 @@ export function disconnectSocket() {
 
     reconnectAttempts = 0;
 
-    client?.deactivate();
+
+    if (client) {
+
+        client.deactivate();
+
+    }
+
 
     client = null;
 
 }
 
+
 export function getSocket() {
+
     return client;
+
 }

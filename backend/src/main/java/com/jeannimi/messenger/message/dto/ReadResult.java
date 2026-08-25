@@ -1,3 +1,5 @@
 package com.jeannimi.messenger.message.dto;
 
-public record ReadResult(MessageDto message, boolean changed) {}
+import com.jeannimi.messenger.chat.dto.ChatMemberReadDto;
+
+public record ReadResult(ChatMemberReadDto read, boolean changed) {}

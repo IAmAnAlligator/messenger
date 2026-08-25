@@ -61,10 +61,6 @@ public class Message {
   private Instant createdAt;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false)
-  private MessageStatus status;
-
-  @Enumerated(EnumType.STRING)
   @Column(name = "type", nullable = false)
   private MessageType type;
 
@@ -76,12 +72,6 @@ public class Message {
   private void prePersist() {
     if (createdAt == null) {
       createdAt = Instant.now();
-    }
-  }
-
-  public void markRead() {
-    if (this.status == MessageStatus.SENT) {
-      this.status = MessageStatus.READ;
     }
   }
 
@@ -108,7 +98,7 @@ public class Message {
 
     message.type = MessageType.TEXT;
 
-    message.status = MessageStatus.SENT;
+    //    message.status = MessageStatus.SENT;
 
     return message;
   }
@@ -126,7 +116,7 @@ public class Message {
     message.attachment = Objects.requireNonNull(attachment, "attachment");
 
     message.type = MessageType.FILE;
-    message.status = MessageStatus.SENT;
+    //    message.status = MessageStatus.SENT;
 
     return message;
   }
