@@ -26,23 +26,23 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
 
     try {
 
-      ChatMemberRemovedEvent dto = objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
+      ChatMemberRemovedEvent chatMemberRemovedEvent = objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
 
       WebSocketEvent<ChatMemberRemovedEvent> event =
-          WebSocketEvent.of(EventType.CHAT_MEMBER_REMOVED, dto);
+          WebSocketEvent.of(EventType.CHAT_MEMBER_REMOVED, chatMemberRemovedEvent);
 
       /*
        * Уведомляем всех участников чата
        */
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
+      messagingTemplate.convertAndSend("/topic/chat/" + chatMemberRemovedEvent.chatId(), event);
 
       /*
        * Обновляем список чатов
        * удаленного пользователя
        */
 
-      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", event);
+      messagingTemplate.convertAndSend("/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", event);
 
     } catch (Exception e) {
 

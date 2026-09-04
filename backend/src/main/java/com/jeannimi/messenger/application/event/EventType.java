@@ -1,0 +1,14 @@
+package com.jeannimi.messenger.application.event;
+
+public enum EventType {
+  CHAT_CREATED,
+  CHAT_DELETED,
+  CHAT_RENAMED,
+  CHAT_MEMBER_ADDED,
+  CHAT_MEMBER_REMOVED,
+  CHAT_MEMBER_LEFT,
+  MESSAGE_CREATED,
+  MESSAGE_READ,
+  MESSAGE_DELETED,
+  FILE_DELETION_REQUESTED
+}

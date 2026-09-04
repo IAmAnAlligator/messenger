@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.message.cleanup;
 
 import com.jeannimi.messenger.message.entity.FileAttachment;
-import com.jeannimi.messenger.message.repository.FileAttachmentRepository;
+import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +23,7 @@ public class OrphanFileCleanupService {
 
   private final FileStorageService fileStorageService;
 
-  private final FileAttachmentRepository fileAttachmentRepository;
+  private final FileAttachmentRepositoryPort fileAttachmentRepository;
 
   private final boolean enabled;
 
@@ -31,7 +31,7 @@ public class OrphanFileCleanupService {
 
   public OrphanFileCleanupService(
       FileStorageService fileStorageService,
-      FileAttachmentRepository fileAttachmentRepository,
+      FileAttachmentRepositoryPort fileAttachmentRepository,
       @Value("${file-storage.cleanup.enabled}") boolean enabled,
       @Value("${file-storage.cleanup.orphan-age}") Duration orphanAge) {
 

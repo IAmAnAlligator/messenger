@@ -28,16 +28,16 @@ public class ChatDeletedHandler implements ChatEventHandler {
 
     try {
 
-      ChatDeletedEvent dto = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
+      ChatDeletedEvent chatDeletedEvent = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
 
-      WebSocketEvent<ChatDeletedEvent> event = WebSocketEvent.of(EventType.CHAT_DELETED, dto);
+      WebSocketEvent<ChatDeletedEvent> event = WebSocketEvent.of(EventType.CHAT_DELETED, chatDeletedEvent);
 
       /*
          Сообщаем участникам,
          что чат удален
       */
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
+      messagingTemplate.convertAndSend("/topic/chat/" + chatDeletedEvent.chatId(), event);
 
       /*
          Глобальное событие удаления

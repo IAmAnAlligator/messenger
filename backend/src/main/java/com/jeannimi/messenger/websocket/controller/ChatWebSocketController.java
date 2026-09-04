@@ -23,27 +23,27 @@ public class ChatWebSocketController {
   private final MessageService messageService;
 
   @MessageMapping("/chat.send")
-  public void sendMessage(@Valid SendMessageCommand dto, Authentication authentication) {
+  public void sendMessage(@Valid SendMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.sendMessage(dto.chatId(), principal.userId(), dto.content());
+    messageService.sendMessage(command.chatId(), principal.userId(), command.content());
   }
 
   @MessageMapping("/chat.read")
-  public void read(@Valid ReadMessageCommand dto, Authentication authentication) {
+  public void read(@Valid ReadMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.markAsRead(dto.chatId(), dto.messageId(), principal.userId());
+    messageService.markAsRead(command.chatId(), command.messageId(), principal.userId());
   }
 
   @MessageMapping("/chat.delete")
-  public void delete(@Valid DeleteMessageCommand dto, Authentication authentication) {
+  public void delete(@Valid DeleteMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.deleteMessage(dto.chatId(), dto.messageId(), principal.userId());
+    messageService.deleteMessage(command.chatId(), command.messageId(), principal.userId());
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {

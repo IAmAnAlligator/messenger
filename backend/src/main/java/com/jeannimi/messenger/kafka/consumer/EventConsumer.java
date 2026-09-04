@@ -12,7 +12,7 @@ import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.entity.ProcessedMessage;
-import com.jeannimi.messenger.message.repository.ProcessedMessageRepository;
+import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class EventConsumer {
 
   private final SimpMessagingTemplate messagingTemplate;
 
-  private final ProcessedMessageRepository processedRepository;
+  private final ProcessedMessageRepositoryPort processedRepository;
 
   private final List<ChatEventHandler> handlers;
 
@@ -65,14 +65,7 @@ public class EventConsumer {
         ack,
         MessageSentEvent.class,
         event -> {
-          MessageDto dto =
-              new MessageDto(
-                  event.messageId(),
-                  event.chatId(),
-                  event.sender(),
-                  event.content(),
-                  event.createdAt(),
-                  event.attachment());
+          MessageDto dto = MessageDto.fromResult(event.toResult());
 
           messagingTemplate.convertAndSend(
               "/topic/chat/" + dto.chatId(), WebSocketEvent.of(EventType.MESSAGE_CREATED, dto));
@@ -191,14 +184,12 @@ public class EventConsumer {
         payload,
         ack,
         envelope -> {
-          T event = null;
           try {
-            event = objectMapper.treeToValue(envelope.payload(), type);
+            T event = objectMapper.treeToValue(envelope.payload(), type);
+            handler.handle(event);
           } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to deserialize Kafka event", e);
           }
-
-          handler.handle(event);
         });
   }
 

@@ -1,9 +1,10 @@
 package com.jeannimi.messenger.user.service;
 
 import com.jeannimi.messenger.common.exception_handling.NotFoundException;
-import com.jeannimi.messenger.user.dto.UserDto;
+
 import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.user.repository.UserRepository;
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,17 +13,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
 
-  private final UserRepository userRepository;
+  private final UserRepositoryPort userRepository;
 
-  public UserDto getCurrentUser(Long userId) {
+  public UserResult getCurrentUser(Long userId) {
 
     User user =
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 
-    return new UserDto(user.getId(), user.getUsername().getValue(), user.getRole());
+    return toResult(user);
   }
 
-  public List<UserDto> searchUsers(String query, Long currentUserId) {
+  public List<UserResult> searchUsers(String query, Long currentUserId) {
 
     if (query == null || query.trim().length() < 2) {
       return List.of();
@@ -32,7 +33,15 @@ public class UserService {
 
     return users.stream()
         .filter(u -> !u.getId().equals(currentUserId)) // исключаем себя
-        .map(u -> new UserDto(u.getId(), u.getUsername().getValue(), u.getRole()))
+        .map(this::toResult)
         .toList();
+  }
+
+  private UserResult toResult(User user) {
+
+    return new UserResult(
+        user.getId(),
+        user.getUsername().getValue(),
+        user.getRole());
   }
 }

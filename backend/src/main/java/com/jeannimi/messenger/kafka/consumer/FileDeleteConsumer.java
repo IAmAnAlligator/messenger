@@ -6,7 +6,7 @@ import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.kafka.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.message.entity.ProcessedMessage;
-import com.jeannimi.messenger.message.repository.ProcessedMessageRepository;
+import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class FileDeleteConsumer {
 
   private final ObjectMapper objectMapper;
   private final FileStorageService fileStorageService;
-  private final ProcessedMessageRepository processedRepository;
+  private final ProcessedMessageRepositoryPort processedRepository;
 
   @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
   public void consume(String payload, Acknowledgment ack) {

@@ -1,10 +1,16 @@
 package com.jeannimi.messenger.message.service;
 
-import com.jeannimi.messenger.chat.dto.ChatMemberReadDto;
+import com.jeannimi.messenger.application.message.command.FileUploadCommand;
+import com.jeannimi.messenger.application.message.dto.FileAttachmentResult;
+import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
+import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.user.dto.UserResult;
+import com.jeannimi.messenger.application.chat.dto.ChatMemberReadResult;
+import com.jeannimi.messenger.application.message.dto.ReadResult;
 import com.jeannimi.messenger.chat.entity.Chat;
 import com.jeannimi.messenger.chat.entity.ChatMember;
-import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
-import com.jeannimi.messenger.chat.repository.ChatRepository;
+import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
+import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.common.exception_handling.FileStorageException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.MessageError;
@@ -13,26 +19,21 @@ import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
-import com.jeannimi.messenger.kafka.KafkaTopics;
-import com.jeannimi.messenger.kafka.event.EventType;
-import com.jeannimi.messenger.kafka.event.FileDeletionRequestedEvent;
-import com.jeannimi.messenger.kafka.event.MessageDeletedEvent;
-import com.jeannimi.messenger.kafka.event.MessageReadEvent;
-import com.jeannimi.messenger.kafka.event.MessageSentEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
+import com.jeannimi.messenger.application.event.MessageCreatedEvent;
+import com.jeannimi.messenger.application.event.MessageDeletedEvent;
+import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.message.MessageConstants;
-import com.jeannimi.messenger.message.dto.FileDownload;
-import com.jeannimi.messenger.message.dto.FileUpload;
-import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.dto.ReadResult;
 import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.message.repository.FileAttachmentRepository;
-import com.jeannimi.messenger.message.repository.MessageRepository;
+import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
+import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import com.jeannimi.messenger.message.storage.StoredFile;
-import com.jeannimi.messenger.outbox.publisher.EventPublisher;
+import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.user.repository.UserRepository;
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -43,8 +44,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,17 +52,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MessageServiceImpl implements MessageService {
 
-  private final MessageRepository messageRepository;
-  private final ChatRepository chatRepository;
-  private final ChatMemberRepository chatMemberRepository;
-  private final UserRepository userRepository;
-  private final EventPublisher eventPublisher;
+  private final MessageRepositoryPort messageRepository;
+  private final ChatRepositoryPort chatRepository;
+  private final ChatMemberRepositoryPort chatMemberRepository;
+  private final UserRepositoryPort userRepository;
+  private final EventPublisherPort eventPublisher;
   private final FileStorageService fileStorageService;
-  private final FileAttachmentRepository fileAttachmentRepository;
+  private final FileAttachmentRepositoryPort fileAttachmentRepository;
 
   @Override
   @Transactional(readOnly = true)
-  public FileDownload getFile(Long chatId, Long messageId, Long userId) {
+  public FileDownloadResult getFile(Long chatId, Long messageId, Long userId) {
 
     // Проверяем, что пользователь участник чата
     checkMembership(chatId, userId);
@@ -84,7 +83,7 @@ public class MessageServiceImpl implements MessageService {
     // Загружаем физический файл
     InputStream inputStream = fileStorageService.load(attachment.getStorageFileName());
 
-    return new FileDownload(
+    return new FileDownloadResult(
         inputStream,
         attachment.getOriginalFileName(),
         attachment.getContentType(),
@@ -93,7 +92,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto sendFile(Long chatId, Long senderId, FileUpload file) {
+  public MessageResult sendFile(Long chatId, Long senderId, FileUploadCommand file) {
 
     // =========================
     // 1. Проверка входных данных
@@ -188,9 +187,11 @@ public class MessageServiceImpl implements MessageService {
 
       chat.updateLastMessageTime();
 
-      publishMessageCreated(savedMessage);
+      MessageResult result = toResult(savedMessage);
 
-      return toDto(savedMessage);
+      publishMessageCreated(result);
+
+      return result;
 
     } catch (RuntimeException e) {
 
@@ -264,7 +265,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public MessageDto sendMessage(Long chatId, Long senderId, String content) {
+  public MessageResult sendMessage(Long chatId, Long senderId, String content) {
 
     // 1. Проверка: чат существует
     Chat chat = getChatForSending(chatId, senderId);
@@ -283,10 +284,12 @@ public class MessageServiceImpl implements MessageService {
 
     chat.updateLastMessageTime();
 
-    publishMessageCreated(message);
+    MessageResult result = toResult(saved);
+
+    publishMessageCreated(result);
 
     // 6. Возвращаем DTO
-    return toDto(saved);
+    return result;
   }
 
   // =========================
@@ -295,20 +298,20 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResponse<MessageDto, CursorDto> getMessages(
+  public CursorPageResponse<MessageResult, CursorDto> getMessages(
       Long chatId, Long userId, CursorPageRequest request) {
 
     checkMembership(chatId, userId);
 
     int pageSize = Math.min(request.limit(), MessageConstants.MAX_MESSAGE_PAGE_SIZE);
 
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
+    int fetchSize = pageSize + 1;
 
     List<Message> messages =
         request.cursorTime() == null
-            ? messageRepository.findWithSenderByChatId(chatId, pageable)
+            ? messageRepository.findWithSenderByChatId(chatId, fetchSize)
             : messageRepository.findWithSenderByChatIdAndCursor(
-                chatId, request.cursorTime(), request.cursorId(), pageable);
+                chatId, request.cursorTime(), request.cursorId(), fetchSize);
 
     boolean hasMore = messages.size() > pageSize;
 
@@ -319,7 +322,7 @@ public class MessageServiceImpl implements MessageService {
     CursorDto nextCursor = createNextCursor(messages, hasMore);
 
     return new CursorPageResponse<>(
-        messages.stream().map(this::toDto).toList(), nextCursor, hasMore);
+        messages.stream().map(this::toResult).toList(), nextCursor, hasMore);
   }
 
   private CursorDto createNextCursor(List<Message> messages, boolean hasMore) {
@@ -339,7 +342,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public MessageDto getMessage(Long chatId, Long messageId, Long userId) {
+  public MessageResult getMessage(Long chatId, Long messageId, Long userId) {
 
     checkMembership(chatId, userId);
 
@@ -348,7 +351,7 @@ public class MessageServiceImpl implements MessageService {
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    return toDto(message);
+    return toResult(message);
   }
 
   // =========================
@@ -377,7 +380,7 @@ public class MessageServiceImpl implements MessageService {
     if (message.getSender().getId().equals(userId)) {
 
       return new ReadResult(
-          new ChatMemberReadDto(
+          new ChatMemberReadResult(
               userId,
               chatMember.getLastReadMessageId()),
           false);
@@ -396,7 +399,7 @@ public class MessageServiceImpl implements MessageService {
 
     if (updated == 0) {
       return new ReadResult(
-          new ChatMemberReadDto(
+          new ChatMemberReadResult(
               userId,
               lastReadMessageId),
           false);
@@ -411,13 +414,12 @@ public class MessageServiceImpl implements MessageService {
             lastReadMessageId);
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_READ,
         EventType.MESSAGE_READ,
         String.valueOf(chatId),
         event);
 
     return new ReadResult(
-        new ChatMemberReadDto(
+        new ChatMemberReadResult(
             userId,
             lastReadMessageId),
         true);
@@ -452,7 +454,6 @@ public class MessageServiceImpl implements MessageService {
     publishFileDeletion(attachment);
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_MESSAGE_DELETED,
         EventType.MESSAGE_DELETED,
         String.valueOf(chatId),
         messageDeletedEvent);
@@ -496,7 +497,6 @@ public class MessageServiceImpl implements MessageService {
           new FileDeletionRequestedEvent(attachment.getStorageFileName());
 
       eventPublisher.publish(
-          KafkaTopics.FILE_DELETE,
           EventType.FILE_DELETION_REQUESTED,
           attachment.getStorageFileName(),
           event);
@@ -524,17 +524,44 @@ public class MessageServiceImpl implements MessageService {
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
-  private void publishMessageCreated(Message message) {
-    MessageSentEvent event = MessageSentEvent.from(message);
+  private void publishMessageCreated(MessageResult result) {
+    MessageCreatedEvent event =
+        new MessageCreatedEvent(result);
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_MESSAGES,
         EventType.MESSAGE_CREATED,
-        String.valueOf(message.getChat().getId()),
+        String.valueOf(result.chatId()),
         event);
   }
 
-  private MessageDto toDto(Message m) {
-    return MessageDto.toDto(m);
+  private MessageResult toResult(Message message) {
+
+    FileAttachment attachment = message.getAttachment();
+
+    FileAttachmentResult attachmentResult =
+        attachment == null
+            ? null
+            : new FileAttachmentResult(
+                attachment.getId(),
+                attachment.getOriginalFileName(),
+                attachment.getContentType(),
+                attachment.getSize());
+
+    User sender = message.getSender();
+
+    UserResult senderResult =
+        new UserResult(
+            sender.getId(),
+            sender.getUsername().getValue(),
+            sender.getRole());
+
+    return new MessageResult(
+        message.getId(),
+        message.getChat().getId(),
+        senderResult,
+        message.getContent(),
+        message.getCreatedAt(),
+        attachmentResult);
   }
+
 }

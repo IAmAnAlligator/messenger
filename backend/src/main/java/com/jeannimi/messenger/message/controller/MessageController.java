@@ -1,15 +1,19 @@
 package com.jeannimi.messenger.message.controller;
 
+import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
-import com.jeannimi.messenger.message.dto.FileDownload;
+import com.jeannimi.messenger.message.dto.FileAttachmentDto;
+import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
 import com.jeannimi.messenger.message.dto.MessageDto;
 import com.jeannimi.messenger.message.dto.MessageSendRequest;
 import com.jeannimi.messenger.message.mapper.FileDownloadMapper;
 import com.jeannimi.messenger.message.mapper.FileUploadMapper;
 import com.jeannimi.messenger.message.service.MessageService;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
+import com.jeannimi.messenger.user.dto.UserDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +52,7 @@ public class MessageController {
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    FileDownload file = messageService.getFile(chatId, messageId, user.id());
+    FileDownloadResult file = messageService.getFile(chatId, messageId, user.id());
 
     return fileDownloadMapper.toResponse(file);
   }
@@ -59,7 +63,13 @@ public class MessageController {
       @RequestPart("file") MultipartFile file,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    return messageService.sendFile(chatId, user.id(), fileUploadMapper.toFileUpload(file));
+    MessageResult result =
+        messageService.sendFile(
+            chatId,
+            user.id(),
+            fileUploadMapper.toFileUploadCommand(file));
+
+    return toDto(result, chatId);
   }
 
   @PostMapping
@@ -67,7 +77,13 @@ public class MessageController {
       @PathVariable @Positive Long chatId,
       @RequestBody @Valid MessageSendRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.sendMessage(chatId, user.id(), request.content());
+    MessageResult result =
+        messageService.sendMessage(
+            chatId,
+            user.id(),
+            request.content());
+
+    return toDto(result, chatId);
   }
 
   // GET LIST
@@ -77,7 +93,10 @@ public class MessageController {
       @Valid @ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    return messageService.getMessages(chatId, user.id(), request);
+    CursorPageResponse<MessageResult, CursorDto> result =
+        messageService.getMessages(chatId, user.id(), request);
+
+    return toDto(result, chatId);
   }
 
   // GET ONE
@@ -86,7 +105,13 @@ public class MessageController {
       @PathVariable @Positive Long chatId,
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
-    return messageService.getMessage(chatId, messageId, user.id());
+    MessageResult result =
+        messageService.getMessage(
+            chatId,
+            messageId,
+            user.id());
+
+    return toDto(result, chatId);
   }
 
   // DELETE
@@ -97,5 +122,52 @@ public class MessageController {
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
     messageService.deleteMessage(chatId, messageId, user.id());
+  }
+
+  private MessageDto toDto(
+      MessageResult result,
+      Long chatId) {
+
+    FileAttachmentDto attachmentDto =
+        result.attachment() == null
+            ? null
+            : new FileAttachmentDto(
+                result.attachment().id(),
+                result.attachment().originalFileName(),
+                result.attachment().contentType(),
+                result.attachment().size(),
+                "/api/chats/"
+                    + chatId
+                    + "/messages/"
+                    + result.id()
+                    + "/file");
+
+    UserResult sender = result.sender();
+
+    UserDto senderDto =
+        new UserDto(
+            sender.id(),
+            sender.username(),
+            sender.role());
+
+    return new MessageDto(
+        result.id(),
+        result.chatId(),
+        senderDto,
+        result.content(),
+        result.createdAt(),
+        attachmentDto);
+  }
+
+  private CursorPageResponse<MessageDto, CursorDto> toDto(
+      CursorPageResponse<MessageResult, CursorDto> result,
+      Long chatId) {
+
+    return new CursorPageResponse<>(
+        result.content().stream()
+            .map(message -> toDto(message, chatId))
+            .toList(),
+        result.nextCursor(),
+        result.hasNext());
   }
 }

@@ -1,27 +1,35 @@
 package com.jeannimi.messenger.kafka.event;
 
-import com.jeannimi.messenger.message.dto.FileAttachmentDto;
-import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.user.dto.UserDto;
+import com.jeannimi.messenger.application.message.dto.FileAttachmentResult;
+import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import java.time.Instant;
 
 public record MessageSentEvent(
     Long messageId,
     Long chatId,
-    UserDto sender,
+    UserResult sender,
     String content,
     Instant createdAt,
-    FileAttachmentDto attachment) {
+    FileAttachmentResult attachment) {
 
-  public static MessageSentEvent from(Message message) {
-
+  public static MessageSentEvent from(MessageResult result) {
     return new MessageSentEvent(
-        message.getId(),
-        message.getChat().getId(),
-        UserDto.toDto(message.getSender()),
-        message.getContent(),
-        message.getCreatedAt(),
-        MessageDto.toDto(message).attachment());
+        result.id(),
+        result.chatId(),
+        result.sender(),
+        result.content(),
+        result.createdAt(),
+        result.attachment());
+  }
+
+  public MessageResult toResult() {
+    return new MessageResult(
+        messageId,
+        chatId,
+        sender,
+        content,
+        createdAt,
+        attachment);
   }
 }

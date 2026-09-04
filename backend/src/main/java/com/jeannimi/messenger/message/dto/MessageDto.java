@@ -1,7 +1,6 @@
 package com.jeannimi.messenger.message.dto;
 
-import com.jeannimi.messenger.message.entity.FileAttachment;
-import com.jeannimi.messenger.message.entity.Message;
+import com.jeannimi.messenger.application.message.dto.MessageResult;
 import com.jeannimi.messenger.user.dto.UserDto;
 import java.time.Instant;
 
@@ -13,21 +12,16 @@ public record MessageDto(
     Instant createdAt,
     FileAttachmentDto attachment) {
 
-  public static MessageDto toDto(Message message) {
-
-    FileAttachment attachment = message.getAttachment();
-
-    FileAttachmentDto attachmentDto =
-        attachment == null
-            ? null
-            : FileAttachmentDto.toDto(attachment, message.getChat().getId(), message.getId());
-
+  public static MessageDto fromResult(MessageResult result) {
     return new MessageDto(
-        message.getId(),
-        message.getChat().getId(),
-        UserDto.toDto(message.getSender()),
-        message.getContent(),
-        message.getCreatedAt(),
-        attachmentDto);
+        result.id(),
+        result.chatId(),
+        UserDto.fromResult(result.sender()),
+        result.content(),
+        result.createdAt(),
+        result.attachment() == null
+            ? null
+            : FileAttachmentDto.fromResult(result.attachment(), result.chatId(),
+                result.id()));
   }
 }

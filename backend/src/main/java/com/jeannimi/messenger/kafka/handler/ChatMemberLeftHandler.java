@@ -26,14 +26,14 @@ public class ChatMemberLeftHandler implements ChatEventHandler {
 
     try {
 
-      ChatMemberLeftEvent dto = objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
+      ChatMemberLeftEvent chatMemberLeftEvent = objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
 
       WebSocketEvent<ChatMemberLeftEvent> event =
-          WebSocketEvent.of(EventType.CHAT_MEMBER_LEFT, dto);
+          WebSocketEvent.of(EventType.CHAT_MEMBER_LEFT, chatMemberLeftEvent);
 
-      messagingTemplate.convertAndSend("/topic/chat/" + dto.chatId(), event);
+      messagingTemplate.convertAndSend("/topic/chat/" + chatMemberLeftEvent.chatId(), event);
 
-      messagingTemplate.convertAndSend("/topic/user/" + dto.userId() + "/chats", event);
+      messagingTemplate.convertAndSend("/topic/user/" + chatMemberLeftEvent.userId() + "/chats", event);
 
     } catch (Exception e) {
 

@@ -10,7 +10,7 @@ import com.jeannimi.messenger.common.exception_handling.UnauthorizedException;
 import com.jeannimi.messenger.security.jwt.JwtService;
 import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.user.entity.Username;
-import com.jeannimi.messenger.user.repository.UserRepository;
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserRepository userRepository;
+  private final UserRepositoryPort userRepository;
   private final JwtService jwtService;
   private final PasswordEncoder passwordEncoder;
 

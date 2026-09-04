@@ -2,13 +2,17 @@ package com.jeannimi.messenger.chat.service;
 
 import static com.jeannimi.messenger.chat.entity.Chat.buildPrivateKey;
 
+import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
+import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
 import com.jeannimi.messenger.chat.ChatConstants;
-import com.jeannimi.messenger.chat.dto.ChatCreateRequest;
-import com.jeannimi.messenger.chat.dto.ChatDto;
-import com.jeannimi.messenger.chat.dto.ChatMemberDto;
+import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
+import com.jeannimi.messenger.application.chat.dto.ChatResult;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.chat.entity.Chat;
-import com.jeannimi.messenger.chat.repository.ChatMemberRepository;
-import com.jeannimi.messenger.chat.repository.ChatRepository;
+import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
+import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
+import com.jeannimi.messenger.chat.entity.ChatMember;
+import com.jeannimi.messenger.chat.entity.ChatType;
 import com.jeannimi.messenger.common.exception_handling.BadRequestException;
 import com.jeannimi.messenger.common.exception_handling.ConflictException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
@@ -16,31 +20,27 @@ import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
-import com.jeannimi.messenger.kafka.KafkaTopics;
-import com.jeannimi.messenger.kafka.event.ChatCreatedEvent;
-import com.jeannimi.messenger.kafka.event.ChatDeletedEvent;
-import com.jeannimi.messenger.kafka.event.ChatMemberAddedEvent;
-import com.jeannimi.messenger.kafka.event.ChatMemberLeftEvent;
-import com.jeannimi.messenger.kafka.event.ChatMemberRemovedEvent;
-import com.jeannimi.messenger.kafka.event.ChatRenamedEvent;
-import com.jeannimi.messenger.kafka.event.EventType;
+import com.jeannimi.messenger.application.event.ChatCreatedEvent;
+import com.jeannimi.messenger.application.event.ChatDeletedEvent;
+import com.jeannimi.messenger.application.event.ChatMemberAddedEvent;
+import com.jeannimi.messenger.application.event.ChatMemberLeftEvent;
+import com.jeannimi.messenger.application.event.ChatMemberRemovedEvent;
+import com.jeannimi.messenger.application.event.ChatRenamedEvent;
+import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.message.service.MessageService;
-import com.jeannimi.messenger.outbox.publisher.EventPublisher;
+import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.user.repository.UserRepository;
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,11 +48,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
-  private final ChatRepository chatRepository;
-  private final UserRepository userRepository;
-  private final ChatMemberRepository chatMemberRepository;
+  private final ChatRepositoryPort chatRepository;
+  private final UserRepositoryPort userRepository;
+  private final ChatMemberRepositoryPort chatMemberRepository;
   private final MessageService messageService;
-  private final EventPublisher eventPublisher;
+  private final EventPublisherPort eventPublisher;
 
   // =========================
   // CREATE CHAT
@@ -60,24 +60,24 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional
-  public ChatDto createChat(ChatCreateRequest request, Long currentUserId) {
+  public ChatResult createChat(ChatCreateCommand command, Long currentUserId) {
 
     User creator = loadUser(currentUserId);
 
-    return switch (request.type()) {
-      case PRIVATE -> createPrivateChat(request, creator);
-      case GROUP -> createGroupChat(request, creator);
+    return switch (command.type()) {
+      case PRIVATE -> createPrivateChat(command, creator);
+      case GROUP -> createGroupChat(command, creator);
       default -> throw new BadRequestException("Unsupported chat type");
     };
   }
 
-  private ChatDto createPrivateChat(ChatCreateRequest request, User creator) {
+  private ChatResult createPrivateChat(ChatCreateCommand command, User creator) {
 
-    if (request.memberIds() == null || request.memberIds().size() != 1) {
+    if (command.memberIds() == null || command.memberIds().size() != 1) {
       throw new BadRequestException("Private chat must have exactly one member");
     }
 
-    Long otherUserId = request.memberIds().get(0);
+    Long otherUserId = command.memberIds().get(0);
 
     String key = buildPrivateKey(creator.getId(), otherUserId);
 
@@ -92,39 +92,41 @@ public class ChatServiceImpl implements ChatService {
     return savePrivateChat(key, chat);
   }
 
-  private ChatDto savePrivateChat(String key, Chat chat) {
+  private ChatResult savePrivateChat(String key, Chat chat) {
 
     try {
       Chat saved = chatRepository.save(chat);
 
+      ChatResult result = toResult(saved);
+
       ChatCreatedEvent chatCreatedEvent =
           new ChatCreatedEvent(
-              UUID.randomUUID(),
-              saved.getId(),
-              saved.getName(),
-              saved.getType(),
-              saved.getMembers().stream().map(m -> m.getUser().getId()).toList());
+              result.id(),
+              result.name(),
+              ChatType.valueOf(result.type()),
+              result.members().stream()
+                  .map(member -> member.user().id())
+                  .toList());
 
       eventPublisher.publish(
-          KafkaTopics.CHAT_EVENTS,
           EventType.CHAT_CREATED,
           String.valueOf(saved.getId()),
           chatCreatedEvent);
 
-      return toDto(saved);
+      return toResult(saved);
 
     } catch (DataIntegrityViolationException e) {
-      return toDto(
+      return toResult(
           chatRepository
               .findByPrivateKey(key)
               .orElseThrow(() -> new ConflictException("Private chat already exists")));
     }
   }
 
-  private ChatDto createGroupChat(ChatCreateRequest request, User creator) {
+  private ChatResult createGroupChat(ChatCreateCommand command, User creator) {
 
     Set<Long> uniqueIds =
-        request.memberIds() == null ? new HashSet<>() : new HashSet<>(request.memberIds());
+        command.memberIds() == null ? new HashSet<>() : new HashSet<>(command.memberIds());
 
     uniqueIds.remove(creator.getId());
 
@@ -134,25 +136,27 @@ public class ChatServiceImpl implements ChatService {
       throw new NotFoundException("One or more users not found");
     }
 
-    Chat chat = Chat.createGroup(request.name(), creator, users);
+    Chat chat = Chat.createGroup(command.name(), creator, users);
 
     Chat saved = chatRepository.save(chat);
 
+    ChatResult result = toResult(saved);
+
     ChatCreatedEvent chatCreatedEvent =
         new ChatCreatedEvent(
-            UUID.randomUUID(),
-            saved.getId(),
-            saved.getName(),
-            saved.getType(),
-            saved.getMembers().stream().map(m -> m.getUser().getId()).toList());
+            result.id(),
+            result.name(),
+            ChatType.valueOf(result.type()),
+            result.members().stream()
+                .map(member -> member.user().id())
+                .toList());
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_CREATED,
         String.valueOf(saved.getId()),
         chatCreatedEvent);
 
-    return toDto(saved);
+    return toResult(saved);
   }
 
   // =========================
@@ -161,18 +165,25 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResponse<ChatDto, CursorDto> getUserChats(
+  public CursorPageResponse<ChatResult, CursorDto> getUserChats(
       Long userId, CursorPageRequest request) {
 
-    int pageSize = Math.min(request.limit(), ChatConstants.MAX_CHAT_PAGE_SIZE);
+    int pageSize = Math.min(
+        request.limit(),
+        ChatConstants.MAX_CHAT_PAGE_SIZE);
 
-    Pageable pageable = PageRequest.of(0, pageSize + 1);
+    int fetchSize = pageSize + 1;
 
     List<Long> ids =
         request.cursorTime() == null
-            ? chatMemberRepository.findFirstPageIds(userId, pageable)
+            ? chatMemberRepository.findFirstPageIds(
+            userId,
+            fetchSize)
             : chatMemberRepository.findNextPageIds(
-                userId, request.cursorTime(), request.cursorId(), pageable);
+                userId,
+                request.cursorTime(),
+                request.cursorId(),
+                fetchSize);
 
     if (ids.isEmpty()) {
       return emptyPage();
@@ -189,8 +200,11 @@ public class ChatServiceImpl implements ChatService {
     CursorDto nextCursor = createNextCursor(orderedChats, hasMore);
 
     return new CursorPageResponse<>(
-        orderedChats.stream().map(this::toDto).toList(), nextCursor, hasMore);
+        orderedChats.stream().map(this::toResult).toList(),
+        nextCursor,
+        hasMore);
   }
+
 
   private List<Long> takePage(List<Long> ids, int pageSize) {
     if (ids.size() <= pageSize) {
@@ -199,7 +213,7 @@ public class ChatServiceImpl implements ChatService {
     return ids.subList(0, pageSize);
   }
 
-  private CursorPageResponse<ChatDto, CursorDto> emptyPage() {
+  private CursorPageResponse<ChatResult, CursorDto> emptyPage() {
     return new CursorPageResponse<>(List.of(), null, false);
   }
 
@@ -231,7 +245,7 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public ChatDto getChat(Long chatId, Long userId) {
+  public ChatResult getChat(Long chatId, Long userId) {
 
     Chat chat = loadChat(chatId);
 
@@ -239,7 +253,7 @@ public class ChatServiceImpl implements ChatService {
       throw new ForbiddenException("Access denied");
     }
 
-    return toDto(chat);
+    return toResult(chat);
   }
 
   // =========================
@@ -258,10 +272,11 @@ public class ChatServiceImpl implements ChatService {
 
     ChatMemberAddedEvent chatMemberAddedEvent =
         new ChatMemberAddedEvent(
-            UUID.randomUUID(), chat.getId(), user.getId(), user.getUsername().getValue());
+            chat.getId(),
+            user.getId(),
+            user.getUsername().getValue());
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_MEMBER_ADDED,
         String.valueOf(chat.getId()),
         chatMemberAddedEvent);
@@ -277,13 +292,16 @@ public class ChatServiceImpl implements ChatService {
 
     Chat chat = loadChat(chatId);
 
+    User user = loadUser(userId);
+
     chat.removeMember(userId, currentUserId);
 
     ChatMemberRemovedEvent chatMemberRemovedEvent =
-        new ChatMemberRemovedEvent(UUID.randomUUID(), chat.getId(), userId);
+        new ChatMemberRemovedEvent(
+            chat.getId(),
+            user.getId());
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_MEMBER_REMOVED,
         String.valueOf(chat.getId()),
         chatMemberRemovedEvent);
@@ -301,10 +319,10 @@ public class ChatServiceImpl implements ChatService {
 
     messageService.deleteAllByChat(chatId);
 
-    ChatDeletedEvent chatDeletedEvent = new ChatDeletedEvent(UUID.randomUUID(), deletedChatId);
+    ChatDeletedEvent chatDeletedEvent =
+        new ChatDeletedEvent(chatId);
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_DELETED,
         String.valueOf(deletedChatId),
         chatDeletedEvent);
@@ -318,13 +336,16 @@ public class ChatServiceImpl implements ChatService {
 
     Chat chat = loadChat(chatId);
 
+    User user = loadUser(currentUserId);
+
     chat.leaveChat(currentUserId);
 
     ChatMemberLeftEvent chatMemberLeftEvent =
-        new ChatMemberLeftEvent(UUID.randomUUID(), chat.getId(), currentUserId);
+        new ChatMemberLeftEvent(
+            chat.getId(),
+            user.getId());
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_MEMBER_LEFT,
         String.valueOf(chat.getId()),
         chatMemberLeftEvent);
@@ -332,7 +353,7 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<ChatMemberDto> getMembers(Long chatId, Long currentUserId) {
+  public List<ChatMemberResult> getMembers(Long chatId, Long currentUserId) {
 
     Chat chat = loadChat(chatId);
 
@@ -340,24 +361,28 @@ public class ChatServiceImpl implements ChatService {
       throw new ForbiddenException("Access denied");
     }
 
-    return chat.getMembers().stream().map(ChatMemberDto::toDto).toList();
+    return chat.getMembers().stream().map(this::toMemberResult).toList();
   }
 
   @Override
   @Transactional
-  public void renameChat(Long chatId, String chatName, Long currentUserId) {
+  public void renameChat(Long chatId, RenameChatCommand command, Long currentUserId) {
 
     Chat chat = loadChat(chatId);
 
     String oldName = chat.getName();
 
-    chat.renameChat(currentUserId, chatName);
+    chat.renameChat(currentUserId, command.name());
+
+    String newName = chat.getName();
 
     ChatRenamedEvent chatRenamedEvent =
-        new ChatRenamedEvent(UUID.randomUUID(), chat.getId(), oldName, chat.getName());
+        new ChatRenamedEvent(
+            chat.getId(),
+            oldName,
+            newName);
 
     eventPublisher.publish(
-        KafkaTopics.CHAT_EVENTS,
         EventType.CHAT_RENAMED,
         String.valueOf(chat.getId()),
         chatRenamedEvent);
@@ -388,7 +413,38 @@ public class ChatServiceImpl implements ChatService {
   // MAPPING
   // =========================
 
-  private ChatDto toDto(Chat chat) {
-    return ChatDto.toDto(chat);
+  private ChatResult toResult(Chat chat) {
+
+    List<ChatMemberResult> members =
+        chat.getMembers() == null
+            ? List.of()
+            : chat.getMembers().stream()
+                .map(this::toMemberResult)
+                .toList();
+
+    return new ChatResult(
+        chat.getId(),
+        chat.getName(),
+        chat.getType().name(),
+        members,
+        chat.getCreatedAt(),
+        chat.getLastMessageAt());
+  }
+
+  private ChatMemberResult toMemberResult(ChatMember member) {
+
+    User user = member.getUser();
+
+    UserResult userResult =
+        new UserResult(
+            user.getId(),
+            user.getUsername().getValue(),
+            user.getRole());
+
+    return new ChatMemberResult(
+        userResult,
+        member.getRole(),
+        member.getJoinedAt(),
+        member.getLastReadMessageId());
   }
 }

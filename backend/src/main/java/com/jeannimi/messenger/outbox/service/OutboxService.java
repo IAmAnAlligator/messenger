@@ -1,12 +1,7 @@
 package com.jeannimi.messenger.outbox.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.common.exception_handling.OutboxException;
-import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
-import com.jeannimi.messenger.kafka.event.EventType;
-import com.jeannimi.messenger.outbox.entity.OutboxEvent;
-import com.jeannimi.messenger.outbox.repository.OutboxRepository;
+import com.jeannimi.messenger.application.outbox.OutboxEventData;
+import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,48 +11,49 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OutboxService {
 
-  private final OutboxRepository outboxRepository;
-  private final ObjectMapper objectMapper;
+  private final OutboxRepositoryPort outboxRepository;
 
   @Transactional
-  public void saveEvent(String topic, EventType eventType, String aggregateId, Object event) {
+  public void saveEvent(
+      String topic,
+      String eventType,
+      String aggregateId,
+      String payload) {
 
-    validate(topic, eventType, event);
+    validate(topic, eventType, aggregateId, payload);
 
-    try {
+    UUID eventId = UUID.randomUUID();
 
-      UUID eventId = UUID.randomUUID();
-
-      KafkaEventEnvelope envelope =
-          new KafkaEventEnvelope(
-              eventId, eventType.name(), aggregateId, objectMapper.valueToTree(event));
-
-      outboxRepository.save(
-          OutboxEvent.pending(
-              eventId,
-              topic,
-              eventType.name(),
-              aggregateId,
-              objectMapper.writeValueAsString(envelope)));
-
-    } catch (JsonProcessingException e) {
-
-      throw new OutboxException("Failed to serialize event", e);
-    }
+    outboxRepository.save(
+        new OutboxEventData(
+            null,
+            eventId,
+            topic,
+            eventType,
+            aggregateId,
+            payload));
   }
 
-  private void validate(String topic, EventType eventType, Object event) {
+  private void validate(
+      String topic,
+      String eventType,
+      String aggregateId,
+      String payload) {
 
     if (topic == null || topic.isBlank()) {
       throw new IllegalArgumentException("Topic is empty");
     }
 
-    if (eventType == null) {
-      throw new IllegalArgumentException("Event type is null");
+    if (eventType == null || eventType.isBlank()) {
+      throw new IllegalArgumentException("Event type is empty");
     }
 
-    if (event == null) {
-      throw new IllegalArgumentException("Event is null");
+    if (aggregateId == null || aggregateId.isBlank()) {
+      throw new IllegalArgumentException("Aggregate id is empty");
+    }
+
+    if (payload == null || payload.isBlank()) {
+      throw new IllegalArgumentException("Payload is empty");
     }
   }
 }

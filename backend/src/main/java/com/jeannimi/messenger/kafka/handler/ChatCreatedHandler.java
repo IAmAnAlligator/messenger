@@ -28,9 +28,9 @@ public class ChatCreatedHandler implements ChatEventHandler {
 
     try {
 
-      ChatCreatedEvent dto = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
+      ChatCreatedEvent chatCreatedEvent = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
 
-      WebSocketEvent<ChatCreatedEvent> event = WebSocketEvent.of(EventType.CHAT_CREATED, dto);
+      WebSocketEvent<ChatCreatedEvent> event = WebSocketEvent.of(EventType.CHAT_CREATED, chatCreatedEvent);
 
       /*
          Уведомляем подписчиков,
@@ -44,7 +44,7 @@ public class ChatCreatedHandler implements ChatEventHandler {
          у каждого пользователя
       */
 
-      for (Long memberId : dto.memberIds()) {
+      for (Long memberId : chatCreatedEvent.memberIds()) {
 
         messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", event);
       }

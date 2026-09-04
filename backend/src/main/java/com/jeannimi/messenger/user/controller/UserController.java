@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.user.controller;
 
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.user.dto.CustomUserDetails;
 import com.jeannimi.messenger.user.dto.UserDto;
 import com.jeannimi.messenger.user.service.UserService;
@@ -22,13 +23,25 @@ public class UserController {
   private final UserService userService;
 
   @GetMapping("/me")
-  public UserDto me(@AuthenticationPrincipal CustomUserDetails userId) {
-    return userService.getCurrentUser(userId.id());
+  public UserDto me(@AuthenticationPrincipal CustomUserDetails user) {
+    UserResult result = userService.getCurrentUser(user.id());
+    return toDto(result);
   }
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
-      @RequestParam @NotBlank String query, @AuthenticationPrincipal CustomUserDetails user) {
-    return userService.searchUsers(query, user.id());
+      @RequestParam @NotBlank String query,
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    return userService.searchUsers(query, user.id()).stream()
+        .map(this::toDto)
+        .toList();
+  }
+
+  private UserDto toDto(UserResult result) {
+    return new UserDto(
+        result.id(),
+        result.username(),
+        result.role());
   }
 }
