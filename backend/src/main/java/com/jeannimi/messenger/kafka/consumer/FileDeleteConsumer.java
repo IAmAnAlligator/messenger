@@ -2,11 +2,11 @@ package com.jeannimi.messenger.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
+import com.jeannimi.messenger.domain.message.ProcessedMessage;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.kafka.event.FileDeletionRequestedEvent;
-import com.jeannimi.messenger.message.entity.ProcessedMessage;
-import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +64,7 @@ public class FileDeleteConsumer {
        */
       try {
 
-        processedRepository.save(ProcessedMessage.of(eventId));
+        processedRepository.save(ProcessedMessage.create(eventId));
 
       } catch (DataIntegrityViolationException e) {
 

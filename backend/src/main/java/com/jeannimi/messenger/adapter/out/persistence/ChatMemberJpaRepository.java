@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.adapter.out.persistence;
 
-import com.jeannimi.messenger.chat.entity.ChatMember;
+import com.jeannimi.messenger.adapter.out.persistence.entity.ChatMemberJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -10,12 +10,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ChatMemberJpaRepository
-    extends JpaRepository<ChatMember, Long> {
+public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEntity, Long> {
 
-  List<ChatMember> findAllByChatId(Long chatId);
+  List<ChatMemberJpaEntity> findAllByChat_Id(Long chatId);
 
-  @Modifying
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query(
       value =
           """
@@ -27,24 +26,24 @@ public interface ChatMemberJpaRepository
           AND new_message.id = :lastReadMessageId
           AND new_message.chat_id = :chatId
           AND (
-          cm.last_read_message_id IS NULL
-          OR NOT EXISTS (
-          SELECT 1
-          FROM messages old_message
-          WHERE old_message.id = cm.last_read_message_id
-          )
-          OR EXISTS (
-          SELECT 1
-          FROM messages old_message
-          WHERE old_message.id = cm.last_read_message_id
-          AND (
-          old_message.created_at < new_message.created_at
-          OR (
-          old_message.created_at = new_message.created_at
-          AND old_message.id < new_message.id
-          )
-          )
-          )
+            cm.last_read_message_id IS NULL
+            OR NOT EXISTS (
+              SELECT 1
+              FROM messages old_message
+              WHERE old_message.id = cm.last_read_message_id
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM messages old_message
+              WHERE old_message.id = cm.last_read_message_id
+              AND (
+                old_message.created_at < new_message.created_at
+                OR (
+                  old_message.created_at = new_message.created_at
+                  AND old_message.id < new_message.id
+                )
+              )
+            )
           )
           """,
       nativeQuery = true)
@@ -53,39 +52,33 @@ public interface ChatMemberJpaRepository
       @Param("userId") Long userId,
       @Param("lastReadMessageId") Long lastReadMessageId);
 
-  Optional<ChatMember> findByChatIdAndUserId(
-      Long chatId,
-      Long userId);
+  Optional<ChatMemberJpaEntity> findByChat_IdAndUser_Id(Long chatId, Long userId);
 
-  boolean existsByChatIdAndUserId(
-      Long chatId,
-      Long userId);
+  boolean existsByChat_IdAndUser_Id(Long chatId, Long userId);
 
   @Query(
       """
       SELECT c.id
-      FROM ChatMember cm
+      FROM ChatMemberJpaEntity cm
       JOIN cm.chat c
       WHERE cm.user.id = :userId
       ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC,
       c.id DESC
       """)
-  List<Long> findFirstPageIds(
-      @Param("userId") Long userId,
-      Pageable pageable);
+  List<Long> findFirstPageIds(@Param("userId") Long userId, Pageable pageable);
 
   @Query(
       """
       SELECT c.id
-      FROM ChatMember cm
+      FROM ChatMemberJpaEntity cm
       JOIN cm.chat c
       WHERE cm.user.id = :userId
       AND (
-      COALESCE(c.lastMessageAt, c.createdAt) < :cursorTime
-      OR (
-      COALESCE(c.lastMessageAt, c.createdAt) = :cursorTime
-      AND c.id < :cursorId
-      )
+        COALESCE(c.lastMessageAt, c.createdAt) < :cursorTime
+        OR (
+          COALESCE(c.lastMessageAt, c.createdAt) = :cursorTime
+          AND c.id < :cursorId
+        )
       )
       ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC,
       c.id DESC

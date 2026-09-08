@@ -9,6 +9,4 @@ public record ChatDto(
     String type,
     List<ChatMemberDto> members,
     Instant createdAt,
-    Instant lastMessageAt) {
-
-}
+    Instant lastMessageAt) {}

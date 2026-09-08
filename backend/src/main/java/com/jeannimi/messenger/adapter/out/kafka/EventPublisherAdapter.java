@@ -26,10 +26,7 @@ public class EventPublisherAdapter implements EventPublisherPort {
   private final KafkaTopicMapper kafkaTopicMapper;
 
   @Override
-  public void publish(
-      EventType type,
-      String aggregateId,
-      ApplicationEvent event) {
+  public void publish(EventType type, String aggregateId, ApplicationEvent event) {
 
     try {
       UUID eventId = UUID.randomUUID();
@@ -40,10 +37,7 @@ public class EventPublisherAdapter implements EventPublisherPort {
 
       KafkaEventEnvelope envelope =
           new KafkaEventEnvelope(
-              eventId,
-              kafkaEventType.name(),
-              aggregateId,
-              objectMapper.valueToTree(kafkaEvent));
+              eventId, kafkaEventType.name(), aggregateId, objectMapper.valueToTree(kafkaEvent));
 
       outboxService.saveEvent(
           kafkaTopicMapper.toTopic(type),

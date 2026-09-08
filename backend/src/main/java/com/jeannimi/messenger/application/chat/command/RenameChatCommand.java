@@ -1,6 +1,3 @@
 package com.jeannimi.messenger.application.chat.command;
 
-public record RenameChatCommand(
-    String name
-) {
-}
+public record RenameChatCommand(String name) {}

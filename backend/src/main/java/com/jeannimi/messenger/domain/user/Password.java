@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.user.entity;
+package com.jeannimi.messenger.domain.user;
 
 public final class Password {
 

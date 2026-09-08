@@ -26,7 +26,8 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
 
     try {
 
-      ChatMemberRemovedEvent chatMemberRemovedEvent = objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
+      ChatMemberRemovedEvent chatMemberRemovedEvent =
+          objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
 
       WebSocketEvent<ChatMemberRemovedEvent> event =
           WebSocketEvent.of(EventType.CHAT_MEMBER_REMOVED, chatMemberRemovedEvent);
@@ -42,7 +43,8 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
        * удаленного пользователя
        */
 
-      messagingTemplate.convertAndSend("/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", event);
+      messagingTemplate.convertAndSend(
+          "/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", event);
 
     } catch (Exception e) {
 

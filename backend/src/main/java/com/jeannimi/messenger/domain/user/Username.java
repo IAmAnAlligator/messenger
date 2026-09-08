@@ -1,22 +1,15 @@
-package com.jeannimi.messenger.user.entity;
+package com.jeannimi.messenger.domain.user;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
 import java.util.Objects;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@Embeddable
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Username {
+public final class Username {
 
   public static final int MAX_USERNAME_LENGTH = 100;
   public static final int MIN_USERNAME_LENGTH = 3;
 
-  @Column(nullable = false, length = MAX_USERNAME_LENGTH)
-  private String value;
+  private final String value;
 
   public Username(String value) {
 
@@ -43,14 +36,20 @@ public class Username {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof Username that)) return false;
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof Username that)) {
+      return false;
+    }
+
     return Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(value);
+    return Objects.hash(value);
   }
 
   @Override

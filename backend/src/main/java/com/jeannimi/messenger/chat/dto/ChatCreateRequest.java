@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.chat.dto;
 
 import com.jeannimi.messenger.chat.ChatConstants;
-import com.jeannimi.messenger.chat.entity.ChatType;
+import com.jeannimi.messenger.domain.chat.ChatType;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

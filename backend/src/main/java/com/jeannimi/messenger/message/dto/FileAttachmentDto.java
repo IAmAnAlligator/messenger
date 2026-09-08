@@ -6,8 +6,8 @@ import java.util.UUID;
 public record FileAttachmentDto(
     UUID id, String originalFileName, String contentType, long size, String url) {
 
-  public static FileAttachmentDto fromResult(FileAttachmentResult result,
-      Long chatId, Long messageId) {
+  public static FileAttachmentDto fromResult(
+      FileAttachmentResult result, Long chatId, Long messageId) {
     return new FileAttachmentDto(
         result.id(),
         result.originalFileName(),

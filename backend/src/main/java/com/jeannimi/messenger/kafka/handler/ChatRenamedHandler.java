@@ -28,7 +28,8 @@ public class ChatRenamedHandler implements ChatEventHandler {
 
       ChatRenamedEvent chatRenamedEvent = objectMapper.treeToValue(payload, ChatRenamedEvent.class);
 
-      WebSocketEvent<ChatRenamedEvent> event = WebSocketEvent.of(EventType.CHAT_RENAMED, chatRenamedEvent);
+      WebSocketEvent<ChatRenamedEvent> event =
+          WebSocketEvent.of(EventType.CHAT_RENAMED, chatRenamedEvent);
 
       messagingTemplate.convertAndSend("/topic/chat/" + chatRenamedEvent.chatId(), event);
 

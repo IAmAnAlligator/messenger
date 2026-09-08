@@ -2,6 +2,8 @@ package com.jeannimi.messenger.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
+import com.jeannimi.messenger.domain.message.ProcessedMessage;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.kafka.event.EventType;
@@ -11,8 +13,6 @@ import com.jeannimi.messenger.kafka.event.MessageSentEvent;
 import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
 import com.jeannimi.messenger.message.dto.MessageDto;
-import com.jeannimi.messenger.message.entity.ProcessedMessage;
-import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +154,7 @@ public class EventConsumer {
 
       try {
 
-        processedRepository.save(ProcessedMessage.of(eventId));
+        processedRepository.save(ProcessedMessage.create(eventId));
 
       } catch (DataIntegrityViolationException e) {
 

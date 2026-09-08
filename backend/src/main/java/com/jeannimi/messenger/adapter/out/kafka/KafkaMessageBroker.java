@@ -12,20 +12,13 @@ public class KafkaMessageBroker implements MessageBrokerPort {
   private final KafkaTemplate<String, String> kafkaTemplate;
 
   @Override
-  public void publish(
-      String topic,
-      String key,
-      String payload) {
+  public void publish(String topic, String key, String payload) {
 
     try {
-      kafkaTemplate
-          .send(topic, key, payload)
-          .get();
+      kafkaTemplate.send(topic, key, payload).get();
 
     } catch (Exception e) {
-      throw new IllegalStateException(
-          "Failed to publish message to Kafka",
-          e);
+      throw new IllegalStateException("Failed to publish message to Kafka", e);
     }
   }
 }

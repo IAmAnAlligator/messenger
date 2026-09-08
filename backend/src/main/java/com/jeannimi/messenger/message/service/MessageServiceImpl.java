@@ -1,16 +1,23 @@
 package com.jeannimi.messenger.message.service;
 
+import com.jeannimi.messenger.application.chat.dto.ChatMemberReadResult;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
+import com.jeannimi.messenger.application.event.MessageCreatedEvent;
+import com.jeannimi.messenger.application.event.MessageDeletedEvent;
+import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.application.message.command.FileUploadCommand;
 import com.jeannimi.messenger.application.message.dto.FileAttachmentResult;
 import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
 import com.jeannimi.messenger.application.message.dto.MessageResult;
-import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.application.chat.dto.ChatMemberReadResult;
 import com.jeannimi.messenger.application.message.dto.ReadResult;
-import com.jeannimi.messenger.chat.entity.Chat;
-import com.jeannimi.messenger.chat.entity.ChatMember;
 import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
+import com.jeannimi.messenger.application.port.out.EventPublisherPort;
+import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
+import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.common.exception_handling.FileStorageException;
 import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
 import com.jeannimi.messenger.common.exception_handling.MessageError;
@@ -19,21 +26,14 @@ import com.jeannimi.messenger.common.exception_handling.NotFoundException;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
-import com.jeannimi.messenger.application.event.EventType;
-import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
-import com.jeannimi.messenger.application.event.MessageCreatedEvent;
-import com.jeannimi.messenger.application.event.MessageDeletedEvent;
-import com.jeannimi.messenger.application.event.MessageReadEvent;
+import com.jeannimi.messenger.domain.chat.Chat;
+import com.jeannimi.messenger.domain.chat.ChatMember;
+import com.jeannimi.messenger.domain.message.FileAttachment;
+import com.jeannimi.messenger.domain.message.Message;
+import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.message.MessageConstants;
-import com.jeannimi.messenger.message.entity.FileAttachment;
-import com.jeannimi.messenger.message.entity.Message;
-import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
-import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import com.jeannimi.messenger.message.storage.StoredFile;
-import com.jeannimi.messenger.application.port.out.EventPublisherPort;
-import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -181,7 +181,7 @@ public class MessageServiceImpl implements MessageService {
               file.size(),
               storedFile.storagePath());
 
-      Message message = Message.ofFile(chat, sender, attachment);
+      Message message = Message.ofFile(chat.getId(), sender.getId(), attachment);
 
       Message savedMessage = messageRepository.save(message);
 
@@ -277,7 +277,7 @@ public class MessageServiceImpl implements MessageService {
     User sender = getUser(senderId);
 
     // 4. Создаём сообщение
-    Message message = Message.ofText(chat, sender, content);
+    Message message = Message.ofText(chat.getId(), sender.getId(), content);
 
     // 5. Сохраняем
     Message saved = messageRepository.save(message);
@@ -372,57 +372,30 @@ public class MessageServiceImpl implements MessageService {
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-
     /*
      * Пользователь не может пометить
      * собственное сообщение прочитанным.
      */
-    if (message.getSender().getId().equals(userId)) {
+    if (message.getSenderId().equals(userId)) {
 
       return new ReadResult(
-          new ChatMemberReadResult(
-              userId,
-              chatMember.getLastReadMessageId()),
-          false);
+          new ChatMemberReadResult(userId, chatMember.getLastReadMessageId()), false);
     }
 
-    int updated =
-        chatMemberRepository.updateLastReadMessageId(
-            chatId,
-            userId,
-            messageId);
+    int updated = chatMemberRepository.updateLastReadMessageId(chatId, userId, messageId);
 
-    Long lastReadMessageId =
-        updated > 0
-            ? messageId
-            : chatMember.getLastReadMessageId();
+    Long lastReadMessageId = updated > 0 ? messageId : chatMember.getLastReadMessageId();
 
     if (updated == 0) {
-      return new ReadResult(
-          new ChatMemberReadResult(
-              userId,
-              lastReadMessageId),
-          false);
+      return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), false);
     }
 
     MessageReadEvent event =
-        new MessageReadEvent(
-            message.getId(),
-            chatId,
-            userId,
-            Instant.now(),
-            lastReadMessageId);
+        new MessageReadEvent(message.getId(), chatId, userId, Instant.now(), lastReadMessageId);
 
-    eventPublisher.publish(
-        EventType.MESSAGE_READ,
-        String.valueOf(chatId),
-        event);
+    eventPublisher.publish(EventType.MESSAGE_READ, String.valueOf(chatId), event);
 
-    return new ReadResult(
-        new ChatMemberReadResult(
-            userId,
-            lastReadMessageId),
-        true);
+    return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), true);
   }
 
   // =========================
@@ -440,7 +413,7 @@ public class MessageServiceImpl implements MessageService {
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    if (!message.getSender().getId().equals(userId)) {
+    if (!message.getSenderId().equals(userId)) {
       throw new ForbiddenException("Only sender can delete message");
     }
 
@@ -453,10 +426,7 @@ public class MessageServiceImpl implements MessageService {
 
     publishFileDeletion(attachment);
 
-    eventPublisher.publish(
-        EventType.MESSAGE_DELETED,
-        String.valueOf(chatId),
-        messageDeletedEvent);
+    eventPublisher.publish(EventType.MESSAGE_DELETED, String.valueOf(chatId), messageDeletedEvent);
   }
 
   @Override
@@ -497,9 +467,7 @@ public class MessageServiceImpl implements MessageService {
           new FileDeletionRequestedEvent(attachment.getStorageFileName());
 
       eventPublisher.publish(
-          EventType.FILE_DELETION_REQUESTED,
-          attachment.getStorageFileName(),
-          event);
+          EventType.FILE_DELETION_REQUESTED, attachment.getStorageFileName(), event);
     }
   }
 
@@ -509,6 +477,7 @@ public class MessageServiceImpl implements MessageService {
     }
   }
 
+  @Transactional(readOnly = true)
   private Chat getChatForSending(Long chatId, Long userId) {
     Chat chat =
         chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
@@ -525,13 +494,9 @@ public class MessageServiceImpl implements MessageService {
   }
 
   private void publishMessageCreated(MessageResult result) {
-    MessageCreatedEvent event =
-        new MessageCreatedEvent(result);
+    MessageCreatedEvent event = new MessageCreatedEvent(result);
 
-    eventPublisher.publish(
-        EventType.MESSAGE_CREATED,
-        String.valueOf(result.chatId()),
-        event);
+    eventPublisher.publish(EventType.MESSAGE_CREATED, String.valueOf(result.chatId()), event);
   }
 
   private MessageResult toResult(Message message) {
@@ -547,21 +512,20 @@ public class MessageServiceImpl implements MessageService {
                 attachment.getContentType(),
                 attachment.getSize());
 
-    User sender = message.getSender();
+    User sender =
+        userRepository
+            .findById(message.getSenderId())
+            .orElseThrow(() -> new NotFoundException("User not found"));
 
     UserResult senderResult =
-        new UserResult(
-            sender.getId(),
-            sender.getUsername().getValue(),
-            sender.getRole());
+        new UserResult(sender.getId(), sender.getUsername().getValue(), sender.getRole());
 
     return new MessageResult(
         message.getId(),
-        message.getChat().getId(),
+        message.getChatId(),
         senderResult,
         message.getContent(),
         message.getCreatedAt(),
         attachmentResult);
   }
-
 }

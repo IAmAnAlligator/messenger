@@ -1,10 +1,9 @@
 package com.jeannimi.messenger.user.service;
 
-import com.jeannimi.messenger.common.exception_handling.NotFoundException;
-
-import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
+import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.domain.user.User;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,9 +38,6 @@ public class UserService {
 
   private UserResult toResult(User user) {
 
-    return new UserResult(
-        user.getId(),
-        user.getUsername().getValue(),
-        user.getRole());
+    return new UserResult(user.getId(), user.getUsername().getValue(), user.getRole());
   }
 }

@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.security.jwt;
 
-import com.jeannimi.messenger.user.entity.User;
+import com.jeannimi.messenger.domain.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;

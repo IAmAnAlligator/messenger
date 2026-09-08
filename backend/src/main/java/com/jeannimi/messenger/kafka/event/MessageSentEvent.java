@@ -24,12 +24,6 @@ public record MessageSentEvent(
   }
 
   public MessageResult toResult() {
-    return new MessageResult(
-        messageId,
-        chatId,
-        sender,
-        content,
-        createdAt,
-        attachment);
+    return new MessageResult(messageId, chatId, sender, content, createdAt, attachment);
   }
 }

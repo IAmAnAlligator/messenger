@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.application.port.out;
 
-import com.jeannimi.messenger.user.entity.User;
+import com.jeannimi.messenger.domain.user.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

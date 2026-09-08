@@ -1,16 +1,16 @@
 package com.jeannimi.messenger.auth.service;
 
-import static com.jeannimi.messenger.user.entity.Role.USER;
+import static com.jeannimi.messenger.domain.user.Role.USER;
 
+import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.auth.dto.AuthResponse;
 import com.jeannimi.messenger.auth.dto.LoginRequest;
 import com.jeannimi.messenger.auth.dto.RegisterRequest;
 import com.jeannimi.messenger.common.exception_handling.ConflictException;
 import com.jeannimi.messenger.common.exception_handling.UnauthorizedException;
+import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.Username;
 import com.jeannimi.messenger.security.jwt.JwtService;
-import com.jeannimi.messenger.user.entity.User;
-import com.jeannimi.messenger.user.entity.Username;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AuthService {
       throw new ConflictException("User already exists");
     }
 
-    User user = User.of(username, passwordEncoder.encode(request.password()), USER);
+    User user = User.create(username, passwordEncoder.encode(request.password()), USER);
 
     userRepository.save(user);
 

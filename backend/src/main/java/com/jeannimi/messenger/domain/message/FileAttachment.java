@@ -1,47 +1,41 @@
-package com.jeannimi.messenger.message.entity;
+package com.jeannimi.messenger.domain.message;
 
 import com.jeannimi.messenger.common.exception_handling.MessageError;
 import com.jeannimi.messenger.common.exception_handling.MessageException;
 import com.jeannimi.messenger.message.MessageConstants;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.UuidGenerator;
 
-@Entity
-@Table(name = "file_attachments")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class FileAttachment {
+public final class FileAttachment {
 
-  @Id
-  @Column(name = "id")
-  @UuidGenerator
-  private UUID id;
+  private final UUID id;
+  private final String originalFileName;
+  private final String storageFileName;
+  private final String contentType;
+  private final Long size;
+  private final String storagePath;
+  private final Instant createdAt;
 
-  @Column(name = "original_file_name", nullable = false)
-  private String originalFileName;
+  private FileAttachment(
+      UUID id,
+      String originalFileName,
+      String storageFileName,
+      String contentType,
+      Long size,
+      String storagePath,
+      Instant createdAt) {
 
-  @Column(name = "storage_file_name", nullable = false, unique = true)
-  private String storageFileName;
-
-  @Column(name = "content_type", nullable = false)
-  private String contentType;
-
-  @Column(name = "size", nullable = false)
-  private Long size;
-
-  @Column(name = "storage_path", nullable = false, length = 500)
-  private String storagePath;
-
-  @Column(name = "created_at", nullable = false)
-  private Instant createdAt;
+    this.id = id;
+    this.originalFileName = originalFileName;
+    this.storageFileName = storageFileName;
+    this.contentType = contentType;
+    this.size = size;
+    this.storagePath = storagePath;
+    this.createdAt = createdAt;
+  }
 
   public static FileAttachment create(
       String originalFileName,
@@ -56,16 +50,33 @@ public class FileAttachment {
     validateSize(size);
     validateStoragePath(storagePath);
 
-    FileAttachment fileAttachment = new FileAttachment();
+    return new FileAttachment(
+        UUID.randomUUID(),
+        originalFileName,
+        storageFileName,
+        contentType,
+        size,
+        storagePath,
+        Instant.now());
+  }
 
-    fileAttachment.originalFileName = originalFileName;
-    fileAttachment.storageFileName = storageFileName;
-    fileAttachment.contentType = contentType;
-    fileAttachment.size = size;
-    fileAttachment.storagePath = storagePath;
-    fileAttachment.createdAt = Instant.now();
+  public static FileAttachment reconstitute(
+      UUID id,
+      String originalFileName,
+      String storageFileName,
+      String contentType,
+      Long size,
+      String storagePath,
+      Instant createdAt) {
 
-    return fileAttachment;
+    return new FileAttachment(
+        Objects.requireNonNull(id, "id"),
+        originalFileName,
+        storageFileName,
+        contentType,
+        size,
+        storagePath,
+        Objects.requireNonNull(createdAt, "createdAt"));
   }
 
   private static void validateOriginalFileName(String fileName) {

@@ -30,18 +30,12 @@ public class UserController {
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
-      @RequestParam @NotBlank String query,
-      @AuthenticationPrincipal CustomUserDetails user) {
+      @RequestParam @NotBlank String query, @AuthenticationPrincipal CustomUserDetails user) {
 
-    return userService.searchUsers(query, user.id()).stream()
-        .map(this::toDto)
-        .toList();
+    return userService.searchUsers(query, user.id()).stream().map(this::toDto).toList();
   }
 
   private UserDto toDto(UserResult result) {
-    return new UserDto(
-        result.id(),
-        result.username(),
-        result.role());
+    return new UserDto(result.id(), result.username(), result.role());
   }
 }

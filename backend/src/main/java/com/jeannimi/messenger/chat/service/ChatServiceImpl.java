@@ -1,25 +1,13 @@
 package com.jeannimi.messenger.chat.service;
 
-import static com.jeannimi.messenger.chat.entity.Chat.buildPrivateKey;
+import static com.jeannimi.messenger.domain.chat.Chat.buildPrivateKey;
+import static com.jeannimi.messenger.domain.chat.ChatType.GROUP;
+import static com.jeannimi.messenger.domain.chat.ChatType.PRIVATE;
 
 import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
 import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
-import com.jeannimi.messenger.chat.ChatConstants;
 import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
-import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.chat.entity.Chat;
-import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
-import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
-import com.jeannimi.messenger.chat.entity.ChatMember;
-import com.jeannimi.messenger.chat.entity.ChatType;
-import com.jeannimi.messenger.common.exception_handling.BadRequestException;
-import com.jeannimi.messenger.common.exception_handling.ConflictException;
-import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
-import com.jeannimi.messenger.common.exception_handling.NotFoundException;
-import com.jeannimi.messenger.common.pagination.CursorDto;
-import com.jeannimi.messenger.common.pagination.CursorPageRequest;
-import com.jeannimi.messenger.common.pagination.CursorPageResponse;
 import com.jeannimi.messenger.application.event.ChatCreatedEvent;
 import com.jeannimi.messenger.application.event.ChatDeletedEvent;
 import com.jeannimi.messenger.application.event.ChatMemberAddedEvent;
@@ -27,10 +15,24 @@ import com.jeannimi.messenger.application.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.application.event.ChatMemberRemovedEvent;
 import com.jeannimi.messenger.application.event.ChatRenamedEvent;
 import com.jeannimi.messenger.application.event.EventType;
-import com.jeannimi.messenger.message.service.MessageService;
+import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
+import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
-import com.jeannimi.messenger.user.entity.User;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.user.dto.UserResult;
+import com.jeannimi.messenger.chat.ChatConstants;
+import com.jeannimi.messenger.common.exception_handling.BadRequestException;
+import com.jeannimi.messenger.common.exception_handling.ConflictException;
+import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
+import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.common.pagination.CursorDto;
+import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.common.pagination.CursorPageResponse;
+import com.jeannimi.messenger.domain.chat.Chat;
+import com.jeannimi.messenger.domain.chat.ChatMember;
+import com.jeannimi.messenger.domain.chat.ChatType;
+import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.message.service.MessageService;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -104,14 +106,10 @@ public class ChatServiceImpl implements ChatService {
               result.id(),
               result.name(),
               ChatType.valueOf(result.type()),
-              result.members().stream()
-                  .map(member -> member.user().id())
-                  .toList());
+              result.members().stream().map(member -> member.user().id()).toList());
 
       eventPublisher.publish(
-          EventType.CHAT_CREATED,
-          String.valueOf(saved.getId()),
-          chatCreatedEvent);
+          EventType.CHAT_CREATED, String.valueOf(saved.getId()), chatCreatedEvent);
 
       return toResult(saved);
 
@@ -147,14 +145,9 @@ public class ChatServiceImpl implements ChatService {
             result.id(),
             result.name(),
             ChatType.valueOf(result.type()),
-            result.members().stream()
-                .map(member -> member.user().id())
-                .toList());
+            result.members().stream().map(member -> member.user().id()).toList());
 
-    eventPublisher.publish(
-        EventType.CHAT_CREATED,
-        String.valueOf(saved.getId()),
-        chatCreatedEvent);
+    eventPublisher.publish(EventType.CHAT_CREATED, String.valueOf(saved.getId()), chatCreatedEvent);
 
     return toResult(saved);
   }
@@ -168,22 +161,15 @@ public class ChatServiceImpl implements ChatService {
   public CursorPageResponse<ChatResult, CursorDto> getUserChats(
       Long userId, CursorPageRequest request) {
 
-    int pageSize = Math.min(
-        request.limit(),
-        ChatConstants.MAX_CHAT_PAGE_SIZE);
+    int pageSize = Math.min(request.limit(), ChatConstants.MAX_CHAT_PAGE_SIZE);
 
     int fetchSize = pageSize + 1;
 
     List<Long> ids =
         request.cursorTime() == null
-            ? chatMemberRepository.findFirstPageIds(
-            userId,
-            fetchSize)
+            ? chatMemberRepository.findFirstPageIds(userId, fetchSize)
             : chatMemberRepository.findNextPageIds(
-                userId,
-                request.cursorTime(),
-                request.cursorId(),
-                fetchSize);
+                userId, request.cursorTime(), request.cursorId(), fetchSize);
 
     if (ids.isEmpty()) {
       return emptyPage();
@@ -200,11 +186,8 @@ public class ChatServiceImpl implements ChatService {
     CursorDto nextCursor = createNextCursor(orderedChats, hasMore);
 
     return new CursorPageResponse<>(
-        orderedChats.stream().map(this::toResult).toList(),
-        nextCursor,
-        hasMore);
+        orderedChats.stream().map(this::toResult).toList(), nextCursor, hasMore);
   }
-
 
   private List<Long> takePage(List<Long> ids, int pageSize) {
     if (ids.size() <= pageSize) {
@@ -270,16 +253,13 @@ public class ChatServiceImpl implements ChatService {
 
     chat.addMember(user, currentUserId);
 
+    chatRepository.save(chat);
+
     ChatMemberAddedEvent chatMemberAddedEvent =
-        new ChatMemberAddedEvent(
-            chat.getId(),
-            user.getId(),
-            user.getUsername().getValue());
+        new ChatMemberAddedEvent(chat.getId(), user.getId(), user.getUsername().getValue());
 
     eventPublisher.publish(
-        EventType.CHAT_MEMBER_ADDED,
-        String.valueOf(chat.getId()),
-        chatMemberAddedEvent);
+        EventType.CHAT_MEMBER_ADDED, String.valueOf(chat.getId()), chatMemberAddedEvent);
   }
 
   // =========================
@@ -296,15 +276,13 @@ public class ChatServiceImpl implements ChatService {
 
     chat.removeMember(userId, currentUserId);
 
+    chatRepository.save(chat);
+
     ChatMemberRemovedEvent chatMemberRemovedEvent =
-        new ChatMemberRemovedEvent(
-            chat.getId(),
-            user.getId());
+        new ChatMemberRemovedEvent(chat.getId(), user.getId());
 
     eventPublisher.publish(
-        EventType.CHAT_MEMBER_REMOVED,
-        String.valueOf(chat.getId()),
-        chatMemberRemovedEvent);
+        EventType.CHAT_MEMBER_REMOVED, String.valueOf(chat.getId()), chatMemberRemovedEvent);
   }
 
   @Override
@@ -319,13 +297,9 @@ public class ChatServiceImpl implements ChatService {
 
     messageService.deleteAllByChat(chatId);
 
-    ChatDeletedEvent chatDeletedEvent =
-        new ChatDeletedEvent(chatId);
+    ChatDeletedEvent chatDeletedEvent = new ChatDeletedEvent(chatId);
 
-    eventPublisher.publish(
-        EventType.CHAT_DELETED,
-        String.valueOf(deletedChatId),
-        chatDeletedEvent);
+    eventPublisher.publish(EventType.CHAT_DELETED, String.valueOf(deletedChatId), chatDeletedEvent);
 
     chatRepository.delete(chat);
   }
@@ -340,15 +314,12 @@ public class ChatServiceImpl implements ChatService {
 
     chat.leaveChat(currentUserId);
 
-    ChatMemberLeftEvent chatMemberLeftEvent =
-        new ChatMemberLeftEvent(
-            chat.getId(),
-            user.getId());
+    chatRepository.save(chat);
+
+    ChatMemberLeftEvent chatMemberLeftEvent = new ChatMemberLeftEvent(chat.getId(), user.getId());
 
     eventPublisher.publish(
-        EventType.CHAT_MEMBER_LEFT,
-        String.valueOf(chat.getId()),
-        chatMemberLeftEvent);
+        EventType.CHAT_MEMBER_LEFT, String.valueOf(chat.getId()), chatMemberLeftEvent);
   }
 
   @Override
@@ -361,11 +332,20 @@ public class ChatServiceImpl implements ChatService {
       throw new ForbiddenException("Access denied");
     }
 
-    return chat.getMembers().stream().map(this::toMemberResult).toList();
+    List<ChatMember> members =
+        chat.getMembers() == null ? List.of() : chat.getMembers().stream().toList();
+
+    Map<Long, User> users =
+        userRepository
+            .findAllById(members.stream().map(ChatMember::getUserId).collect(Collectors.toSet()))
+            .stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+
+    return members.stream().map(member -> toMemberResult(member, users)).toList();
   }
 
-  @Override
   @Transactional
+  @Override
   public void renameChat(Long chatId, RenameChatCommand command, Long currentUserId) {
 
     Chat chat = loadChat(chatId);
@@ -374,18 +354,13 @@ public class ChatServiceImpl implements ChatService {
 
     chat.renameChat(currentUserId, command.name());
 
+    chatRepository.save(chat);
+
     String newName = chat.getName();
 
-    ChatRenamedEvent chatRenamedEvent =
-        new ChatRenamedEvent(
-            chat.getId(),
-            oldName,
-            newName);
+    ChatRenamedEvent event = new ChatRenamedEvent(chat.getId(), oldName, newName);
 
-    eventPublisher.publish(
-        EventType.CHAT_RENAMED,
-        String.valueOf(chat.getId()),
-        chatRenamedEvent);
+    eventPublisher.publish(EventType.CHAT_RENAMED, String.valueOf(chat.getId()), event);
   }
 
   @Override
@@ -415,36 +390,39 @@ public class ChatServiceImpl implements ChatService {
 
   private ChatResult toResult(Chat chat) {
 
-    List<ChatMemberResult> members =
-        chat.getMembers() == null
-            ? List.of()
-            : chat.getMembers().stream()
-                .map(this::toMemberResult)
-                .toList();
+    List<ChatMember> members =
+        chat.getMembers() == null ? List.of() : chat.getMembers().stream().toList();
+
+    Map<Long, User> users =
+        userRepository
+            .findAllById(members.stream().map(ChatMember::getUserId).collect(Collectors.toSet()))
+            .stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+
+    List<ChatMemberResult> memberResults =
+        members.stream().map(member -> toMemberResult(member, users)).toList();
 
     return new ChatResult(
         chat.getId(),
         chat.getName(),
         chat.getType().name(),
-        members,
+        memberResults,
         chat.getCreatedAt(),
         chat.getLastMessageAt());
   }
 
-  private ChatMemberResult toMemberResult(ChatMember member) {
+  private ChatMemberResult toMemberResult(ChatMember member, Map<Long, User> users) {
 
-    User user = member.getUser();
+    User user = users.get(member.getUserId());
+
+    if (user == null) {
+      throw new NotFoundException("User not found: " + member.getUserId());
+    }
 
     UserResult userResult =
-        new UserResult(
-            user.getId(),
-            user.getUsername().getValue(),
-            user.getRole());
+        new UserResult(user.getId(), user.getUsername().getValue(), user.getRole());
 
     return new ChatMemberResult(
-        userResult,
-        member.getRole(),
-        member.getJoinedAt(),
-        member.getLastReadMessageId());
+        userResult, member.getRole(), member.getJoinedAt(), member.getLastReadMessageId());
   }
 }

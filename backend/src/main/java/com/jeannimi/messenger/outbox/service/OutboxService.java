@@ -14,31 +14,17 @@ public class OutboxService {
   private final OutboxRepositoryPort outboxRepository;
 
   @Transactional
-  public void saveEvent(
-      String topic,
-      String eventType,
-      String aggregateId,
-      String payload) {
+  public void saveEvent(String topic, String eventType, String aggregateId, String payload) {
 
     validate(topic, eventType, aggregateId, payload);
 
     UUID eventId = UUID.randomUUID();
 
     outboxRepository.save(
-        new OutboxEventData(
-            null,
-            eventId,
-            topic,
-            eventType,
-            aggregateId,
-            payload));
+        new OutboxEventData(null, eventId, topic, eventType, aggregateId, payload));
   }
 
-  private void validate(
-      String topic,
-      String eventType,
-      String aggregateId,
-      String payload) {
+  private void validate(String topic, String eventType, String aggregateId, String payload) {
 
     if (topic == null || topic.isBlank()) {
       throw new IllegalArgumentException("Topic is empty");

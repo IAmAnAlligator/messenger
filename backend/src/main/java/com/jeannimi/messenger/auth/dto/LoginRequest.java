@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.auth.dto;
 
-import com.jeannimi.messenger.user.entity.Password;
-import com.jeannimi.messenger.user.entity.Username;
+import com.jeannimi.messenger.domain.user.Password;
+import com.jeannimi.messenger.domain.user.Username;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 

@@ -28,7 +28,8 @@ public class ChatMemberAddedHandler implements ChatEventHandler {
 
     try {
 
-      ChatMemberAddedEvent chatMemberAddedEvent = objectMapper.treeToValue(payload, ChatMemberAddedEvent.class);
+      ChatMemberAddedEvent chatMemberAddedEvent =
+          objectMapper.treeToValue(payload, ChatMemberAddedEvent.class);
 
       WebSocketEvent<ChatMemberAddedEvent> event =
           WebSocketEvent.of(EventType.CHAT_MEMBER_ADDED, chatMemberAddedEvent);
@@ -41,7 +42,8 @@ public class ChatMemberAddedHandler implements ChatEventHandler {
          чтобы обновить список чатов
       */
 
-      messagingTemplate.convertAndSend("/topic/user/" + chatMemberAddedEvent.userId() + "/chats", event);
+      messagingTemplate.convertAndSend(
+          "/topic/user/" + chatMemberAddedEvent.userId() + "/chats", event);
 
     } catch (Exception e) {
 

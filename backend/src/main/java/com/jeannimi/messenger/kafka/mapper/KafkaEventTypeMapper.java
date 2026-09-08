@@ -6,8 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class KafkaEventTypeMapper {
 
-  public com.jeannimi.messenger.kafka.event.EventType toKafkaEventType(
-      EventType type) {
+  public com.jeannimi.messenger.kafka.event.EventType toKafkaEventType(EventType type) {
 
     return switch (type) {
       case CHAT_CREATED -> com.jeannimi.messenger.kafka.event.EventType.CHAT_CREATED;
@@ -19,8 +18,8 @@ public class KafkaEventTypeMapper {
       case MESSAGE_CREATED -> com.jeannimi.messenger.kafka.event.EventType.MESSAGE_CREATED;
       case MESSAGE_READ -> com.jeannimi.messenger.kafka.event.EventType.MESSAGE_READ;
       case MESSAGE_DELETED -> com.jeannimi.messenger.kafka.event.EventType.MESSAGE_DELETED;
-      case FILE_DELETION_REQUESTED ->
-          com.jeannimi.messenger.kafka.event.EventType.FILE_DELETION_REQUESTED;
+      case FILE_DELETION_REQUESTED -> com.jeannimi.messenger.kafka.event.EventType
+          .FILE_DELETION_REQUESTED;
     };
   }
 }

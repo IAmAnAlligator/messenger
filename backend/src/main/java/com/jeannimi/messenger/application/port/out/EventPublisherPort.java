@@ -5,8 +5,5 @@ import com.jeannimi.messenger.application.event.EventType;
 
 public interface EventPublisherPort {
 
-  void publish(
-      EventType type,
-      String aggregateId,
-      ApplicationEvent event);
+  void publish(EventType type, String aggregateId, ApplicationEvent event);
 }

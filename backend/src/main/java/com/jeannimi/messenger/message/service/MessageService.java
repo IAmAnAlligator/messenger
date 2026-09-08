@@ -1,12 +1,12 @@
 package com.jeannimi.messenger.message.service;
 
+import com.jeannimi.messenger.application.message.command.FileUploadCommand;
+import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
 import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.message.dto.ReadResult;
 import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.common.pagination.CursorPageRequest;
 import com.jeannimi.messenger.common.pagination.CursorPageResponse;
-import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
-import com.jeannimi.messenger.application.message.command.FileUploadCommand;
-import com.jeannimi.messenger.application.message.dto.ReadResult;
 
 public interface MessageService {
 

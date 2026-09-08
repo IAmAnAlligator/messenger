@@ -21,7 +21,6 @@ public record MessageDto(
         result.createdAt(),
         result.attachment() == null
             ? null
-            : FileAttachmentDto.fromResult(result.attachment(), result.chatId(),
-                result.id()));
+            : FileAttachmentDto.fromResult(result.attachment(), result.chatId(), result.id()));
   }
 }

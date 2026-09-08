@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.outbox.entity;
+package com.jeannimi.messenger.domain.outbox;
 
 public enum OutboxStatus {
   NEW,

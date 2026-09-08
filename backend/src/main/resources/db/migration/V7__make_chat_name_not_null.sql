@@ -1,0 +1,2 @@
+ALTER TABLE chats
+    ALTER COLUMN name SET NOT NULL;

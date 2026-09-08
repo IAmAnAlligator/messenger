@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.application.port.out;
 
-import com.jeannimi.messenger.message.entity.FileAttachment;
+import com.jeannimi.messenger.domain.message.FileAttachment;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,5 +13,4 @@ public interface FileAttachmentRepositoryPort {
   void deleteAllByIds(List<UUID> ids);
 
   void delete(FileAttachment fileAttachment);
-
 }

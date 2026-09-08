@@ -30,7 +30,8 @@ public class ChatCreatedHandler implements ChatEventHandler {
 
       ChatCreatedEvent chatCreatedEvent = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
 
-      WebSocketEvent<ChatCreatedEvent> event = WebSocketEvent.of(EventType.CHAT_CREATED, chatCreatedEvent);
+      WebSocketEvent<ChatCreatedEvent> event =
+          WebSocketEvent.of(EventType.CHAT_CREATED, chatCreatedEvent);
 
       /*
          Уведомляем подписчиков,

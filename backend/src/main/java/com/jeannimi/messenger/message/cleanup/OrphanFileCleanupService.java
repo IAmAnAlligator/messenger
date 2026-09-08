@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.message.cleanup;
 
-import com.jeannimi.messenger.message.entity.FileAttachment;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
+import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.message.storage.FileStorageService;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -27,35 +27,23 @@ public class OutboxPublisher {
   public void publishOutboxEvents() {
 
     List<OutboxEventData> events =
-        outboxRepository.findBatch(
-            new OutboxBatchRequest(
-                OutboxStatus.NEW,
-                BATCH_SIZE));
+        outboxRepository.findBatch(new OutboxBatchRequest(OutboxStatus.NEW, BATCH_SIZE));
 
     for (OutboxEventData event : events) {
 
       try {
 
-        messagePublisher.publish(
-            event.topic(),
-            event.aggregateId(),
-            event.payload());
+        messagePublisher.publish(event.topic(), event.aggregateId(), event.payload());
 
         outboxStatusService.markSent(event.id());
 
-        log.info(
-            "[OUTBOX SENT] id={}, type={}",
-            event.id(),
-            event.eventType());
+        log.info("[OUTBOX SENT] id={}, type={}", event.id(), event.eventType());
 
       } catch (Exception e) {
 
         outboxStatusService.markFailed(event.id());
 
-        log.error(
-            "[OUTBOX FAILED] id={}",
-            event.id(),
-            e);
+        log.error("[OUTBOX FAILED] id={}", event.id(), e);
       }
     }
   }

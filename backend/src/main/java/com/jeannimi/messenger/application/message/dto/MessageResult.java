@@ -9,6 +9,4 @@ public record MessageResult(
     UserResult sender,
     String content,
     Instant createdAt,
-    FileAttachmentResult attachment) {
-
-}
+    FileAttachmentResult attachment) {}

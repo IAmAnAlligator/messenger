@@ -30,7 +30,8 @@ public class ChatDeletedHandler implements ChatEventHandler {
 
       ChatDeletedEvent chatDeletedEvent = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
 
-      WebSocketEvent<ChatDeletedEvent> event = WebSocketEvent.of(EventType.CHAT_DELETED, chatDeletedEvent);
+      WebSocketEvent<ChatDeletedEvent> event =
+          WebSocketEvent.of(EventType.CHAT_DELETED, chatDeletedEvent);
 
       /*
          Сообщаем участникам,

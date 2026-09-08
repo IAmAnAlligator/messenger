@@ -44,8 +44,8 @@ public class ChatController {
       @RequestBody @Valid ChatCreateRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    ChatCreateCommand command
-        = new ChatCreateCommand( request.name(), request.memberIds(), request.type() );
+    ChatCreateCommand command =
+        new ChatCreateCommand(request.name(), request.memberIds(), request.type());
     ChatResult result = chatService.createChat(command, user.id());
 
     return toDto(result);
@@ -53,20 +53,17 @@ public class ChatController {
 
   @GetMapping
   public CursorPageResponse<ChatDto, CursorDto> getUserChats(
-      @Valid @org.springframework.web.bind.annotation.ModelAttribute
-      CursorPageRequest request,
+      @Valid @org.springframework.web.bind.annotation.ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    CursorPageResponse<ChatResult, CursorDto> result =
-        chatService.getUserChats(user.id(), request);
+    CursorPageResponse<ChatResult, CursorDto> result = chatService.getUserChats(user.id(), request);
 
     return toDto(result);
   }
 
   @GetMapping("/{chatId}")
   public ChatDto getChat(
-      @PathVariable @Positive Long chatId,
-      @AuthenticationPrincipal CustomUserDetails user) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails user) {
 
     ChatResult result = chatService.getChat(chatId, user.id());
 
@@ -97,8 +94,7 @@ public class ChatController {
 
   @DeleteMapping("/{chatId}")
   public ResponseEntity<Void> deleteChat(
-      @PathVariable @Positive Long chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     chatService.deleteChat(chatId, currentUser.id());
 
@@ -107,21 +103,16 @@ public class ChatController {
 
   @GetMapping("/{chatId}/members")
   public List<ChatMemberDto> getMembers(
-      @PathVariable @Positive Long chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    List<ChatMemberResult> results =
-        chatService.getMembers(chatId, currentUser.id());
+    List<ChatMemberResult> results = chatService.getMembers(chatId, currentUser.id());
 
-    return results.stream()
-        .map(this::toDto)
-        .toList();
+    return results.stream().map(this::toDto).toList();
   }
 
   @DeleteMapping("/{chatId}/leave")
   public ResponseEntity<Void> leaveChat(
-      @PathVariable @Positive Long chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable @Positive Long chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     chatService.leaveChat(chatId, currentUser.id());
 
@@ -134,9 +125,7 @@ public class ChatController {
       @RequestBody @Valid RenameChatRequest request,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    RenameChatCommand command = new RenameChatCommand(
-        request.name()
-    );
+    RenameChatCommand command = new RenameChatCommand(request.name());
 
     chatService.renameChat(chatId, command, currentUser.id());
 
@@ -146,11 +135,7 @@ public class ChatController {
   private ChatDto toDto(ChatResult result) {
 
     List<ChatMemberDto> members =
-        result.members() == null
-            ? List.of()
-            : result.members().stream()
-                .map(this::toDto)
-                .toList();
+        result.members() == null ? List.of() : result.members().stream().map(this::toDto).toList();
 
     return new ChatDto(
         result.id(),
@@ -164,10 +149,7 @@ public class ChatController {
   private ChatMemberDto toDto(ChatMemberResult result) {
 
     return new ChatMemberDto(
-        new UserDto(
-            result.user().id(),
-            result.user().username(),
-            result.user().role()),
+        new UserDto(result.user().id(), result.user().username(), result.user().role()),
         result.chatRole(),
         result.joinedAt(),
         result.lastReadMessageId());
@@ -177,10 +159,6 @@ public class ChatController {
       CursorPageResponse<ChatResult, CursorDto> result) {
 
     return new CursorPageResponse<>(
-        result.content().stream()
-            .map(this::toDto)
-            .toList(),
-        result.nextCursor(),
-        result.hasNext());
+        result.content().stream().map(this::toDto).toList(), result.nextCursor(), result.hasNext());
   }
 }
