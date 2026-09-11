@@ -12,7 +12,7 @@ import com.jeannimi.messenger.kafka.event.MessageReadEvent;
 import com.jeannimi.messenger.kafka.event.MessageSentEvent;
 import com.jeannimi.messenger.kafka.event.WebSocketEvent;
 import com.jeannimi.messenger.kafka.handler.ChatEventHandler;
-import com.jeannimi.messenger.message.dto.MessageDto;
+import com.jeannimi.messenger.adapter.in.web.message.dto.MessageDto;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;

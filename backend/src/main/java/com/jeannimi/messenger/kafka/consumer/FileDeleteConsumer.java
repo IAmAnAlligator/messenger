@@ -7,7 +7,7 @@ import com.jeannimi.messenger.domain.message.ProcessedMessage;
 import com.jeannimi.messenger.kafka.KafkaTopics;
 import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.kafka.event.FileDeletionRequestedEvent;
-import com.jeannimi.messenger.message.storage.FileStorageService;
+import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 public class FileDeleteConsumer {
 
   private final ObjectMapper objectMapper;
-  private final FileStorageService fileStorageService;
+  private final FileStoragePort fileStoragePort;
   private final ProcessedMessageRepositoryPort processedRepository;
 
   @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
@@ -54,7 +54,7 @@ public class FileDeleteConsumer {
        *
        * Если файла уже нет — это успешный результат.
        */
-      fileStorageService.delete(event.storageFileName());
+      fileStoragePort.delete(event.storageFileName());
 
       log.info("[FILE DELETE] deleted file={}", event.storageFileName());
 

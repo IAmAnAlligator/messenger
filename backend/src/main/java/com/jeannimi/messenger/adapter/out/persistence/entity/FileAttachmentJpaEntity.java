@@ -32,8 +32,8 @@ public class FileAttachmentJpaEntity {
   @Column(name = "size", nullable = false)
   private Long size;
 
-  @Column(name = "storage_path", nullable = false, length = 500)
-  private String storagePath;
+//  @Column(name = "storage_path", nullable = false, length = 500)
+//  private String storagePath;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
@@ -44,7 +44,6 @@ public class FileAttachmentJpaEntity {
       String storageFileName,
       String contentType,
       Long size,
-      String storagePath,
       Instant createdAt) {
 
     this.id = id;
@@ -52,7 +51,6 @@ public class FileAttachmentJpaEntity {
     this.storageFileName = storageFileName;
     this.contentType = contentType;
     this.size = size;
-    this.storagePath = storagePath;
     this.createdAt = createdAt;
   }
 }

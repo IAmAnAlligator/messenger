@@ -10,7 +10,7 @@ import com.jeannimi.messenger.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.kafka.mapper.KafkaEventMapper;
 import com.jeannimi.messenger.kafka.mapper.KafkaEventTypeMapper;
 import com.jeannimi.messenger.kafka.mapper.KafkaTopicMapper;
-import com.jeannimi.messenger.outbox.service.OutboxService;
+import com.jeannimi.messenger.application.outbox.service.OutboxService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

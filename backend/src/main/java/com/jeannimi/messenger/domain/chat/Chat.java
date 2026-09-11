@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.domain.chat;
 
-import com.jeannimi.messenger.chat.ChatConstants;
 import com.jeannimi.messenger.common.exception_handling.ChatError;
 import com.jeannimi.messenger.common.exception_handling.ChatException;
 import com.jeannimi.messenger.domain.user.User;

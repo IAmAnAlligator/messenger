@@ -1,0 +1,12 @@
+package com.jeannimi.messenger.domain.chat;
+
+public class ChatConstants {
+
+  private ChatConstants() {}
+
+  public static final int MAX_CHAT_NAME_LENGTH = 100;
+  public static final int MIN_CHAT_NAME_LENGTH = 1;
+  public static final int MAX_GROUP_MEMBERS = 100;
+  public static final int MIN_GROUP_MEMBERS = 2;
+  public static final String SEPARATOR = "_";
+}

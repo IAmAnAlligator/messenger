@@ -2,7 +2,6 @@ package com.jeannimi.messenger.domain.message;
 
 import com.jeannimi.messenger.common.exception_handling.MessageError;
 import com.jeannimi.messenger.common.exception_handling.MessageException;
-import com.jeannimi.messenger.message.MessageConstants;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -16,7 +15,6 @@ public final class FileAttachment {
   private final String storageFileName;
   private final String contentType;
   private final Long size;
-  private final String storagePath;
   private final Instant createdAt;
 
   private FileAttachment(
@@ -25,7 +23,6 @@ public final class FileAttachment {
       String storageFileName,
       String contentType,
       Long size,
-      String storagePath,
       Instant createdAt) {
 
     this.id = id;
@@ -33,7 +30,6 @@ public final class FileAttachment {
     this.storageFileName = storageFileName;
     this.contentType = contentType;
     this.size = size;
-    this.storagePath = storagePath;
     this.createdAt = createdAt;
   }
 
@@ -41,14 +37,12 @@ public final class FileAttachment {
       String originalFileName,
       String storageFileName,
       String contentType,
-      Long size,
-      String storagePath) {
+      Long size) {
 
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
     validateContentType(contentType);
     validateSize(size);
-    validateStoragePath(storagePath);
 
     return new FileAttachment(
         UUID.randomUUID(),
@@ -56,7 +50,6 @@ public final class FileAttachment {
         storageFileName,
         contentType,
         size,
-        storagePath,
         Instant.now());
   }
 
@@ -66,7 +59,6 @@ public final class FileAttachment {
       String storageFileName,
       String contentType,
       Long size,
-      String storagePath,
       Instant createdAt) {
 
     return new FileAttachment(
@@ -75,18 +67,21 @@ public final class FileAttachment {
         storageFileName,
         contentType,
         size,
-        storagePath,
         Objects.requireNonNull(createdAt, "createdAt"));
   }
 
   private static void validateOriginalFileName(String fileName) {
 
     if (fileName == null || fileName.isBlank()) {
-      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
+      throw new MessageException(
+          MessageError.FILE_NAME_INVALID,
+          "File name must not be empty");
     }
 
     if (fileName.length() > 255) {
-      throw new MessageException(MessageError.FILE_NAME_TOO_LONG, "File name is too long");
+      throw new MessageException(
+          MessageError.FILE_NAME_TOO_LONG,
+          "File name is too long");
     }
   }
 
@@ -94,12 +89,14 @@ public final class FileAttachment {
 
     if (fileName == null || fileName.isBlank()) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_NAME_INVALID, "Storage file name must not be empty");
+          MessageError.FILE_STORAGE_NAME_INVALID,
+          "Storage file name must not be empty");
     }
 
     if (fileName.length() > 255) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_NAME_TOO_LONG, "Storage file name is too long");
+          MessageError.FILE_STORAGE_NAME_TOO_LONG,
+          "Storage file name is too long");
     }
   }
 
@@ -107,36 +104,29 @@ public final class FileAttachment {
 
     if (contentType == null || contentType.isBlank()) {
       throw new MessageException(
-          MessageError.FILE_CONTENT_TYPE_INVALID, "Content type must not be empty");
+          MessageError.FILE_CONTENT_TYPE_INVALID,
+          "Content type must not be empty");
     }
 
     if (contentType.length() > 255) {
       throw new MessageException(
-          MessageError.FILE_CONTENT_TYPE_TOO_LONG, "Content type is too long");
+          MessageError.FILE_CONTENT_TYPE_TOO_LONG,
+          "Content type is too long");
     }
   }
 
   private static void validateSize(Long size) {
 
     if (size == null || size <= 0) {
-      throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
-    }
-
-    if (size > MessageConstants.MAX_FILE_SIZE_BYTES) {
-      throw new MessageException(MessageError.FILE_TOO_LARGE, "File size exceeds 10 MB");
-    }
-  }
-
-  private static void validateStoragePath(String storagePath) {
-
-    if (storagePath == null || storagePath.isBlank()) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_PATH_INVALID, "Storage path must not be empty");
+          MessageError.FILE_EMPTY,
+          "File must not be empty");
     }
 
-    if (storagePath.length() > 500) {
+    if (size > FileAttachmentConstants.MAX_FILE_SIZE_BYTES) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_PATH_TOO_LONG, "Storage path is too long");
+          MessageError.FILE_TOO_LARGE,
+          "File size exceeds 10 MB");
     }
   }
 }

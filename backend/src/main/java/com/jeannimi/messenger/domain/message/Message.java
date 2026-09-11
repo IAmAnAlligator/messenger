@@ -2,7 +2,6 @@ package com.jeannimi.messenger.domain.message;
 
 import com.jeannimi.messenger.common.exception_handling.MessageError;
 import com.jeannimi.messenger.common.exception_handling.MessageException;
-import com.jeannimi.messenger.message.MessageConstants;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.Getter;
