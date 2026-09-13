@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.application.event.ApplicationEvent;
 import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
-import com.jeannimi.messenger.common.exception_handling.OutboxException;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaEventMapper;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaEventTypeMapper;

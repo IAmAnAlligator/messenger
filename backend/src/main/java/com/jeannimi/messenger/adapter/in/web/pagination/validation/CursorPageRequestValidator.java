@@ -1,6 +1,6 @@
-package com.jeannimi.messenger.common.pagination.validation;
+package com.jeannimi.messenger.adapter.in.web.pagination.validation;
 
-import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

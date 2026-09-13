@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.adapter.in.security.jwt;
 
 public class JwtAuthenticationException extends RuntimeException {
 

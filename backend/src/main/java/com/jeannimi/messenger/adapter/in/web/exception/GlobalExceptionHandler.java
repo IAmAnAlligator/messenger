@@ -1,5 +1,13 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.adapter.in.web.exception;
 
+import com.jeannimi.messenger.application.exception.BadRequestException;
+import com.jeannimi.messenger.application.exception.ConflictException;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
+import com.jeannimi.messenger.application.exception.UnauthorizedException;
+import com.jeannimi.messenger.adapter.out.filestorage.FileStorageException;
+import com.jeannimi.messenger.domain.exception.MessageException;
+import com.jeannimi.messenger.application.exception.NotFoundException;
+import com.jeannimi.messenger.domain.exception.ChatException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;

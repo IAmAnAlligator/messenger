@@ -4,7 +4,6 @@ import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
 import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
 import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
-import com.jeannimi.messenger.common.pagination.CursorDto;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
 import java.util.List;

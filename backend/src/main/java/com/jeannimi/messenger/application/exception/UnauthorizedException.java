@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.application.exception;
 
 public class UnauthorizedException extends RuntimeException {
   public UnauthorizedException(String message) {

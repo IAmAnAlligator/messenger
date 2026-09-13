@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.adapter.in.web.message.mapper;
 
 import com.jeannimi.messenger.application.message.command.FileUploadCommand;
-import com.jeannimi.messenger.common.exception_handling.MessageError;
-import com.jeannimi.messenger.common.exception_handling.MessageException;
+import com.jeannimi.messenger.domain.exception.MessageError;
+import com.jeannimi.messenger.domain.exception.MessageException;
 import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;

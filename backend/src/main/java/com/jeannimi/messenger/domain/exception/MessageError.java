@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.domain.exception;
 
 public enum MessageError {
   CONTENT_TOO_LONG,

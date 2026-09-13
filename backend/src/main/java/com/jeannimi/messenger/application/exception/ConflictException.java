@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.application.exception;
 
 public class ConflictException extends RuntimeException {
   public ConflictException(String message) {

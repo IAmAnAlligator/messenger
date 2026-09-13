@@ -2,8 +2,8 @@ package com.jeannimi.messenger.adapter.in.web.mapper;
 
 import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
-import com.jeannimi.messenger.common.pagination.CursorDto;
-import com.jeannimi.messenger.common.pagination.CursorPageRequest;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
 import org.springframework.stereotype.Component;
 
 @Component

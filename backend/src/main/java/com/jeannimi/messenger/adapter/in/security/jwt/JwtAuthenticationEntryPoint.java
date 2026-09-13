@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.adapter.in.security.jwt;
 
-import com.jeannimi.messenger.common.exception_handling.ErrorResponse;
+import com.jeannimi.messenger.adapter.in.web.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;

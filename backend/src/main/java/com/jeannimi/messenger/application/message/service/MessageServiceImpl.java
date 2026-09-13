@@ -21,11 +21,10 @@ import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.common.exception_handling.FileStorageException;
-import com.jeannimi.messenger.common.exception_handling.ForbiddenException;
-import com.jeannimi.messenger.common.exception_handling.MessageError;
-import com.jeannimi.messenger.common.exception_handling.MessageException;
-import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
+import com.jeannimi.messenger.domain.exception.MessageError;
+import com.jeannimi.messenger.domain.exception.MessageException;
+import com.jeannimi.messenger.application.exception.NotFoundException;
 import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.domain.chat.Chat;
 import com.jeannimi.messenger.domain.chat.ChatMember;
@@ -194,7 +193,7 @@ public class MessageServiceImpl implements MessageService {
 
         fileStoragePort.delete(storedFile.storageFileName());
 
-      } catch (FileStorageException cleanupException) {
+      } catch (RuntimeException cleanupException) {
 
         e.addSuppressed(cleanupException);
       }

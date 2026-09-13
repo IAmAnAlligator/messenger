@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.exception_handling;
+package com.jeannimi.messenger.adapter.out.kafka;
 
 public class OutboxException extends RuntimeException {
 

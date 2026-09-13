@@ -2,7 +2,6 @@ package com.jeannimi.messenger.adapter.in.security.jwt;
 
 import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.out.security.jwt.JwtService;
-import com.jeannimi.messenger.common.exception_handling.JwtAuthenticationException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

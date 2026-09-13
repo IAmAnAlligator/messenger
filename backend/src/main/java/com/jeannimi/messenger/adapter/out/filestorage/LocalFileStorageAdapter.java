@@ -4,7 +4,6 @@ import com.jeannimi.messenger.application.port.out.FileStorageMaintenancePort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.StoredFileInfo;
-import com.jeannimi.messenger.common.exception_handling.FileStorageException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

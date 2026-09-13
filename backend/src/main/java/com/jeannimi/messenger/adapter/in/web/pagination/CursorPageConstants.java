@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.pagination;
+package com.jeannimi.messenger.adapter.in.web.pagination;
 
 public final class CursorPageConstants {
 

@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.config;
+package com.jeannimi.messenger.adapter.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

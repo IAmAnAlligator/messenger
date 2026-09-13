@@ -2,7 +2,7 @@ package com.jeannimi.messenger.application.user.service;
 
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.common.exception_handling.NotFoundException;
+import com.jeannimi.messenger.application.exception.NotFoundException;
 import com.jeannimi.messenger.domain.user.User;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

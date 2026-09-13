@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.domain.message;
 
-import com.jeannimi.messenger.common.exception_handling.MessageError;
-import com.jeannimi.messenger.common.exception_handling.MessageException;
+import com.jeannimi.messenger.domain.exception.MessageError;
+import com.jeannimi.messenger.domain.exception.MessageException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;

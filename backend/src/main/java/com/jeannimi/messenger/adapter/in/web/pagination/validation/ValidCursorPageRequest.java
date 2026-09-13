@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.common.pagination.validation;
+package com.jeannimi.messenger.adapter.in.web.pagination.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
