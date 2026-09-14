@@ -23,4 +23,6 @@ public record MessageDto(
             ? null
             : FileAttachmentDto.fromResult(result.attachment(), result.chatId(), result.id()));
   }
+
+
 }

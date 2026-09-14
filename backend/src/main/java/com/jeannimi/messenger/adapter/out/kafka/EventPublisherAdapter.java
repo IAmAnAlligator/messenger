@@ -1,14 +1,15 @@
 package com.jeannimi.messenger.adapter.out.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.application.event.ApplicationEvent;
-import com.jeannimi.messenger.application.event.EventType;
-import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaEventMapper;
-import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaEventTypeMapper;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaTopicMapper;
+import com.jeannimi.messenger.application.event.ApplicationEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.event.MessageCreatedEvent;
+import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.outbox.service.OutboxService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,31 +22,50 @@ public class EventPublisherAdapter implements EventPublisherPort {
   private final OutboxService outboxService;
   private final ObjectMapper objectMapper;
   private final KafkaEventMapper kafkaEventMapper;
-  private final KafkaEventTypeMapper kafkaEventTypeMapper;
   private final KafkaTopicMapper kafkaTopicMapper;
 
   @Override
-  public void publish(EventType type, String aggregateId, ApplicationEvent event) {
+  public void publish(
+      EventType type,
+      String aggregateId,
+      ApplicationEvent event) {
 
     try {
       UUID eventId = UUID.randomUUID();
 
-      var kafkaEventType = kafkaEventTypeMapper.toKafkaEventType(type);
-
-      var kafkaEvent = kafkaEventMapper.toKafkaEvent(type, event);
+      JsonNode payload = toKafkaPayload(type, event);
 
       KafkaEventEnvelope envelope =
           new KafkaEventEnvelope(
-              eventId, kafkaEventType.name(), aggregateId, objectMapper.valueToTree(kafkaEvent));
+              eventId,
+              type.name(),
+              aggregateId,
+              payload);
 
       outboxService.saveEvent(
           kafkaTopicMapper.toTopic(type),
-          kafkaEventType.name(),
+          envelope.eventType(),
           aggregateId,
           objectMapper.writeValueAsString(envelope));
 
     } catch (JsonProcessingException e) {
-      throw new OutboxException("Failed to serialize event", e);
+      throw new OutboxException(
+          "Failed to serialize event", e);
     }
+  }
+
+  private JsonNode toKafkaPayload(
+      EventType type,
+      ApplicationEvent event) {
+
+    if (type == EventType.MESSAGE_CREATED) {
+      MessageCreatedEvent messageCreatedEvent =
+          (MessageCreatedEvent) event;
+
+      return objectMapper.valueToTree(
+          kafkaEventMapper.toKafkaEvent(messageCreatedEvent));
+    }
+
+    return objectMapper.valueToTree(event);
   }
 }

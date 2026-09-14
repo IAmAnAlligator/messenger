@@ -2,11 +2,10 @@ package com.jeannimi.messenger.adapter.in.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.adapter.kafka.event.ChatMemberRemovedEvent;
-import com.jeannimi.messenger.adapter.kafka.event.EventType;
-import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
+import com.jeannimi.messenger.application.event.ChatMemberRemovedEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class ChatMemberRemovedHandler implements ChatEventHandler {
 
   private final ObjectMapper objectMapper;
-  private final SimpMessagingTemplate messagingTemplate;
+  private final RealtimeEventPublisherPort realtimeEventPublisher;
 
   @Override
   public EventType supports() {
@@ -25,30 +24,16 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-
-      ChatMemberRemovedEvent chatMemberRemovedEvent =
+      ChatMemberRemovedEvent event =
           objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
 
-      WebSocketEvent<ChatMemberRemovedEvent> event =
-          WebSocketEvent.of(EventType.CHAT_MEMBER_REMOVED, chatMemberRemovedEvent);
-
-      /*
-       * Уведомляем всех участников чата
-       */
-
-      messagingTemplate.convertAndSend("/topic/chat/" + chatMemberRemovedEvent.chatId(), event);
-
-      /*
-       * Обновляем список чатов
-       * удаленного пользователя
-       */
-
-      messagingTemplate.convertAndSend(
-          "/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", event);
+      realtimeEventPublisher.publish(
+          EventType.CHAT_MEMBER_REMOVED,
+          event);
 
     } catch (Exception e) {
-
-      throw new RuntimeException("Failed to process CHAT_MEMBER_REMOVED", e);
+      throw new RuntimeException(
+          "Failed to process CHAT_MEMBER_REMOVED", e);
     }
   }
 }

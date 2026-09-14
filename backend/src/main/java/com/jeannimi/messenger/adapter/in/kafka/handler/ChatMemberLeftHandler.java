@@ -2,11 +2,10 @@ package com.jeannimi.messenger.adapter.in.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.adapter.kafka.event.ChatMemberLeftEvent;
-import com.jeannimi.messenger.adapter.kafka.event.EventType;
-import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
+import com.jeannimi.messenger.application.event.ChatMemberLeftEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class ChatMemberLeftHandler implements ChatEventHandler {
 
   private final ObjectMapper objectMapper;
-  private final SimpMessagingTemplate messagingTemplate;
+  private final RealtimeEventPublisherPort realtimeEventPublisher;
 
   @Override
   public EventType supports() {
@@ -25,21 +24,21 @@ public class ChatMemberLeftHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-
-      ChatMemberLeftEvent chatMemberLeftEvent =
+      ChatMemberLeftEvent kafkaEvent =
           objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
 
-      WebSocketEvent<ChatMemberLeftEvent> event =
-          WebSocketEvent.of(EventType.CHAT_MEMBER_LEFT, chatMemberLeftEvent);
+      com.jeannimi.messenger.application.event.ChatMemberLeftEvent applicationEvent =
+          new com.jeannimi.messenger.application.event.ChatMemberLeftEvent(
+              kafkaEvent.chatId(),
+              kafkaEvent.userId());
 
-      messagingTemplate.convertAndSend("/topic/chat/" + chatMemberLeftEvent.chatId(), event);
-
-      messagingTemplate.convertAndSend(
-          "/topic/user/" + chatMemberLeftEvent.userId() + "/chats", event);
+      realtimeEventPublisher.publish(
+          EventType.CHAT_MEMBER_LEFT,
+          applicationEvent);
 
     } catch (Exception e) {
-
-      throw new RuntimeException("Failed to process CHAT_MEMBER_LEFT", e);
+      throw new RuntimeException(
+          "Failed to process CHAT_MEMBER_LEFT", e);
     }
   }
 }

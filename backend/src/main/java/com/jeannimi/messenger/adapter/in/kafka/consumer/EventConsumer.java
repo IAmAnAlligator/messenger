@@ -2,17 +2,18 @@ package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.adapter.in.kafka.mapper.KafkaEventToApplicationEventMapper;
+import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
+import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import com.jeannimi.messenger.domain.message.ProcessedMessage;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
-import com.jeannimi.messenger.adapter.kafka.event.EventType;
-import com.jeannimi.messenger.adapter.kafka.event.MessageDeletedEvent;
-import com.jeannimi.messenger.adapter.kafka.event.MessageReadEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.event.MessageDeletedEvent;
+import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.adapter.kafka.event.MessageSentEvent;
-import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
 import com.jeannimi.messenger.adapter.in.kafka.handler.ChatEventHandler;
-import com.jeannimi.messenger.adapter.in.web.message.dto.MessageDto;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -35,7 +35,9 @@ public class EventConsumer {
 
   private final ObjectMapper objectMapper;
 
-  private final SimpMessagingTemplate messagingTemplate;
+  private final KafkaEventToApplicationEventMapper eventMapper;
+
+  private final RealtimeEventPublisherPort realtimeEventPublisher;
 
   private final ProcessedMessageRepositoryPort processedRepository;
 
@@ -65,10 +67,12 @@ public class EventConsumer {
         ack,
         MessageSentEvent.class,
         event -> {
-          MessageDto dto = MessageDto.fromResult(event.toResult());
+          MessageCreatedEvent applicationEvent =
+              eventMapper.toApplicationEvent(event);
 
-          messagingTemplate.convertAndSend(
-              "/topic/chat/" + dto.chatId(), WebSocketEvent.of(EventType.MESSAGE_CREATED, dto));
+          realtimeEventPublisher.publish(
+              EventType.MESSAGE_CREATED,
+              applicationEvent);
         });
   }
 
@@ -85,9 +89,9 @@ public class EventConsumer {
         payload,
         ack,
         MessageReadEvent.class,
-        event ->
-            messagingTemplate.convertAndSend(
-                "/topic/chat/" + event.chatId(), WebSocketEvent.of(EventType.MESSAGE_READ, event)));
+        event -> realtimeEventPublisher.publish(
+            EventType.MESSAGE_READ,
+            event));
   }
 
   /*
@@ -103,10 +107,9 @@ public class EventConsumer {
         payload,
         ack,
         MessageDeletedEvent.class,
-        event ->
-            messagingTemplate.convertAndSend(
-                "/topic/chat/" + event.chatId(),
-                WebSocketEvent.of(EventType.MESSAGE_DELETED, event)));
+        event -> realtimeEventPublisher.publish(
+            EventType.MESSAGE_DELETED,
+            event));
   }
 
   /*

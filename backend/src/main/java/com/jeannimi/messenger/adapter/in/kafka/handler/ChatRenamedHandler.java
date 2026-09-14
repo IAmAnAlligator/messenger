@@ -2,11 +2,10 @@ package com.jeannimi.messenger.adapter.in.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.adapter.kafka.event.ChatRenamedEvent;
-import com.jeannimi.messenger.adapter.kafka.event.EventType;
-import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
+import com.jeannimi.messenger.application.event.ChatRenamedEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class ChatRenamedHandler implements ChatEventHandler {
 
   private final ObjectMapper objectMapper;
-  private final SimpMessagingTemplate messagingTemplate;
+  private final RealtimeEventPublisherPort realtimeEventPublisher;
 
   @Override
   public EventType supports() {
@@ -25,17 +24,16 @@ public class ChatRenamedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
+      ChatRenamedEvent event =
+          objectMapper.treeToValue(payload, ChatRenamedEvent.class);
 
-      ChatRenamedEvent chatRenamedEvent = objectMapper.treeToValue(payload, ChatRenamedEvent.class);
-
-      WebSocketEvent<ChatRenamedEvent> event =
-          WebSocketEvent.of(EventType.CHAT_RENAMED, chatRenamedEvent);
-
-      messagingTemplate.convertAndSend("/topic/chat/" + chatRenamedEvent.chatId(), event);
+      realtimeEventPublisher.publish(
+          EventType.CHAT_RENAMED,
+          event);
 
     } catch (Exception e) {
-
-      throw new RuntimeException("Failed to process CHAT_RENAMED", e);
+      throw new RuntimeException(
+          "Failed to process CHAT_RENAMED", e);
     }
   }
 }

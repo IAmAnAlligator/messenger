@@ -2,11 +2,10 @@ package com.jeannimi.messenger.adapter.in.kafka.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.adapter.kafka.event.ChatCreatedEvent;
-import com.jeannimi.messenger.adapter.kafka.event.EventType;
-import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
+import com.jeannimi.messenger.application.event.ChatCreatedEvent;
+import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,12 +13,10 @@ import org.springframework.stereotype.Component;
 public class ChatCreatedHandler implements ChatEventHandler {
 
   private final ObjectMapper objectMapper;
-
-  private final SimpMessagingTemplate messagingTemplate;
+  private final RealtimeEventPublisherPort realtimeEventPublisher;
 
   @Override
   public EventType supports() {
-
     return EventType.CHAT_CREATED;
   }
 
@@ -27,32 +24,16 @@ public class ChatCreatedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
+      ChatCreatedEvent event =
+          objectMapper.treeToValue(payload, ChatCreatedEvent.class);
 
-      ChatCreatedEvent chatCreatedEvent = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
-
-      WebSocketEvent<ChatCreatedEvent> event =
-          WebSocketEvent.of(EventType.CHAT_CREATED, chatCreatedEvent);
-
-      /*
-         Уведомляем подписчиков,
-         которые слушают создание чатов
-      */
-
-      messagingTemplate.convertAndSend("/topic/chat.created", event);
-
-      /*
-         Обновляем список чатов
-         у каждого пользователя
-      */
-
-      for (Long memberId : chatCreatedEvent.memberIds()) {
-
-        messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", event);
-      }
+      realtimeEventPublisher.publish(
+          EventType.CHAT_CREATED,
+          event);
 
     } catch (Exception e) {
-
-      throw new RuntimeException("Failed to process CHAT_CREATED", e);
+      throw new RuntimeException(
+          "Failed to process CHAT_CREATED", e);
     }
   }
 }
