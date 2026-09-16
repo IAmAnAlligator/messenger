@@ -17,6 +17,9 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
       """
         SELECT u FROM UserJpaEntity u
         WHERE LOWER(u.username.value) LIKE LOWER(CONCAT('%', :query, '%'))
+          AND u.id <> :currentUserId
       """)
-  List<UserJpaEntity> searchByUsername(@Param("query") String query);
+  List<UserJpaEntity> searchByUsername(
+      @Param("query") String query,
+      @Param("currentUserId") Long currentUserId);
 }

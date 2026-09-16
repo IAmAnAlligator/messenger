@@ -18,7 +18,7 @@ public class UserRepository implements UserRepositoryPort {
   private final UserPersistenceMapper userPersistenceMapper;
 
   @Override
-  public Optional<User> findByUsername_ValueIgnoreCase(String username) {
+  public Optional<User> findByUsernameIgnoreCase(String username) {
 
     return userJpaRepository
         .findByUsername_ValueIgnoreCase(username)
@@ -26,15 +26,15 @@ public class UserRepository implements UserRepositoryPort {
   }
 
   @Override
-  public boolean existsByUsername_ValueIgnoreCase(String username) {
+  public boolean existsByUsernameIgnoreCase(String username) {
 
     return userJpaRepository.existsByUsername_ValueIgnoreCase(username);
   }
 
   @Override
-  public List<User> searchByUsername(String query) {
+  public List<User> searchByUsername(String query, Long currentUserId) {
 
-    return userJpaRepository.searchByUsername(query).stream()
+    return userJpaRepository.searchByUsername(query, currentUserId).stream()
         .map(userPersistenceMapper::toDomain)
         .toList();
   }

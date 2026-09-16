@@ -24,14 +24,9 @@ public class UserService {
 
   public List<UserResult> searchUsers(String query, Long currentUserId) {
 
-    if (query == null || query.trim().length() < 2) {
-      return List.of();
-    }
-
-    List<User> users = userRepository.searchByUsername(query);
+    List<User> users = userRepository.searchByUsername(query, currentUserId);
 
     return users.stream()
-        .filter(u -> !u.getId().equals(currentUserId)) // исключаем себя
         .map(this::toResult)
         .toList();
   }

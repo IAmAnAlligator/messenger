@@ -5,6 +5,7 @@ import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
 import com.jeannimi.messenger.application.user.service.UserService;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,9 +31,9 @@ public class UserController {
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
-      @RequestParam @NotBlank String query, @AuthenticationPrincipal CustomUserDetails user) {
+      @RequestParam @NotBlank @Size(min = 2, max = 25) String query, @AuthenticationPrincipal CustomUserDetails user) {
 
-    return userService.searchUsers(query, user.id()).stream().map(this::toDto).toList();
+    return userService.searchUsers(query.trim(), user.id()).stream().map(this::toDto).toList();
   }
 
   private UserDto toDto(UserResult result) {

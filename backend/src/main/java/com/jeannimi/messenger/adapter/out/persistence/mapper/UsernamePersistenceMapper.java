@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 public class UsernamePersistenceMapper {
 
   public Username toDomain(UsernameJpaEntity entity) {
-
     if (entity == null) {
       return null;
     }
@@ -17,11 +16,10 @@ public class UsernamePersistenceMapper {
   }
 
   public UsernameJpaEntity toEntity(Username username) {
-
     if (username == null) {
       return null;
     }
 
-    return new UsernameJpaEntity(username);
+    return new UsernameJpaEntity(username.getValue());
   }
 }

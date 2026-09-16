@@ -28,6 +28,7 @@ public class UserJpaEntity {
 
   @Embedded private UsernameJpaEntity username;
 
+  // name = password_hash при следующей миграции
   @Column(name = "password", nullable = false, length = 255)
   private String password;
 
@@ -39,7 +40,6 @@ public class UserJpaEntity {
   private Instant createdAt;
 
   public UserJpaEntity(UsernameJpaEntity username, String password, Role role, Instant createdAt) {
-
     this.username = username;
     this.password = password;
     this.role = role;

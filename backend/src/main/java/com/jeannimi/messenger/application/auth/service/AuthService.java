@@ -27,7 +27,7 @@ public class AuthService {
 
     User user =
         userRepository
-            .findByUsername_ValueIgnoreCase(username.getValue())
+            .findByUsernameIgnoreCase(username.getValue())
             .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
     if (!passwordHashPort.matches(password, user.getPasswordHash())) {
@@ -40,7 +40,7 @@ public class AuthService {
   public AuthResult register(String usernameValue, String password) {
     Username username = new Username(usernameValue);
 
-    if (userRepository.existsByUsername_ValueIgnoreCase(username.getValue())) {
+    if (userRepository.existsByUsernameIgnoreCase(username.getValue())) {
       throw new ConflictException("User already exists");
     }
 

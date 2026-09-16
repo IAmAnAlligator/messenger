@@ -8,9 +8,9 @@ import lombok.Getter;
 public final class User {
 
   private final Long id;
-  private Username username;
-  private String passwordHash;
-  private Role role;
+  private final Username username;
+  private final String passwordHash;
+  private final Role role;
   private final Instant createdAt;
 
   private User(Long id, Username username, String passwordHash, Role role, Instant createdAt) {
@@ -31,22 +31,6 @@ public final class User {
       Long id, Username username, String passwordHash, Role role, Instant createdAt) {
 
     return new User(Objects.requireNonNull(id, "id"), username, passwordHash, role, createdAt);
-  }
-
-  public boolean isUser() {
-    return role == Role.USER;
-  }
-
-  public void changeRole(Role newRole) {
-    this.role = Objects.requireNonNull(newRole, "role");
-  }
-
-  public void changeUsername(Username username) {
-    this.username = Objects.requireNonNull(username, "username");
-  }
-
-  public void changePassword(String encodedPassword) {
-    this.passwordHash = Objects.requireNonNull(encodedPassword, "passwordHash");
   }
 
   @Override
