@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.in.security.jwt;
 
 import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
-import com.jeannimi.messenger.adapter.out.security.jwt.JwtService;
+import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +26,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private static final String BEARER_PREFIX = "Bearer ";
   private static final String ACCESS_TOKEN_TYPE = "ACCESS";
 
-  private final JwtService jwtService;
+  private final TokenServicePort tokenService;
 
   @Override
   protected void doFilterInternal(
@@ -35,59 +35,105 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
 
-    if (SecurityContextHolder.getContext().getAuthentication() != null) {
-      filterChain.doFilter(request, response);
-      return;
+    if (!hasAuthentication()) {
+      authenticateIfTokenPresent(request);
     }
+
+    filterChain.doFilter(request, response);
+  }
+
+  private boolean hasAuthentication() {
+    return SecurityContextHolder.getContext().getAuthentication() != null;
+  }
+
+  private void authenticateIfTokenPresent(HttpServletRequest request) {
 
     String header = request.getHeader("Authorization");
 
-    if (header == null || !header.startsWith(BEARER_PREFIX)) {
-      filterChain.doFilter(request, response);
-      return;
+    if (hasBearerToken(header)) {
+      String token = extractToken(header);
+
+      try {
+        authenticate(token, request);
+      } catch (JwtAuthenticationException e) {
+        clearContext();
+        throw e;
+      }
+    }
+  }
+
+  private boolean hasBearerToken(String header) {
+
+    return header != null && header.startsWith(BEARER_PREFIX);
+  }
+
+  private String extractToken(String header) {
+
+    String token = header.substring(BEARER_PREFIX.length()).trim();
+
+    if (token.isBlank()) {
+      throw new JwtAuthenticationException("Invalid token");
     }
 
-    String token = header.substring(BEARER_PREFIX.length());
+    return token;
+  }
 
-    try {
-      if (!jwtService.isTokenValid(token)) {
-        throw new JwtAuthenticationException("Invalid or expired token");
-      }
+  private void authenticate(String token, HttpServletRequest request) {
 
-      String tokenType = jwtService.extractTokenType(token);
+    validateToken(token);
 
-      if (!ACCESS_TOKEN_TYPE.equals(tokenType)) {
-        throw new JwtAuthenticationException("Invalid token type");
-      }
+    String tokenType = tokenService.extractTokenType(token);
 
-      Long userId = jwtService.extractUserId(token);
-      String role = jwtService.extractRole(token);
+    validateAccessToken(tokenType);
 
-      if (role == null || role.isBlank()) {
-        throw new JwtAuthenticationException("Invalid token");
-      }
+    Long userId = tokenService.extractUserId(token);
+    String role = tokenService.extractRole(token);
 
-      CustomUserDetails user = new CustomUserDetails(userId, role);
+    validateRole(role);
 
-      UsernamePasswordAuthenticationToken auth =
-          new UsernamePasswordAuthenticationToken(
-              user,
-              null,
-              List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+    CustomUserDetails user = new CustomUserDetails(userId, role);
 
-      auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    UsernamePasswordAuthenticationToken authentication =
+        createAuthentication(user, role);
 
-      SecurityContextHolder.getContext().setAuthentication(auth);
+    authentication.setDetails(
+        new WebAuthenticationDetailsSource().buildDetails(request));
 
-      filterChain.doFilter(request, response);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+  }
 
-    } catch (JwtAuthenticationException e) {
-      SecurityContextHolder.clearContext();
-      throw e;
+  private void validateToken(String token) {
 
-    } catch (Exception e) {
-      SecurityContextHolder.clearContext();
-      throw new JwtAuthenticationException("Authentication error", e);
+    if (!tokenService.isTokenValid(token)) {
+      throw new JwtAuthenticationException("Invalid or expired token");
     }
+  }
+
+  private void validateAccessToken(String tokenType) {
+
+    if (!ACCESS_TOKEN_TYPE.equals(tokenType)) {
+      throw new JwtAuthenticationException("Invalid token type");
+    }
+  }
+
+  private void validateRole(String role) {
+
+    if (role == null || role.isBlank()) {
+      throw new JwtAuthenticationException("Invalid token");
+    }
+  }
+
+  private UsernamePasswordAuthenticationToken createAuthentication(
+      CustomUserDetails user,
+      String role) {
+
+    return new UsernamePasswordAuthenticationToken(
+        user,
+        null,
+        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+  }
+
+  private void clearContext() {
+    SecurityContextHolder.clearContext();
   }
 }

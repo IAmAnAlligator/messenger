@@ -1,6 +1,8 @@
 package com.jeannimi.messenger.adapter.in.security.jwt;
 
-public class JwtAuthenticationException extends RuntimeException {
+import org.springframework.security.core.AuthenticationException;
+
+public class JwtAuthenticationException extends AuthenticationException {
 
   public JwtAuthenticationException(String message) {
     super(message);

@@ -28,58 +28,50 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<AuthAccessResponse> login(@RequestBody @Valid LoginRequest request) {
 
-    AuthResult auth = authService.login(request.username(), request.password());
-
-    return ResponseEntity.ok()
-        .header(
-            HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
-                .toString())
-        .body(new AuthAccessResponse(auth.accessToken()));
+    return authResponse(
+        authService.login(request.username(), request.password()));
   }
 
   @PostMapping("/register")
   public ResponseEntity<AuthAccessResponse> register(@RequestBody @Valid RegisterRequest request) {
 
-    AuthResult auth = authService.register(request.username(), request.password());
-
-    return ResponseEntity.ok()
-        .header(
-            HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
-                .toString())
-        .body(new AuthAccessResponse(auth.accessToken()));
+    return authResponse(
+        authService.register(request.username(), request.password()));
   }
 
   @PostMapping("/refresh")
   public ResponseEntity<AuthAccessResponse> refresh(
       @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken) {
 
-    AuthResult auth = authService.refresh(refreshToken);
-
-    return ResponseEntity.ok()
-        .header(
-            HttpHeaders.SET_COOKIE,
-            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME.getSeconds())
-                .toString())
-        .body(new AuthAccessResponse(auth.accessToken()));
+    return authResponse(authService.refresh(refreshToken));
   }
 
   @PostMapping("/logout")
   public ResponseEntity<Void> logout() {
 
     return ResponseEntity.ok()
-        .header(HttpHeaders.SET_COOKIE, createRefreshCookie("", 0).toString())
+        .header(HttpHeaders.SET_COOKIE, createRefreshCookie("", Duration.ZERO).toString())
         .build();
   }
 
-  private ResponseCookie createRefreshCookie(String value, long maxAgeSeconds) {
+  private ResponseCookie createRefreshCookie(String value, Duration maxAge) {
     return ResponseCookie.from(REFRESH_COOKIE, value == null ? "" : value)
         .httpOnly(true)
         .secure(false) // true в production
         .path(COOKIE_PATH)
         .sameSite(SAME_SITE)
-        .maxAge(maxAgeSeconds)
+        .maxAge(maxAge)
         .build();
+  }
+
+  private ResponseEntity<AuthAccessResponse> authResponse(AuthResult auth) {
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.SET_COOKIE,
+            createRefreshCookie(
+                auth.refreshToken(),
+                REFRESH_TOKEN_LIFETIME)
+                .toString())
+        .body(new AuthAccessResponse(auth.accessToken()));
   }
 }

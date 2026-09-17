@@ -11,6 +11,8 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
 import java.util.Date;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -25,36 +27,42 @@ public class JwtService implements TokenServicePort {
   private static final String CLAIM_TOKEN_TYPE = "token_type";
 
   private final SecretKey key;
+  private final long jwtAccessExpiration;
+  private final long jwtRefreshExpiration;
 
-  @Value("${security.access-expiration}")
-  private long jwtAccessExpiration;
+  public JwtService(
+      @Value("${security.secret}") String secret,
+      @Value("${security.access-expiration}") long jwtAccessExpiration,
+      @Value("${security.refresh-expiration}") long jwtRefreshExpiration) {
 
-  @Value("${security.refresh-expiration}")
-  private long jwtRefreshExpiration;
-
-  public JwtService(@Value("${security.secret}") String secret) {
     this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    this.jwtAccessExpiration = jwtAccessExpiration;
+    this.jwtRefreshExpiration = jwtRefreshExpiration;
   }
 
   @Override
   public String generateAccessToken(User user) {
+    Instant now = Instant.now();
+
     return Jwts.builder()
-        .setSubject(String.valueOf(user.getId()))
+        .subject(String.valueOf(user.getId()))
         .claim(CLAIM_ROLE, user.getRole().name())
         .claim(CLAIM_TOKEN_TYPE, ACCESS_TOKEN_TYPE)
-        .setIssuedAt(new Date())
-        .setExpiration(new Date(System.currentTimeMillis() + jwtAccessExpiration))
+        .issuedAt(Date.from(now))
+        .expiration(Date.from(now.plusMillis(jwtAccessExpiration)))
         .signWith(key)
         .compact();
   }
 
   @Override
   public String generateRefreshToken(User user) {
+    Instant now = Instant.now();
+
     return Jwts.builder()
-        .setSubject(String.valueOf(user.getId()))
+        .subject(String.valueOf(user.getId()))
         .claim(CLAIM_TOKEN_TYPE, REFRESH_TOKEN_TYPE)
-        .setIssuedAt(new Date())
-        .setExpiration(new Date(System.currentTimeMillis() + jwtRefreshExpiration))
+        .issuedAt(Date.from(now))
+        .expiration(Date.from(now.plusMillis(jwtRefreshExpiration)))
         .signWith(key)
         .compact();
   }
@@ -64,9 +72,8 @@ public class JwtService implements TokenServicePort {
     return Long.valueOf(extractClaims(token).getSubject());
   }
 
-  /**
-   * Used by the security adapter to extract the user's role from an access token.
-   */
+
+  @Override
   public String extractRole(String token) {
     return extractClaims(token).get(CLAIM_ROLE, String.class);
   }
@@ -81,7 +88,7 @@ public class JwtService implements TokenServicePort {
         .verifyWith(key)
         .build()
         .parseSignedClaims(token)
-        .getBody();
+        .getPayload();
   }
 
   @Override

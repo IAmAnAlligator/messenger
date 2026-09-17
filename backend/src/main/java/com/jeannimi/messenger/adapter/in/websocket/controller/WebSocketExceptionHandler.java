@@ -1,18 +1,19 @@
 package com.jeannimi.messenger.adapter.in.websocket.controller;
 
 import com.jeannimi.messenger.adapter.in.websocket.dto.WebSocketErrorResponse;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 
-@Controller
+@ControllerAdvice
 public class WebSocketExceptionHandler {
 
   @MessageExceptionHandler(MethodArgumentNotValidException.class)
   @SendToUser("/queue/errors")
-  public WebSocketErrorResponse handle(MethodArgumentNotValidException ex) {
+  public WebSocketErrorResponse handleValidation(MethodArgumentNotValidException ex) {
 
     String message =
         ex.getBindingResult().getFieldErrors().stream()
@@ -21,5 +22,12 @@ public class WebSocketExceptionHandler {
             .orElse("Validation error");
 
     return new WebSocketErrorResponse(message);
+  }
+
+  @MessageExceptionHandler(ForbiddenException.class)
+  @SendToUser("/queue/errors")
+  public WebSocketErrorResponse handleForbidden(ForbiddenException ex) {
+
+    return new WebSocketErrorResponse(ex.getMessage());
   }
 }

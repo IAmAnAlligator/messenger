@@ -8,7 +8,7 @@ import com.jeannimi.messenger.adapter.in.websocket.dto.SendMessageCommand;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.access.AccessDeniedException;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
@@ -51,7 +51,7 @@ public class ChatWebSocketController {
     if (authentication == null
         || !(authentication.getPrincipal() instanceof WsUserPrincipal principal)) {
 
-      throw new AccessDeniedException("Unauthorized WebSocket request");
+      throw new ForbiddenException("Unauthorized WebSocket request");
     }
 
     return principal;
