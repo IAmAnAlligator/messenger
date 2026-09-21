@@ -33,7 +33,9 @@ type Props = {
 
     currentUserId: number;
 
-    lastReadMessageId: number | null;
+isMessageReadByOtherUser(
+    messageId: number
+): boolean;
 
     text: string;
 
@@ -77,18 +79,26 @@ export default function ChatContent(
 
             <ChatHeader
 
-                chat={props.chat}
+                chat={
+                    props.chat
+                }
 
-                onBack={props.onBack}
+                onBack={
+                    props.onBack
+                }
 
-                onEdit={props.onEdit}
+                onEdit={
+                    props.onEdit
+                }
 
             />
 
 
             <WsError
 
-                message={props.error}
+                message={
+                    props.error
+                }
 
             />
 
@@ -115,9 +125,9 @@ export default function ChatContent(
                     props.currentUserId
                 }
 
-                lastReadMessageId={
-                    props.lastReadMessageId
-                }
+    isMessageReadByOtherUser={
+        props.isMessageReadByOtherUser
+    }
 
                 onLoadMore={
                     props.onLoadMore
@@ -157,4 +167,5 @@ export default function ChatContent(
         </div>
 
     );
+
 }

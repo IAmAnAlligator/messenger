@@ -23,82 +23,77 @@ import ChatContent
 
 
 type Props = {
-
     chatId?: number;
-
 };
 
 
-export default function ChatContainer({
-    chatId
-}: Props) {
+export default function ChatContainer(
+    {
+        chatId
+    }: Props
+) {
 
     const navigate =
         useNavigate();
+
 
     const { user } =
         useAuth();
 
 
-    const [text, setText] =
+    const [
+        text,
+        setText
+    ] =
         useState("");
 
 
-    const {
-
-        chat,
-
-        messages,
-
-        loading,
-
-        loadingMore,
-
-        hasMore,
-
-        otherUserLastReadMessageId,
-
-        addMessage,
-
-        removeMessage,
-
-        updateMessageStatus,
-
-        reloadMessages,
-
-        loadMoreMessages,
-
-        sendFile
-
-    } = useChat(chatId);
+const {
+    chat,
+    messages,
+    loading,
+    loadingMore,
+    hasMore,
+    isMessageReadByOtherUser,
+    addMessage,
+    removeMessage,
+    updateMessageStatus,
+    markCurrentUserRead,
+    reloadMessages,
+    loadMoreMessages,
+    sendFile
+} = useChat(chatId);
 
 
     const {
-
         error,
-
         sendMessage,
-
         deleteMessage,
-
         sendReadUpTo
+    } =
+        useChatSocket({
+            chatId,
+            onMessage: addMessage,
+            onDelete: removeMessage,
+            onRead: updateMessageStatus,
+            reloadMessages
+        });
 
-    } = useChatSocket({
 
-        chatId,
+    function handleReadUpTo(
+        messageId: number
+    ) {
 
-        onMessage:
-            addMessage,
+        sendReadUpTo(
+            messageId
+        );
 
-        onDelete:
-            removeMessage,
 
-        onRead:
-            updateMessageStatus,
+        markCurrentUserRead(
+            messageId
+        );
 
-        reloadMessages
-
-    });
+    }
 
 
     async function handleSendFile(
@@ -153,23 +148,33 @@ export default function ChatContainer({
 
         <ChatContent
 
-            chat={chat}
+            chat={
+                chat
+            }
 
-            messages={messages}
+            messages={
+                messages
+            }
 
-            loading={loading}
+            loading={
+                loading
+            }
 
-            loadingMore={loadingMore}
+            loadingMore={
+                loadingMore
+            }
 
-            hasMore={hasMore}
+            hasMore={
+                hasMore
+            }
 
             currentUserId={
                 user.id
             }
 
-            lastReadMessageId={
-                otherUserLastReadMessageId
-            }
+isMessageReadByOtherUser={
+    isMessageReadByOtherUser
+}
 
             onLoadMore={
                 loadMoreMessages
@@ -180,12 +185,16 @@ export default function ChatContainer({
             }
 
             onReadUpTo={
-                sendReadUpTo
+                handleReadUpTo
             }
 
-            text={text}
+            text={
+                text
+            }
 
-            error={error}
+            error={
+                error
+            }
 
             onTextChange={
                 setText

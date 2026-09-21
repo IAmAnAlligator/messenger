@@ -1,4 +1,5 @@
 import { Client } from "@stomp/stompjs";
+
 import type {
     IMessage,
     StompSubscription
@@ -7,6 +8,10 @@ import type {
 
 type SubscriptionCallback =
     (message: IMessage) => void;
+
+
+type ConnectionListener =
+    () => void;
 
 
 let client: Client | null = null;
@@ -26,15 +31,24 @@ const activeSubs =
     >();
 
 
+const connectionListeners =
+    new Set<ConnectionListener>();
+
+
 let reconnectAttempts = 0;
+
 
 const MAX_RECONNECT = 5;
 
 
 export function connectSocket(
-    token: string,
-    onConnect?: () => void
+    token: string
 ) {
+
+    /*
+     * Если socket уже создан и активен,
+     * повторно Client не создаём.
+     */
 
     if (client?.active) {
         return client;
@@ -78,11 +92,49 @@ export function connectSocket(
                     "[WS] connected"
                 );
 
+
                 reconnectAttempts = 0;
+
+
+                /*
+                 * После каждого успешного подключения
+                 * восстанавливаем все подписки.
+                 *
+                 * Это работает как для первого connect,
+                 * так и для reconnect.
+                 */
 
                 resubscribeAll();
 
-                onConnect?.();
+
+                /*
+                 * Уведомляем всех подписчиков,
+                 * например useChatSocket.
+                 *
+                 * Важно:
+                 * здесь нет chatId и reloadMessages.
+                 * WebSocket-сервис ничего не знает
+                 * о конкретном чате.
+                 */
+
+                connectionListeners.forEach(
+                    listener => {
+
+                        try {
+
+                            listener();
+
+                        } catch (error) {
+
+                            console.error(
+                                "[WS CONNECTION LISTENER ERROR]",
+                                error
+                            );
+
+                        }
+
+                    }
+                );
 
             },
 
@@ -98,6 +150,7 @@ export function connectSocket(
 
                 reconnectAttempts++;
 
+
                 console.log(
                     "[WS] closed attempt:",
                     reconnectAttempts
@@ -112,6 +165,7 @@ export function connectSocket(
                     console.warn(
                         "[WS] max reconnect reached"
                     );
+
 
                     disconnectSocket();
 
@@ -135,11 +189,22 @@ export function connectSocket(
                     frame
                 );
 
+
+                /*
+                 * STOMP ERROR означает,
+                 * что сервер отклонил CONNECT
+                 * или произошла фатальная ошибка.
+                 *
+                 * В этом случае reconnect не продолжаем.
+                 */
+
                 disconnectSocket();
+
 
                 localStorage.removeItem(
                     "accessToken"
                 );
+
 
                 window.location.href =
                     "/login";
@@ -151,7 +216,57 @@ export function connectSocket(
 
     client.activate();
 
+
     return client;
+
+}
+
+
+/*
+ * Регистрирует listener, который будет вызван
+ * после каждого успешного подключения:
+ *
+ * - initial connect
+ * - reconnect
+ *
+ * Возвращает функцию удаления listener.
+ */
+
+export function onSocketConnected(
+    listener: ConnectionListener
+) {
+
+    connectionListeners.add(
+        listener
+    );
+
+
+    if (client?.connected) {
+
+        try {
+
+            listener();
+
+        } catch (error) {
+
+            console.error(
+                "[WS CONNECTION LISTENER ERROR]",
+                error
+            );
+
+        }
+
+    }
+
+
+    return () => {
+
+        connectionListeners.delete(
+            listener
+        );
+
+    };
+
 }
 
 
@@ -184,6 +299,11 @@ export function subscribe(
     );
 
 
+    /*
+     * Если socket уже подключён,
+     * создаём STOMP subscription сразу.
+     */
+
     if (client?.connected) {
 
         createSubscription(
@@ -215,6 +335,12 @@ export function unsubscribe(
         callback
     );
 
+
+    /*
+     * Если для destination больше
+     * нет callback'ов — удаляем
+     * саму STOMP subscription.
+     */
 
     if (
         callbacks.size === 0
@@ -254,6 +380,15 @@ function createSubscription(
         return;
     }
 
+
+    /*
+     * На один destination создаём
+     * только одну STOMP subscription.
+     *
+     * Несколько React-компонентов могут
+     * использовать один destination —
+     * callbacks будут храниться в Set.
+     */
 
     const existing =
         activeSubs.get(
@@ -322,14 +457,41 @@ function resubscribeAll() {
     }
 
 
+    /*
+     * Старые STOMP subscriptions
+     * больше не считаем активными.
+     */
+
     activeSubs.forEach(
-        subscription =>
-            subscription.unsubscribe()
+        subscription => {
+
+            try {
+
+                subscription.unsubscribe();
+
+            } catch (error) {
+
+                console.error(
+                    "[WS UNSUBSCRIBE ERROR]",
+                    error
+                );
+
+            }
+
+        }
     );
 
 
     activeSubs.clear();
 
+
+    /*
+     * subscriptions содержит логические
+     * подписки приложения.
+     *
+     * Восстанавливаем их на новом
+     * STOMP connection.
+     */
 
     for (
         const destination
@@ -347,20 +509,55 @@ function resubscribeAll() {
 
 export function disconnectSocket() {
 
+    /*
+     * Удаляем реальные STOMP subscriptions.
+     */
+
     activeSubs.forEach(
-        subscription =>
-            subscription.unsubscribe()
+        subscription => {
+
+            try {
+
+                subscription.unsubscribe();
+
+            } catch (error) {
+
+                console.error(
+                    "[WS UNSUBSCRIBE ERROR]",
+                    error
+                );
+
+            }
+
+        }
     );
 
 
     activeSubs.clear();
 
+
+    /*
+     * Удаляем логические subscriptions.
+     */
+
     subscriptions.clear();
+
+
+    /*
+     * Удаляем listeners подключения.
+     */
+
+    connectionListeners.clear();
+
 
     reconnectAttempts = 0;
 
 
     if (client) {
+
+        /*
+         * deactivate() завершает STOMP client.
+         */
 
         client.deactivate();
 

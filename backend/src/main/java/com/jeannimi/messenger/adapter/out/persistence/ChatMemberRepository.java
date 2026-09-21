@@ -9,6 +9,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -40,8 +41,8 @@ public class ChatMemberRepository implements ChatMemberRepositoryPort {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public boolean existsByChatIdAndUserId(Long chatId, Long userId) {
-
     return chatMemberJpaRepository.existsByChat_IdAndUser_Id(chatId, userId);
   }
 

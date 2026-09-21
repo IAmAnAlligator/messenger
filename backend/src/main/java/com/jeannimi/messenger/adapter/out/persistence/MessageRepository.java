@@ -14,7 +14,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -27,7 +26,6 @@ public class MessageRepository implements MessageRepositoryPort {
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;
 
   @Override
-  @Transactional(readOnly = true)
   public List<FileAttachment> findAttachmentsByChatId(Long chatId) {
 
     return messageJpaRepository.findAttachmentsByChatId(chatId).stream()
@@ -36,25 +34,6 @@ public class MessageRepository implements MessageRepositoryPort {
   }
 
   @Override
-  @Transactional(readOnly = true)
-  public List<Message> findAllByChatId(Long chatId, int limit) {
-
-    return messageJpaRepository.findAllByChat_Id(chatId, PageRequest.of(0, limit)).stream()
-        .map(messagePersistenceMapper::toDomain)
-        .toList();
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public List<Message> findAllByChatId(Long chatId) {
-
-    return messageJpaRepository.findAllByChat_Id(chatId).stream()
-        .map(messagePersistenceMapper::toDomain)
-        .toList();
-  }
-
-  @Override
-  @Transactional(readOnly = true)
   public Optional<Message> findByIdAndChatId(Long messageId, Long chatId) {
 
     return messageJpaRepository
@@ -63,7 +42,6 @@ public class MessageRepository implements MessageRepositoryPort {
   }
 
   @Override
-  @Transactional(readOnly = true)
   public List<Message> findWithSenderByChatId(Long chatId, int limit) {
 
     return messageJpaRepository.findWithSenderByChatId(chatId, PageRequest.of(0, limit)).stream()
@@ -72,7 +50,6 @@ public class MessageRepository implements MessageRepositoryPort {
   }
 
   @Override
-  @Transactional(readOnly = true)
   public List<Message> findWithSenderByChatIdAndCursor(
       Long chatId, Instant createdAt, Long id, int limit) {
 
@@ -84,14 +61,12 @@ public class MessageRepository implements MessageRepositoryPort {
   }
 
   @Override
-  @Transactional
   public int deleteByChatId(Long chatId) {
 
     return messageJpaRepository.deleteByChatId(chatId);
   }
 
   @Override
-  @Transactional
   public Message save(Message message) {
 
     ChatJpaEntity chat = chatJpaRepository.getReferenceById(message.getChatId());
@@ -106,7 +81,6 @@ public class MessageRepository implements MessageRepositoryPort {
   }
 
   @Override
-  @Transactional
   public void delete(Message message) {
 
     if (message == null || message.getId() == null) {

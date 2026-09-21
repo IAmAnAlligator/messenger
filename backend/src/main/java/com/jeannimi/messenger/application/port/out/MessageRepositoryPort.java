@@ -10,10 +10,6 @@ public interface MessageRepositoryPort {
 
   List<FileAttachment> findAttachmentsByChatId(Long chatId);
 
-  List<Message> findAllByChatId(Long chatId, int limit);
-
-  List<Message> findAllByChatId(Long chatId);
-
   Optional<Message> findByIdAndChatId(Long messageId, Long chatId);
 
   List<Message> findWithSenderByChatId(Long chatId, int limit);

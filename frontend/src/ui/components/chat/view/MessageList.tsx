@@ -1,5 +1,6 @@
 import {
     useEffect,
+    useLayoutEffect,
     useRef
 } from "react";
 
@@ -25,7 +26,9 @@ type Props = {
 
     currentUserId: number;
 
-    lastReadMessageId: number | null;
+    isMessageReadByOtherUser(
+        messageId: number
+    ): boolean;
 
     onDelete(
         id: number
@@ -53,7 +56,7 @@ export default function MessageList({
 
     currentUserId,
 
-    lastReadMessageId,
+    isMessageReadByOtherUser,
 
     onDelete,
 
@@ -157,11 +160,6 @@ export default function MessageList({
             }
 
 
-            /*
-             * Свои сообщения никогда
-             * не отправляют READ.
-             */
-
             if (
                 message.sender.id ===
                 currentUserId
@@ -183,17 +181,24 @@ export default function MessageList({
         });
 
 
+        console.log(
+            "[READ] visible check:",
+            {
+                messages:
+                    messages.map(
+                        message => message.id
+                    ),
+
+                elements:
+                    elements.length,
+
+                lastVisibleIncomingId
+            }
+        );
+
+
         if (
             lastVisibleIncomingId === null
-        ) {
-            return;
-        }
-
-
-        if (
-            lastReadMessageId !== null &&
-            lastVisibleIncomingId <=
-                lastReadMessageId
         ) {
             return;
         }
@@ -225,16 +230,21 @@ export default function MessageList({
     }
 
 
-    /*
-     * Первоначальный вход.
-     */
-
-    useEffect(() => {
+    useLayoutEffect(() => {
 
         if (
-            initialized.current ||
+            loading ||
             messages.length === 0
         ) {
+            return;
+        }
+
+
+        const container =
+            containerRef.current;
+
+
+        if (!container) {
             return;
         }
 
@@ -257,15 +267,11 @@ export default function MessageList({
 
         });
 
-    }, [messages]);
+    }, [
+        loading,
+        messages
+    ]);
 
-
-    /*
-     * Новое сообщение.
-     *
-     * Скроллим вниз, но READ отправляем
-     * только если новое сообщение чужое.
-     */
 
     useEffect(() => {
 
@@ -299,11 +305,6 @@ export default function MessageList({
             });
 
 
-            /*
-             * ВАЖНО:
-             * собственное сообщение не READ.
-             */
-
             if (
                 lastMessage.sender.id !==
                 currentUserId
@@ -329,10 +330,6 @@ export default function MessageList({
         currentUserId
     ]);
 
-
-    /*
-     * Восстановление позиции после pagination.
-     */
 
     useEffect(() => {
 
@@ -378,12 +375,10 @@ export default function MessageList({
 
         }
 
-    }, [messages]);
+    }, [
+        messages
+    ]);
 
-
-    /*
-     * Scroll.
-     */
 
     useEffect(() => {
 
@@ -444,8 +439,7 @@ export default function MessageList({
         loadingMore,
         onLoadMore,
         messages,
-        currentUserId,
-        lastReadMessageId
+        currentUserId
     ]);
 
 
@@ -494,18 +488,29 @@ export default function MessageList({
                             currentUserId;
 
 
-                        /*
-                         * Две галочки только если
-                         * ДРУГОЙ пользователь прочитал
-                         * это сообщение.
-                         */
-
                         const isRead =
                             isOwnMessage &&
-                            otherRead(
-                                message.id,
-                                lastReadMessageId
+                            isMessageReadByOtherUser(
+                                message.id
                             );
+
+
+                        console.log(
+                            "[READ UI]",
+                            {
+                                messageId:
+                                    message.id,
+
+                                senderId:
+                                    message.sender.id,
+
+                                currentUserId,
+
+                                isOwnMessage,
+
+                                isRead
+                            }
+                        );
 
 
                         return (
@@ -546,26 +551,6 @@ export default function MessageList({
 
         </div>
 
-    );
-
-}
-
-
-function otherRead(
-    messageId: number,
-    lastReadMessageId: number | null
-): boolean {
-
-    if (
-        lastReadMessageId === null
-    ) {
-        return false;
-    }
-
-
-    return (
-        messageId <=
-        lastReadMessageId
     );
 
 }

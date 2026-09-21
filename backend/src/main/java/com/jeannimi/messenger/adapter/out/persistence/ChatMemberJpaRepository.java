@@ -31,11 +31,13 @@ public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEnti
               SELECT 1
               FROM messages old_message
               WHERE old_message.id = cm.last_read_message_id
+              AND old_message.chat_id = :chatId
             )
             OR EXISTS (
               SELECT 1
               FROM messages old_message
               WHERE old_message.id = cm.last_read_message_id
+              AND old_message.chat_id = :chatId
               AND (
                 old_message.created_at < new_message.created_at
                 OR (

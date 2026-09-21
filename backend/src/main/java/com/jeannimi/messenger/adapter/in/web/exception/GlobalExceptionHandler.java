@@ -144,7 +144,8 @@ public class GlobalExceptionHandler {
               FILE_CONTENT_TYPE_INVALID,
               FILE_CONTENT_TYPE_TOO_LONG,
               FILE_STORAGE_PATH_INVALID,
-              FILE_STORAGE_PATH_TOO_LONG -> HttpStatus.BAD_REQUEST;
+              FILE_STORAGE_PATH_TOO_LONG,
+               CONTENT_NOT_ALLOWED -> HttpStatus.BAD_REQUEST;
 
           case FILE_STORAGE_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

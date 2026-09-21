@@ -1,3 +1,4 @@
+
 import type {
     IMessage
 } from "@stomp/stompjs";
@@ -21,7 +22,8 @@ import {
     connectSocket,
     subscribe,
     unsubscribe,
-    getSocket
+    getSocket,
+    onSocketConnected
 } from "../services/chatSocket";
 
 import type {
@@ -83,13 +85,6 @@ export function useChatSocket({
         );
 
 
-    /*
-     * Храним актуальные callbacks.
-     *
-     * Это позволяет не пересоздавать
-     * STOMP subscription при каждом render.
-     */
-
     const onMessageRef =
         useRef(onMessage);
 
@@ -105,52 +100,40 @@ export function useChatSocket({
     const userIdRef =
         useRef(user?.id);
 
+    const pendingReadRef =
+        useRef<number | null>(
+            null
+        );
+
 
     useEffect(() => {
-
-        onMessageRef.current =
-            onMessage;
-
+        onMessageRef.current = onMessage;
     }, [onMessage]);
 
 
     useEffect(() => {
-
-        onDeleteRef.current =
-            onDelete;
-
+        onDeleteRef.current = onDelete;
     }, [onDelete]);
 
 
     useEffect(() => {
-
-        onReadRef.current =
-            onRead;
-
+        onReadRef.current = onRead;
     }, [onRead]);
 
 
     useEffect(() => {
-
         reloadMessagesRef.current =
             reloadMessages;
-
     }, [reloadMessages]);
 
 
     useEffect(() => {
-
         userIdRef.current =
             user?.id;
-
     }, [user?.id]);
 
 
-    /*
-     * READ до указанного сообщения.
-     */
-
-    const sendReadUpTo =
+    const publishRead =
         useCallback(
             (
                 messageId: number
@@ -160,21 +143,12 @@ export function useChatSocket({
                     return;
                 }
 
-
                 const socket =
                     getSocket();
 
-
                 if (!socket?.connected) {
-
-                    console.warn(
-                        "[READ] socket is not connected"
-                    );
-
                     return;
-
                 }
-
 
                 console.log(
                     "[READ] sending",
@@ -183,7 +157,6 @@ export function useChatSocket({
                         messageId
                     }
                 );
-
 
                 socket.publish({
 
@@ -208,27 +181,78 @@ export function useChatSocket({
         );
 
 
+    const sendReadUpTo =
+        useCallback(
+            (
+                messageId: number
+            ) => {
+
+                if (!chatId) {
+                    return;
+                }
+
+                const socket =
+                    getSocket();
+
+                if (!socket?.connected) {
+
+                    const pending =
+                        pendingReadRef.current;
+
+                    if (
+                        pending === null ||
+                        messageId > pending
+                    ) {
+
+                        pendingReadRef.current =
+                            messageId;
+
+                    }
+
+                    console.log(
+                        "[READ] queued",
+                        {
+                            chatId,
+                            messageId
+                        }
+                    );
+
+                    return;
+                }
+
+                publishRead(
+                    messageId
+                );
+
+            },
+            [
+                chatId,
+                publishRead
+            ]
+        );
+
+
     useEffect(() => {
+
+        pendingReadRef.current =
+            null;
+
 
         if (!chatId) {
             return;
         }
-
 
         const token =
             localStorage.getItem(
                 "accessToken"
             );
 
-
         if (!token) {
             return;
         }
 
-
         const chatTopic =
             `/topic/chat/${chatId}`;
-
 
         const errorQueue =
             "/user/queue/errors";
@@ -239,7 +263,6 @@ export function useChatSocket({
 
                 let event:
                     ChatSocketEvent;
-
 
                 try {
 
@@ -256,7 +279,6 @@ export function useChatSocket({
                     );
 
                     return;
-
                 }
 
 
@@ -287,23 +309,10 @@ export function useChatSocket({
                         const readEvent =
                             event.payload;
 
-
                         console.log(
                             "[MESSAGE_READ]",
                             readEvent
                         );
-
-
-                        /*
-                         * ВАЖНО:
-                         *
-                         * READ должен обрабатываться
-                         * у отправителя, когда readerId
-                         * является другим пользователем.
-                         *
-                         * Собственный READ игнорируем
-                         * для галочек.
-                         */
 
                         if (
                             readEvent.readerId ===
@@ -315,14 +324,11 @@ export function useChatSocket({
                             );
 
                             break;
-
                         }
-
 
                         onReadRef.current(
                             readEvent
                         );
-
 
                         break;
                     }
@@ -357,7 +363,6 @@ export function useChatSocket({
                             break;
                         }
 
-
                         if (
                             event.payload.userId ===
                             userIdRef.current
@@ -371,9 +376,7 @@ export function useChatSocket({
                             );
 
                             return;
-
                         }
-
 
                         reloadMessagesRef
                             .current
@@ -404,15 +407,15 @@ export function useChatSocket({
                             frame.body
                         ) as WebSocketErrorResponse;
 
-
                     setError(
                         response.message
                     );
 
-
                     setTimeout(() => {
 
-                        setError(null);
+                        setError(
+                            null
+                        );
 
                     }, 4000);
 
@@ -428,16 +431,8 @@ export function useChatSocket({
             };
 
 
-        /*
-         * Подключаем socket.
-         *
-         * Не передаём reloadMessages в dependency
-         * effect.
-         */
-
-        connectSocket(
-            token,
-            () => {
+        const removeConnectionListener =
+            onSocketConnected(() => {
 
                 console.log(
                     "[WS] chat socket connected",
@@ -448,7 +443,38 @@ export function useChatSocket({
                     .current
                     ?.();
 
-            }
+
+                const pendingRead =
+                    pendingReadRef.current;
+
+
+                if (
+                    pendingRead !== null
+                ) {
+
+                    console.log(
+                        "[READ] sending pending",
+                        {
+                            chatId,
+                            messageId:
+                                pendingRead
+                        }
+                    );
+
+                    pendingReadRef.current =
+                        null;
+
+                    publishRead(
+                        pendingRead
+                    );
+
+                }
+
+            });
+
+
+        connectSocket(
+            token
         );
 
 
@@ -466,6 +492,9 @@ export function useChatSocket({
 
         return () => {
 
+            removeConnectionListener();
+
+
             unsubscribe(
                 chatTopic,
                 handleChatMessage
@@ -482,7 +511,8 @@ export function useChatSocket({
 
     }, [
         chatId,
-        navigate
+        navigate,
+        publishRead
     ]);
 
 
@@ -495,7 +525,6 @@ export function useChatSocket({
                 const socket =
                     getSocket();
 
-
                 if (
                     !socket?.connected ||
                     !chatId
@@ -506,9 +535,7 @@ export function useChatSocket({
                     );
 
                     return;
-
                 }
-
 
                 socket.publish({
 
@@ -542,14 +569,12 @@ export function useChatSocket({
                 const socket =
                     getSocket();
 
-
                 if (
                     !socket?.connected ||
                     !chatId
                 ) {
                     return;
                 }
-
 
                 socket.publish({
 

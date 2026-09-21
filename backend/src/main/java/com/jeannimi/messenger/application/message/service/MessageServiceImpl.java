@@ -96,13 +96,8 @@ public class MessageServiceImpl implements MessageService {
     // 1. Проверка входных данных
     // =========================
 
-    if (file == null || file.size() <= 0) {
+    if (file == null) {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
-    }
-
-    if (file.size() > FileAttachmentConstants.MAX_FILE_SIZE_BYTES) {
-      throw new MessageException(
-          MessageError.FILE_TOO_LARGE, "File size exceeds the maximum allowed size");
     }
 
     // =========================
@@ -176,6 +171,8 @@ public class MessageServiceImpl implements MessageService {
 
       chat.updateLastMessageTime();
 
+      chatRepository.save(chat);
+
       MessageResult result = toResult(savedMessage);
 
       publishMessageCreated(result);
@@ -220,7 +217,15 @@ public class MessageServiceImpl implements MessageService {
      *
      * secret.txt
      */
-    String sanitizedName = Paths.get(fileName).getFileName().toString();
+
+    String sanitizedName =
+        fileName.replace('\\', '/');
+
+    int lastSeparator = sanitizedName.lastIndexOf('/');
+
+    if (lastSeparator >= 0) {
+      sanitizedName = sanitizedName.substring(lastSeparator + 1);
+    }
 
     if (sanitizedName.isBlank()) {
       throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
@@ -241,7 +246,7 @@ public class MessageServiceImpl implements MessageService {
     /*
      * Не разрешаем слишком длинные имена.
      */
-    if (sanitizedName.length() > 255) {
+    if (sanitizedName.length() > FileAttachmentConstants.MAX_FILE_NAME_LENGTH) {
       throw new MessageException(MessageError.FILE_NAME_INVALID, "File name is too long");
     }
 
@@ -272,6 +277,8 @@ public class MessageServiceImpl implements MessageService {
     Message saved = messageRepository.save(message);
 
     chat.updateLastMessageTime();
+
+    chatRepository.save(chat);
 
     MessageResult result = toResult(saved);
 
@@ -390,6 +397,8 @@ public class MessageServiceImpl implements MessageService {
   // =========================
   // DELETE
   // =========================
+
+  // не проверен
 
   @Override
   @Transactional

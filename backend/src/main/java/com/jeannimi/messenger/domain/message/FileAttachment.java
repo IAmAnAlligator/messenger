@@ -25,12 +25,13 @@ public final class FileAttachment {
       Long size,
       Instant createdAt) {
 
-    this.id = id;
-    this.originalFileName = originalFileName;
-    this.storageFileName = storageFileName;
-    this.contentType = contentType;
-    this.size = size;
-    this.createdAt = createdAt;
+    this.id = Objects.requireNonNull(id, "id");
+    this.originalFileName = Objects.requireNonNull(originalFileName, "originalFileName");
+    this.storageFileName = Objects.requireNonNull(storageFileName, "storageFileName");
+    this.contentType = Objects.requireNonNull(contentType, "contentType");
+    this.size = Objects.requireNonNull(size, "size");
+    this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+
   }
 
   public static FileAttachment create(
@@ -61,13 +62,18 @@ public final class FileAttachment {
       Long size,
       Instant createdAt) {
 
+    validateOriginalFileName(originalFileName);
+    validateStorageFileName(storageFileName);
+    validateContentType(contentType);
+    validateSize(size);
+
     return new FileAttachment(
-        Objects.requireNonNull(id, "id"),
+        id,
         originalFileName,
         storageFileName,
         contentType,
         size,
-        Objects.requireNonNull(createdAt, "createdAt"));
+        createdAt);
   }
 
   private static void validateOriginalFileName(String fileName) {
@@ -78,7 +84,7 @@ public final class FileAttachment {
           "File name must not be empty");
     }
 
-    if (fileName.length() > 255) {
+    if (fileName.length() > FileAttachmentConstants.MAX_FILE_NAME_LENGTH) {
       throw new MessageException(
           MessageError.FILE_NAME_TOO_LONG,
           "File name is too long");
@@ -93,7 +99,7 @@ public final class FileAttachment {
           "Storage file name must not be empty");
     }
 
-    if (fileName.length() > 255) {
+    if (fileName.length() > FileAttachmentConstants.MAX_STORAGE_FILE_NAME_LENGTH) {
       throw new MessageException(
           MessageError.FILE_STORAGE_NAME_TOO_LONG,
           "Storage file name is too long");
@@ -108,7 +114,7 @@ public final class FileAttachment {
           "Content type must not be empty");
     }
 
-    if (contentType.length() > 255) {
+    if (contentType.length() > FileAttachmentConstants.MAX_CONTENT_TYPE_LENGTH) {
       throw new MessageException(
           MessageError.FILE_CONTENT_TYPE_TOO_LONG,
           "Content type is too long");

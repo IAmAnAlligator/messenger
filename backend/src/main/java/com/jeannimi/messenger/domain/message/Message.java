@@ -38,31 +38,32 @@ public final class Message {
 
   public static Message ofText(Long chatId, Long senderId, String content) {
 
-    Objects.requireNonNull(chatId, "chatId");
-    Objects.requireNonNull(senderId, "senderId");
+    validateTextContent(content);
 
-    if (content == null || content.isBlank()) {
-      throw new MessageException(MessageError.CONTENT_BLANK, "Message content must not be blank");
-    }
+    String normalizedContent = content.trim();
 
-    content = content.trim();
-
-    if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
-      throw new MessageException(
-          MessageError.CONTENT_TOO_LONG,
-          "Message content exceeds " + MessageConstants.MAX_CONTENT_LENGTH + " characters");
-    }
-
-    return new Message(null, chatId, senderId, content, Instant.now(), MessageType.TEXT, null);
+    return new Message(
+        null,
+        chatId,
+        senderId,
+        normalizedContent,
+        Instant.now(),
+        MessageType.TEXT,
+        null);
   }
 
   public static Message ofFile(Long chatId, Long senderId, FileAttachment attachment) {
 
-    Objects.requireNonNull(chatId, "chatId");
-    Objects.requireNonNull(senderId, "senderId");
-    Objects.requireNonNull(attachment, "attachment");
+    validateFileAttachment(attachment);
 
-    return new Message(null, chatId, senderId, null, Instant.now(), MessageType.FILE, attachment);
+    return new Message(
+        null,
+        chatId,
+        senderId,
+        null,
+        Instant.now(),
+        MessageType.FILE,
+        attachment);
   }
 
   public static Message reconstitute(
@@ -74,16 +75,77 @@ public final class Message {
       MessageType type,
       FileAttachment attachment) {
 
+    validate(type, content, attachment);
+
     return new Message(
-        Objects.requireNonNull(id, "id"), chatId, senderId, content, createdAt, type, attachment);
+        Objects.requireNonNull(id, "id"),
+        chatId,
+        senderId,
+        content,
+        createdAt,
+        type,
+        attachment);
   }
 
-  public boolean isText() {
-    return type == MessageType.TEXT;
+  private static void validate(
+      MessageType type,
+      String content,
+      FileAttachment attachment) {
+
+    Objects.requireNonNull(type, "type");
+
+    switch (type) {
+      case TEXT -> {
+        validateTextContent(content);
+        validateTextAttachment(attachment);
+      }
+      case FILE -> {
+        validateFileContent(content);
+        validateFileAttachment(attachment);
+      }
+    }
   }
 
-  public boolean isFile() {
-    return type == MessageType.FILE;
+  private static void validateTextContent(String content) {
+
+    if (content == null || content.isBlank()) {
+      throw new MessageException(
+          MessageError.CONTENT_BLANK,
+          "Text message content must not be blank");
+    }
+
+    if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
+      throw new MessageException(
+          MessageError.CONTENT_TOO_LONG,
+          "Message content exceeds "
+              + MessageConstants.MAX_CONTENT_LENGTH
+              + " characters");
+    }
+  }
+
+  private static void validateTextAttachment(FileAttachment attachment) {
+
+    if (attachment != null) {
+      throw new MessageException(
+          MessageError.CONTENT_NOT_ALLOWED,
+          "Text message must not have an attachment");
+    }
+  }
+
+  private static void validateFileContent(String content) {
+    if (content != null) {
+      throw new MessageException(
+          MessageError.CONTENT_NOT_ALLOWED,
+          "File message must not have text content");
+    }
+  }
+
+  private static void validateFileAttachment(FileAttachment attachment) {
+    if (attachment == null) {
+      throw new MessageException(
+          MessageError.FILE_EMPTY,
+          "File message must have an attachment");
+    }
   }
 
   @Override

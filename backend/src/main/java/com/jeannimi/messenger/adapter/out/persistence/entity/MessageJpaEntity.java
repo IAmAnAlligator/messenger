@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.adapter.out.persistence.entity;
 
+import com.jeannimi.messenger.domain.message.MessageConstants;
 import com.jeannimi.messenger.domain.message.MessageType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -30,7 +31,6 @@ import org.hibernate.annotations.BatchSize;
           columnList = "chat_id, created_at DESC, id DESC"),
       @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
     })
-@BatchSize(size = 50)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MessageJpaEntity {

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class FileAttachmentJpaEntity {
 
   @Id
-  @Column(name = "id")
+  @Column(name = "id", nullable = false, updatable = false)
   private UUID id;
 
   @Column(name = "original_file_name", nullable = false, length = 255)
@@ -26,16 +26,13 @@ public class FileAttachmentJpaEntity {
   @Column(name = "storage_file_name", nullable = false, unique = true, length = 255)
   private String storageFileName;
 
-  @Column(name = "content_type", nullable = false, length = 255)
+  @Column(name = "content_type", nullable = false, length = 100)
   private String contentType;
 
   @Column(name = "size", nullable = false)
   private Long size;
 
-//  @Column(name = "storage_path", nullable = false, length = 500)
-//  private String storagePath;
-
-  @Column(name = "created_at", nullable = false)
+  @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
   public FileAttachmentJpaEntity(
