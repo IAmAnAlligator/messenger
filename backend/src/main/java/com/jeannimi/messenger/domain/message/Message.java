@@ -43,27 +43,14 @@ public final class Message {
     String normalizedContent = content.trim();
 
     return new Message(
-        null,
-        chatId,
-        senderId,
-        normalizedContent,
-        Instant.now(),
-        MessageType.TEXT,
-        null);
+        null, chatId, senderId, normalizedContent, Instant.now(), MessageType.TEXT, null);
   }
 
   public static Message ofFile(Long chatId, Long senderId, FileAttachment attachment) {
 
     validateFileAttachment(attachment);
 
-    return new Message(
-        null,
-        chatId,
-        senderId,
-        null,
-        Instant.now(),
-        MessageType.FILE,
-        attachment);
+    return new Message(null, chatId, senderId, null, Instant.now(), MessageType.FILE, attachment);
   }
 
   public static Message reconstitute(
@@ -78,19 +65,10 @@ public final class Message {
     validate(type, content, attachment);
 
     return new Message(
-        Objects.requireNonNull(id, "id"),
-        chatId,
-        senderId,
-        content,
-        createdAt,
-        type,
-        attachment);
+        Objects.requireNonNull(id, "id"), chatId, senderId, content, createdAt, type, attachment);
   }
 
-  private static void validate(
-      MessageType type,
-      String content,
-      FileAttachment attachment) {
+  private static void validate(MessageType type, String content, FileAttachment attachment) {
 
     Objects.requireNonNull(type, "type");
 
@@ -110,16 +88,13 @@ public final class Message {
 
     if (content == null || content.isBlank()) {
       throw new MessageException(
-          MessageError.CONTENT_BLANK,
-          "Text message content must not be blank");
+          MessageError.CONTENT_BLANK, "Text message content must not be blank");
     }
 
     if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
       throw new MessageException(
           MessageError.CONTENT_TOO_LONG,
-          "Message content exceeds "
-              + MessageConstants.MAX_CONTENT_LENGTH
-              + " characters");
+          "Message content exceeds " + MessageConstants.MAX_CONTENT_LENGTH + " characters");
     }
   }
 
@@ -127,24 +102,20 @@ public final class Message {
 
     if (attachment != null) {
       throw new MessageException(
-          MessageError.CONTENT_NOT_ALLOWED,
-          "Text message must not have an attachment");
+          MessageError.CONTENT_NOT_ALLOWED, "Text message must not have an attachment");
     }
   }
 
   private static void validateFileContent(String content) {
     if (content != null) {
       throw new MessageException(
-          MessageError.CONTENT_NOT_ALLOWED,
-          "File message must not have text content");
+          MessageError.CONTENT_NOT_ALLOWED, "File message must not have text content");
     }
   }
 
   private static void validateFileAttachment(FileAttachment attachment) {
     if (attachment == null) {
-      throw new MessageException(
-          MessageError.FILE_EMPTY,
-          "File message must have an attachment");
+      throw new MessageException(MessageError.FILE_EMPTY, "File message must have an attachment");
     }
   }
 

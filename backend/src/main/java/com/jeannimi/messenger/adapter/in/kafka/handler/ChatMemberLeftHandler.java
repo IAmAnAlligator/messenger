@@ -24,21 +24,16 @@ public class ChatMemberLeftHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-      ChatMemberLeftEvent kafkaEvent =
-          objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
+      ChatMemberLeftEvent kafkaEvent = objectMapper.treeToValue(payload, ChatMemberLeftEvent.class);
 
       com.jeannimi.messenger.application.event.ChatMemberLeftEvent applicationEvent =
           new com.jeannimi.messenger.application.event.ChatMemberLeftEvent(
-              kafkaEvent.chatId(),
-              kafkaEvent.userId());
+              kafkaEvent.chatId(), kafkaEvent.userId());
 
-      realtimeEventPublisher.publish(
-          EventType.CHAT_MEMBER_LEFT,
-          applicationEvent);
+      realtimeEventPublisher.publish(EventType.CHAT_MEMBER_LEFT, applicationEvent);
 
     } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to process CHAT_MEMBER_LEFT", e);
+      throw new RuntimeException("Failed to process CHAT_MEMBER_LEFT", e);
     }
   }
 }

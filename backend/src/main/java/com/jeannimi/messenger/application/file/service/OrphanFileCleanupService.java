@@ -40,34 +40,26 @@ public class OrphanFileCleanupService {
 
     Instant threshold = Instant.now().minus(orphanAge);
 
-    List<StoredFileInfo> filesInStorage =
-        fileStorageMaintenancePort.listFiles();
+    List<StoredFileInfo> filesInStorage = fileStorageMaintenancePort.listFiles();
 
     log.info("Storage contains {} files", filesInStorage.size());
 
-    int deletedFiles =
-        deleteOrphanFiles(filesInStorage, threshold);
+    int deletedFiles = deleteOrphanFiles(filesInStorage, threshold);
 
-    List<StoredFileInfo> currentFilesInStorage =
-        fileStorageMaintenancePort.listFiles();
+    List<StoredFileInfo> currentFilesInStorage = fileStorageMaintenancePort.listFiles();
 
-    int deletedAttachments =
-        deleteOrphanAttachments(currentFilesInStorage);
+    int deletedAttachments = deleteOrphanAttachments(currentFilesInStorage);
 
     log.info(
-        "Orphan file cleanup finished. "
-            + "Deleted files: {}, deleted DB attachments: {}",
+        "Orphan file cleanup finished. " + "Deleted files: {}, deleted DB attachments: {}",
         deletedFiles,
         deletedAttachments);
   }
 
-  private int deleteOrphanFiles(
-      List<StoredFileInfo> filesInStorage,
-      Instant threshold) {
+  private int deleteOrphanFiles(List<StoredFileInfo> filesInStorage, Instant threshold) {
 
     Set<String> filesInDatabase =
-        new HashSet<>(
-            fileAttachmentRepositoryPort.findAllStorageFileNames());
+        new HashSet<>(fileAttachmentRepositoryPort.findAllStorageFileNames());
 
     int deletedFiles = 0;
 
@@ -77,9 +69,7 @@ public class OrphanFileCleanupService {
 
       if (filesInDatabase.contains(storageFileName)) {
 
-        log.debug(
-            "File is registered in DB: {}",
-            storageFileName);
+        log.debug("File is registered in DB: {}", storageFileName);
 
       } else if (file.lastModified().isBefore(threshold)) {
 
@@ -89,9 +79,7 @@ public class OrphanFileCleanupService {
 
       } else {
 
-        log.debug(
-            "Orphan file is too young, keeping it: {}",
-            storageFileName);
+        log.debug("Orphan file is too young, keeping it: {}", storageFileName);
       }
     }
 
@@ -104,40 +92,30 @@ public class OrphanFileCleanupService {
 
       fileStoragePort.delete(storageFileName);
 
-      log.info(
-          "Deleted orphan file: {}",
-          storageFileName);
+      log.info("Deleted orphan file: {}", storageFileName);
 
       return true;
 
     } catch (Exception e) {
 
-      log.error(
-          "Failed to delete orphan file: {}",
-          storageFileName,
-          e);
+      log.error("Failed to delete orphan file: {}", storageFileName, e);
 
       return false;
     }
   }
 
-  private int deleteOrphanAttachments(
-      List<StoredFileInfo> filesInStorage) {
+  private int deleteOrphanAttachments(List<StoredFileInfo> filesInStorage) {
 
     Set<String> filesOnDisk =
-        filesInStorage.stream()
-            .map(StoredFileInfo::storageFileName)
-            .collect(Collectors.toSet());
+        filesInStorage.stream().map(StoredFileInfo::storageFileName).collect(Collectors.toSet());
 
-    List<FileAttachment> orphanAttachments =
-        fileAttachmentRepositoryPort.findOrphanAttachments();
+    List<FileAttachment> orphanAttachments = fileAttachmentRepositoryPort.findOrphanAttachments();
 
     int deletedAttachments = 0;
 
     for (FileAttachment attachment : orphanAttachments) {
 
-      String storageFileName =
-          attachment.getStorageFileName();
+      String storageFileName = attachment.getStorageFileName();
 
       if (!filesOnDisk.contains(storageFileName)) {
 
@@ -146,23 +124,16 @@ public class OrphanFileCleanupService {
           fileAttachmentRepositoryPort.delete(attachment);
           deletedAttachments++;
 
-          log.info(
-              "Deleted orphan DB attachment: {}",
-              storageFileName);
+          log.info("Deleted orphan DB attachment: {}", storageFileName);
 
         } catch (Exception e) {
 
-          log.error(
-              "Failed to delete orphan DB attachment: {}",
-              storageFileName,
-              e);
+          log.error("Failed to delete orphan DB attachment: {}", storageFileName, e);
         }
 
       } else {
 
-        log.debug(
-            "Orphan DB attachment still has physical file: {}",
-            storageFileName);
+        log.debug("Orphan DB attachment still has physical file: {}", storageFileName);
       }
     }
 

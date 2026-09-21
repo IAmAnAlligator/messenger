@@ -10,7 +10,7 @@ public interface FileAttachmentRepositoryPort {
 
   List<FileAttachment> findOrphanAttachments();
 
-  void deleteAllByIds(List<UUID> ids);
+  int deleteAllByIds(List<UUID> ids);
 
   void delete(FileAttachment fileAttachment);
 }

@@ -15,5 +15,4 @@ public interface TokenServicePort {
   String extractTokenType(String token);
 
   String extractRole(String token);
-
 }

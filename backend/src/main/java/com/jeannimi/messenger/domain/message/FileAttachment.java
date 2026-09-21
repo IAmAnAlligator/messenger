@@ -31,14 +31,10 @@ public final class FileAttachment {
     this.contentType = Objects.requireNonNull(contentType, "contentType");
     this.size = Objects.requireNonNull(size, "size");
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
-
   }
 
   public static FileAttachment create(
-      String originalFileName,
-      String storageFileName,
-      String contentType,
-      Long size) {
+      String originalFileName, String storageFileName, String contentType, Long size) {
 
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
@@ -46,12 +42,7 @@ public final class FileAttachment {
     validateSize(size);
 
     return new FileAttachment(
-        UUID.randomUUID(),
-        originalFileName,
-        storageFileName,
-        contentType,
-        size,
-        Instant.now());
+        UUID.randomUUID(), originalFileName, storageFileName, contentType, size, Instant.now());
   }
 
   public static FileAttachment reconstitute(
@@ -67,27 +58,17 @@ public final class FileAttachment {
     validateContentType(contentType);
     validateSize(size);
 
-    return new FileAttachment(
-        id,
-        originalFileName,
-        storageFileName,
-        contentType,
-        size,
-        createdAt);
+    return new FileAttachment(id, originalFileName, storageFileName, contentType, size, createdAt);
   }
 
   private static void validateOriginalFileName(String fileName) {
 
     if (fileName == null || fileName.isBlank()) {
-      throw new MessageException(
-          MessageError.FILE_NAME_INVALID,
-          "File name must not be empty");
+      throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
     }
 
     if (fileName.length() > FileAttachmentConstants.MAX_FILE_NAME_LENGTH) {
-      throw new MessageException(
-          MessageError.FILE_NAME_TOO_LONG,
-          "File name is too long");
+      throw new MessageException(MessageError.FILE_NAME_TOO_LONG, "File name is too long");
     }
   }
 
@@ -95,14 +76,12 @@ public final class FileAttachment {
 
     if (fileName == null || fileName.isBlank()) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_NAME_INVALID,
-          "Storage file name must not be empty");
+          MessageError.FILE_STORAGE_NAME_INVALID, "Storage file name must not be empty");
     }
 
     if (fileName.length() > FileAttachmentConstants.MAX_STORAGE_FILE_NAME_LENGTH) {
       throw new MessageException(
-          MessageError.FILE_STORAGE_NAME_TOO_LONG,
-          "Storage file name is too long");
+          MessageError.FILE_STORAGE_NAME_TOO_LONG, "Storage file name is too long");
     }
   }
 
@@ -110,29 +89,23 @@ public final class FileAttachment {
 
     if (contentType == null || contentType.isBlank()) {
       throw new MessageException(
-          MessageError.FILE_CONTENT_TYPE_INVALID,
-          "Content type must not be empty");
+          MessageError.FILE_CONTENT_TYPE_INVALID, "Content type must not be empty");
     }
 
     if (contentType.length() > FileAttachmentConstants.MAX_CONTENT_TYPE_LENGTH) {
       throw new MessageException(
-          MessageError.FILE_CONTENT_TYPE_TOO_LONG,
-          "Content type is too long");
+          MessageError.FILE_CONTENT_TYPE_TOO_LONG, "Content type is too long");
     }
   }
 
   private static void validateSize(Long size) {
 
     if (size == null || size <= 0) {
-      throw new MessageException(
-          MessageError.FILE_EMPTY,
-          "File must not be empty");
+      throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
     if (size > FileAttachmentConstants.MAX_FILE_SIZE_BYTES) {
-      throw new MessageException(
-          MessageError.FILE_TOO_LARGE,
-          "File size exceeds 10 MB");
+      throw new MessageException(MessageError.FILE_TOO_LARGE, "File size exceeds 10 MB");
     }
   }
 }

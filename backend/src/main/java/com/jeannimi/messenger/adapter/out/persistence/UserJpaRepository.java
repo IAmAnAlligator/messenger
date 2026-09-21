@@ -20,6 +20,5 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
           AND u.id <> :currentUserId
       """)
   List<UserJpaEntity> searchByUsername(
-      @Param("query") String query,
-      @Param("currentUserId") Long currentUserId);
+      @Param("query") String query, @Param("currentUserId") Long currentUserId);
 }

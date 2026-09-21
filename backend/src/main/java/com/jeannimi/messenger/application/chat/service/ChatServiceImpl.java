@@ -7,6 +7,7 @@ import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
 import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
 import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
+import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
 import com.jeannimi.messenger.application.event.ChatCreatedEvent;
@@ -16,21 +17,20 @@ import com.jeannimi.messenger.application.event.ChatMemberLeftEvent;
 import com.jeannimi.messenger.application.event.ChatMemberRemovedEvent;
 import com.jeannimi.messenger.application.event.ChatRenamedEvent;
 import com.jeannimi.messenger.application.event.EventType;
+import com.jeannimi.messenger.application.exception.BadRequestException;
+import com.jeannimi.messenger.application.exception.ConflictException;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
+import com.jeannimi.messenger.application.exception.NotFoundException;
+import com.jeannimi.messenger.application.message.service.MessageService;
 import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.application.exception.BadRequestException;
-import com.jeannimi.messenger.application.exception.ConflictException;
-import com.jeannimi.messenger.application.exception.ForbiddenException;
-import com.jeannimi.messenger.application.exception.NotFoundException;
-import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.domain.chat.Chat;
 import com.jeannimi.messenger.domain.chat.ChatMember;
 import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.user.User;
-import com.jeannimi.messenger.application.message.service.MessageService;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -156,8 +156,7 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResult<ChatResult> getUserChats(
-      Long userId, CursorPageQuery query) {
+  public CursorPageResult<ChatResult> getUserChats(Long userId, CursorPageQuery query) {
 
     int pageSize = Math.min(query.limit(), ChatApplicationConstants.MAX_CHAT_PAGE_SIZE);
 

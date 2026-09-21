@@ -20,8 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class WebSocketEventPublisherAdapter
-    implements RealtimeEventPublisherPort {
+public class WebSocketEventPublisherAdapter implements RealtimeEventPublisherPort {
 
   private final SimpMessagingTemplate messagingTemplate;
 
@@ -29,55 +28,38 @@ public class WebSocketEventPublisherAdapter
   public void publish(EventType eventType, ApplicationEvent event) {
 
     switch (eventType) {
-
       case MESSAGE_DELETED -> {
-        MessageDeletedEvent messageDeletedEvent =
-            (MessageDeletedEvent) event;
+        MessageDeletedEvent messageDeletedEvent = (MessageDeletedEvent) event;
 
         WebSocketEvent<MessageDeletedEvent> webSocketEvent =
-            WebSocketEvent.of(
-                eventType,
-                messageDeletedEvent);
+            WebSocketEvent.of(eventType, messageDeletedEvent);
 
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + messageDeletedEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + messageDeletedEvent.chatId(), webSocketEvent);
       }
 
       case MESSAGE_READ -> {
-        MessageReadEvent messageReadEvent =
-            (MessageReadEvent) event;
+        MessageReadEvent messageReadEvent = (MessageReadEvent) event;
 
         WebSocketEvent<MessageReadEvent> webSocketEvent =
-            WebSocketEvent.of(
-                eventType,
-                messageReadEvent);
+            WebSocketEvent.of(eventType, messageReadEvent);
 
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + messageReadEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + messageReadEvent.chatId(), webSocketEvent);
       }
 
       case MESSAGE_CREATED -> {
-        MessageCreatedEvent messageCreatedEvent =
-            (MessageCreatedEvent) event;
+        MessageCreatedEvent messageCreatedEvent = (MessageCreatedEvent) event;
 
-        MessageDto messageDto =
-            MessageDto.fromResult(messageCreatedEvent.message());
+        MessageDto messageDto = MessageDto.fromResult(messageCreatedEvent.message());
 
-        WebSocketEvent<MessageDto> webSocketEvent =
-            WebSocketEvent.of(
-                eventType,
-                messageDto);
+        WebSocketEvent<MessageDto> webSocketEvent = WebSocketEvent.of(eventType, messageDto);
 
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + messageDto.chatId(),
-            webSocketEvent);
+        messagingTemplate.convertAndSend("/topic/chat/" + messageDto.chatId(), webSocketEvent);
       }
 
       case CHAT_CREATED -> {
-        ChatCreatedEvent chatCreatedEvent =
-            (ChatCreatedEvent) event;
+        ChatCreatedEvent chatCreatedEvent = (ChatCreatedEvent) event;
 
         WebSocketEvent<ChatCreatedEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatCreatedEvent);
@@ -86,24 +68,19 @@ public class WebSocketEventPublisherAdapter
          * Уведомляем подписчиков,
          * которые слушают создание чатов.
          */
-        messagingTemplate.convertAndSend(
-            "/topic/chat.created",
-            webSocketEvent);
+        messagingTemplate.convertAndSend("/topic/chat.created", webSocketEvent);
 
         /*
          * Обновляем список чатов
          * у каждого пользователя.
          */
         for (Long memberId : chatCreatedEvent.memberIds()) {
-          messagingTemplate.convertAndSend(
-              "/topic/user/" + memberId + "/chats",
-              webSocketEvent);
+          messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", webSocketEvent);
         }
       }
 
       case CHAT_DELETED -> {
-        ChatDeletedEvent chatDeletedEvent =
-            (ChatDeletedEvent) event;
+        ChatDeletedEvent chatDeletedEvent = (ChatDeletedEvent) event;
 
         WebSocketEvent<ChatDeletedEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatDeletedEvent);
@@ -113,20 +90,16 @@ public class WebSocketEventPublisherAdapter
          * что чат удалён.
          */
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatDeletedEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + chatDeletedEvent.chatId(), webSocketEvent);
 
         /*
          * Глобальное событие удаления.
          */
-        messagingTemplate.convertAndSend(
-            "/topic/chat.deleted",
-            webSocketEvent);
+        messagingTemplate.convertAndSend("/topic/chat.deleted", webSocketEvent);
       }
 
       case CHAT_MEMBER_ADDED -> {
-        ChatMemberAddedEvent chatMemberAddedEvent =
-            (ChatMemberAddedEvent) event;
+        ChatMemberAddedEvent chatMemberAddedEvent = (ChatMemberAddedEvent) event;
 
         WebSocketEvent<ChatMemberAddedEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatMemberAddedEvent);
@@ -135,21 +108,18 @@ public class WebSocketEventPublisherAdapter
          * Уведомляем участников чата.
          */
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberAddedEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + chatMemberAddedEvent.chatId(), webSocketEvent);
 
         /*
          * Отдельно уведомляем нового пользователя,
          * чтобы обновить список чатов.
          */
         messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberAddedEvent.userId() + "/chats",
-            webSocketEvent);
+            "/topic/user/" + chatMemberAddedEvent.userId() + "/chats", webSocketEvent);
       }
 
       case CHAT_MEMBER_REMOVED -> {
-        ChatMemberRemovedEvent chatMemberRemovedEvent =
-            (ChatMemberRemovedEvent) event;
+        ChatMemberRemovedEvent chatMemberRemovedEvent = (ChatMemberRemovedEvent) event;
 
         WebSocketEvent<ChatMemberRemovedEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatMemberRemovedEvent);
@@ -158,48 +128,40 @@ public class WebSocketEventPublisherAdapter
          * Уведомляем участников чата.
          */
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberRemovedEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + chatMemberRemovedEvent.chatId(), webSocketEvent);
 
         /*
          * Обновляем список чатов
          * удалённого пользователя.
          */
         messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberRemovedEvent.userId() + "/chats",
-            webSocketEvent);
+            "/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", webSocketEvent);
       }
 
       case CHAT_MEMBER_LEFT -> {
-        ChatMemberLeftEvent chatMemberLeftEvent =
-            (ChatMemberLeftEvent) event;
+        ChatMemberLeftEvent chatMemberLeftEvent = (ChatMemberLeftEvent) event;
 
         WebSocketEvent<ChatMemberLeftEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatMemberLeftEvent);
 
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberLeftEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + chatMemberLeftEvent.chatId(), webSocketEvent);
 
         messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberLeftEvent.userId() + "/chats",
-            webSocketEvent);
+            "/topic/user/" + chatMemberLeftEvent.userId() + "/chats", webSocketEvent);
       }
 
       case CHAT_RENAMED -> {
-        ChatRenamedEvent chatRenamedEvent =
-            (ChatRenamedEvent) event;
+        ChatRenamedEvent chatRenamedEvent = (ChatRenamedEvent) event;
 
         WebSocketEvent<ChatRenamedEvent> webSocketEvent =
             WebSocketEvent.of(eventType, chatRenamedEvent);
 
         messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatRenamedEvent.chatId(),
-            webSocketEvent);
+            "/topic/chat/" + chatRenamedEvent.chatId(), webSocketEvent);
       }
 
-      default -> throw new IllegalArgumentException(
-          "Unsupported realtime event: " + eventType);
+      default -> throw new IllegalArgumentException("Unsupported realtime event: " + eventType);
     }
   }
 }

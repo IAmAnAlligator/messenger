@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.application.user.service;
 
+import com.jeannimi.messenger.application.exception.NotFoundException;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.application.exception.NotFoundException;
 import com.jeannimi.messenger.domain.user.User;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +26,7 @@ public class UserService {
 
     List<User> users = userRepository.searchByUsername(query, currentUserId);
 
-    return users.stream()
-        .map(this::toResult)
-        .toList();
+    return users.stream().map(this::toResult).toList();
   }
 
   private UserResult toResult(User user) {

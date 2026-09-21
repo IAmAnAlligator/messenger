@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.out.kafka.mapper;
 
-import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
+import com.jeannimi.messenger.application.event.EventType;
 import org.springframework.stereotype.Component;
 
 @Component

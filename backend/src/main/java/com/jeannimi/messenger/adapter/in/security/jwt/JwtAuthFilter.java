@@ -93,11 +93,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     CustomUserDetails user = new CustomUserDetails(userId, role);
 
-    UsernamePasswordAuthenticationToken authentication =
-        createAuthentication(user, role);
+    UsernamePasswordAuthenticationToken authentication = createAuthentication(user, role);
 
-    authentication.setDetails(
-        new WebAuthenticationDetailsSource().buildDetails(request));
+    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
   }
@@ -124,13 +122,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   }
 
   private UsernamePasswordAuthenticationToken createAuthentication(
-      CustomUserDetails user,
-      String role) {
+      CustomUserDetails user, String role) {
 
     return new UsernamePasswordAuthenticationToken(
-        user,
-        null,
-        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        user, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
   }
 
   private void clearContext() {

@@ -11,5 +11,4 @@ public interface FileStoragePort {
   void delete(String storageFileName);
 
   String detectContentType(String storageFileName);
-
 }

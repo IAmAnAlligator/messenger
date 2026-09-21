@@ -33,5 +33,5 @@ public interface FileAttachmentJpaRepository extends JpaRepository<FileAttachmen
       DELETE FROM FileAttachmentJpaEntity f
       WHERE f.id IN :ids
       """)
-  void deleteAllByIds(@Param("ids") List<UUID> ids);
+  int deleteAllByIds(@Param("ids") List<UUID> ids);
 }

@@ -28,11 +28,12 @@ public interface MessageJpaRepository extends JpaRepository<MessageJpaEntity, Lo
 
   @Query(
       """
-      SELECT m
-      FROM MessageJpaEntity m
-      WHERE m.id = :messageId
-      AND m.chat.id = :chatId
-      """)
+    SELECT m
+    FROM MessageJpaEntity m
+    JOIN FETCH m.sender
+    WHERE m.id = :messageId
+    AND m.chat.id = :chatId
+    """)
   Optional<MessageJpaEntity> findByIdAndChatId(
       @Param("messageId") Long messageId, @Param("chatId") Long chatId);
 

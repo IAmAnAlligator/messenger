@@ -1,9 +1,9 @@
 package com.jeannimi.messenger.adapter.in.web.auth;
 
-import com.jeannimi.messenger.application.auth.dto.AuthResult;
 import com.jeannimi.messenger.adapter.in.web.auth.dto.AuthAccessResponse;
 import com.jeannimi.messenger.adapter.in.web.auth.dto.LoginRequest;
 import com.jeannimi.messenger.adapter.in.web.auth.dto.RegisterRequest;
+import com.jeannimi.messenger.application.auth.dto.AuthResult;
 import com.jeannimi.messenger.application.auth.service.AuthService;
 import jakarta.validation.Valid;
 import java.time.Duration;
@@ -28,15 +28,13 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<AuthAccessResponse> login(@RequestBody @Valid LoginRequest request) {
 
-    return authResponse(
-        authService.login(request.username(), request.password()));
+    return authResponse(authService.login(request.username(), request.password()));
   }
 
   @PostMapping("/register")
   public ResponseEntity<AuthAccessResponse> register(@RequestBody @Valid RegisterRequest request) {
 
-    return authResponse(
-        authService.register(request.username(), request.password()));
+    return authResponse(authService.register(request.username(), request.password()));
   }
 
   @PostMapping("/refresh")
@@ -68,10 +66,7 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.SET_COOKIE,
-            createRefreshCookie(
-                auth.refreshToken(),
-                REFRESH_TOKEN_LIFETIME)
-                .toString())
+            createRefreshCookie(auth.refreshToken(), REFRESH_TOKEN_LIFETIME).toString())
         .body(new AuthAccessResponse(auth.accessToken()));
   }
 }

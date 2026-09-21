@@ -24,16 +24,12 @@ public class ChatRenamedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-      ChatRenamedEvent event =
-          objectMapper.treeToValue(payload, ChatRenamedEvent.class);
+      ChatRenamedEvent event = objectMapper.treeToValue(payload, ChatRenamedEvent.class);
 
-      realtimeEventPublisher.publish(
-          EventType.CHAT_RENAMED,
-          event);
+      realtimeEventPublisher.publish(EventType.CHAT_RENAMED, event);
 
     } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to process CHAT_RENAMED", e);
+      throw new RuntimeException("Failed to process CHAT_RENAMED", e);
     }
   }
 }

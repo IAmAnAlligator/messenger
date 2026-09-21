@@ -24,16 +24,12 @@ public class ChatDeletedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-      ChatDeletedEvent event =
-          objectMapper.treeToValue(payload, ChatDeletedEvent.class);
+      ChatDeletedEvent event = objectMapper.treeToValue(payload, ChatDeletedEvent.class);
 
-      realtimeEventPublisher.publish(
-          EventType.CHAT_DELETED,
-          event);
+      realtimeEventPublisher.publish(EventType.CHAT_DELETED, event);
 
     } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to process CHAT_DELETED", e);
+      throw new RuntimeException("Failed to process CHAT_DELETED", e);
     }
   }
 }

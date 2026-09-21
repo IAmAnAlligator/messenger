@@ -4,8 +4,10 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.FileAttachmentJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
+import com.jeannimi.messenger.application.message.dto.MessageWithSender;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;
+import com.jeannimi.messenger.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class MessagePersistenceMapper {
 
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;
+  private final UserPersistenceMapper userPersistenceMapper;
 
   public Message toDomain(MessageJpaEntity entity) {
 
@@ -50,5 +53,18 @@ public class MessagePersistenceMapper {
         message.getCreatedAt(),
         message.getType(),
         attachment);
+  }
+
+  public MessageWithSender toMessageWithSender(MessageJpaEntity entity) {
+
+    if (entity == null) {
+      return null;
+    }
+
+    Message message = toDomain(entity);
+
+    User sender = userPersistenceMapper.toDomain(entity.getSender());
+
+    return new MessageWithSender(message, sender);
   }
 }

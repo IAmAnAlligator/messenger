@@ -2,12 +2,13 @@ package com.jeannimi.messenger.adapter.in.security.websocket;
 
 import static com.jeannimi.messenger.application.auth.AuthTokenConstants.ACCESS_TOKEN_TYPE;
 
-import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.chat.service.ChatService;
+import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -17,7 +18,6 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.jspecify.annotations.NonNull;
 
 @Slf4j
 @Component
@@ -101,10 +101,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     WsUserPrincipal principal = new WsUserPrincipal(userId);
 
     UsernamePasswordAuthenticationToken auth =
-        new UsernamePasswordAuthenticationToken(
-            principal,
-            null,
-            List.of());
+        new UsernamePasswordAuthenticationToken(principal, null, List.of());
 
     accessor.setUser(auth);
 
@@ -116,10 +113,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     WsUserPrincipal principal = extractPrincipal(accessor);
     String destination = accessor.getDestination();
 
-    log.info(
-        "WS SUBSCRIBE destination={} principal={}",
-        destination,
-        principal);
+    log.info("WS SUBSCRIBE destination={} principal={}", destination, principal);
 
     if (principal == null) {
       log.warn("WS SUBSCRIBE without principal");
@@ -143,24 +137,18 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
   private boolean isPublicDestination(String destination) {
 
-    return "/topic/chat.deleted".equals(destination)
-        || "/topic/chat.created".equals(destination);
+    return "/topic/chat.deleted".equals(destination) || "/topic/chat.created".equals(destination);
   }
 
   private boolean isChatDestination(String destination) {
     return destination.startsWith("/topic/chat/");
   }
 
-  private boolean isChatSubscriptionAllowed(
-      String destination,
-      WsUserPrincipal principal) {
+  private boolean isChatSubscriptionAllowed(String destination, WsUserPrincipal principal) {
 
     Long chatId = extractChatId(destination);
 
-    boolean isMember =
-        chatService.isParticipant(
-            chatId,
-            principal.userId());
+    boolean isMember = chatService.isParticipant(chatId, principal.userId());
 
     log.info(
         "WS SUBSCRIBE permission userId={} chatId={} isMember={}",
@@ -169,25 +157,17 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         isMember);
 
     if (!isMember) {
-      log.warn(
-          "WS SUBSCRIBE denied userId={} chatId={}",
-          principal.userId(),
-          chatId);
+      log.warn("WS SUBSCRIBE denied userId={} chatId={}", principal.userId(), chatId);
 
       return false;
     }
 
-    log.info(
-        "WS SUBSCRIBE allowed userId={} chatId={}",
-        principal.userId(),
-        chatId);
+    log.info("WS SUBSCRIBE allowed userId={} chatId={}", principal.userId(), chatId);
 
     return true;
   }
 
-
-  private WsUserPrincipal extractPrincipal(
-      StompHeaderAccessor accessor) {
+  private WsUserPrincipal extractPrincipal(StompHeaderAccessor accessor) {
 
     Principal user = accessor.getUser();
 
@@ -206,20 +186,16 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
   private String extractToken(StompHeaderAccessor accessor) {
 
-    String authHeader =
-        accessor.getFirstNativeHeader("Authorization");
+    String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-    if (authHeader == null
-        || !authHeader.startsWith(BEARER_PREFIX)) {
-      throw new IllegalArgumentException(
-          "Invalid Authorization header");
+    if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+      throw new IllegalArgumentException("Invalid Authorization header");
     }
 
     String token = authHeader.substring(BEARER_PREFIX.length());
 
     if (token.isBlank()) {
-      throw new IllegalArgumentException(
-          "Invalid Authorization header");
+      throw new IllegalArgumentException("Invalid Authorization header");
     }
 
     return token;

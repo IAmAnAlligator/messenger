@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.application.port.out;
 
+import com.jeannimi.messenger.application.message.dto.MessageWithSender;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;
 import java.time.Instant;
@@ -10,11 +11,12 @@ public interface MessageRepositoryPort {
 
   List<FileAttachment> findAttachmentsByChatId(Long chatId);
 
-  Optional<Message> findByIdAndChatId(Long messageId, Long chatId);
+  Optional<MessageWithSender> findByIdAndChatId(Long messageId, Long chatId);
 
-  List<Message> findWithSenderByChatId(Long chatId, int limit);
+  List<MessageWithSender> findWithSenderByChatId(Long chatId, int limit);
 
-  List<Message> findWithSenderByChatIdAndCursor(Long chatId, Instant createdAt, Long id, int limit);
+  List<MessageWithSender> findWithSenderByChatIdAndCursor(
+      Long chatId, Instant createdAt, Long id, int limit);
 
   int deleteByChatId(Long chatId);
 

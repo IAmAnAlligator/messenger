@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.in.web.message.dto;
 
-import com.jeannimi.messenger.application.message.dto.MessageResult;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
+import com.jeannimi.messenger.application.message.dto.MessageResult;
 import java.time.Instant;
 
 public record MessageDto(
@@ -23,6 +23,4 @@ public record MessageDto(
             ? null
             : FileAttachmentDto.fromResult(result.attachment(), result.chatId(), result.id()));
   }
-
-
 }

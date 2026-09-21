@@ -4,11 +4,11 @@ import static com.jeannimi.messenger.application.auth.AuthTokenConstants.REFRESH
 import static com.jeannimi.messenger.domain.user.Role.USER;
 
 import com.jeannimi.messenger.application.auth.dto.AuthResult;
+import com.jeannimi.messenger.application.exception.ConflictException;
+import com.jeannimi.messenger.application.exception.UnauthorizedException;
 import com.jeannimi.messenger.application.port.out.PasswordHashPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
-import com.jeannimi.messenger.application.exception.ConflictException;
-import com.jeannimi.messenger.application.exception.UnauthorizedException;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.Username;
 import lombok.RequiredArgsConstructor;
@@ -44,11 +44,7 @@ public class AuthService {
       throw new ConflictException("User already exists");
     }
 
-    User user =
-        User.create(
-            username,
-            passwordHashPort.hash(password),
-            USER);
+    User user = User.create(username, passwordHashPort.hash(password), USER);
 
     userRepository.save(user);
 
@@ -82,7 +78,6 @@ public class AuthService {
 
   private AuthResult generateTokens(User user) {
     return new AuthResult(
-        tokenService.generateAccessToken(user),
-        tokenService.generateRefreshToken(user));
+        tokenService.generateAccessToken(user), tokenService.generateRefreshToken(user));
   }
 }

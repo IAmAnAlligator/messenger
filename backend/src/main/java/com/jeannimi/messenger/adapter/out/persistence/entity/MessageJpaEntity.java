@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.adapter.out.persistence.entity;
 
-import com.jeannimi.messenger.domain.message.MessageConstants;
 import com.jeannimi.messenger.domain.message.MessageType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -20,7 +19,6 @@ import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(

@@ -3,15 +3,14 @@ package com.jeannimi.messenger.adapter.in.scheduler;
 import com.jeannimi.messenger.application.outbox.OutboxBatchRequest;
 import com.jeannimi.messenger.application.outbox.OutboxEventData;
 import com.jeannimi.messenger.application.outbox.OutboxStatus;
+import com.jeannimi.messenger.application.outbox.service.OutboxStatusService;
 import com.jeannimi.messenger.application.port.out.MessageBrokerPort;
 import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
-import com.jeannimi.messenger.application.outbox.service.OutboxStatusService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 @Component
 @RequiredArgsConstructor

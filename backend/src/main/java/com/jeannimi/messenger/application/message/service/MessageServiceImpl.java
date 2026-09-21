@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.application.message.service;
 
 import com.jeannimi.messenger.application.chat.dto.ChatMemberReadResult;
+import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
 import com.jeannimi.messenger.application.event.EventType;
@@ -8,10 +9,14 @@ import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
+import com.jeannimi.messenger.application.exception.ForbiddenException;
+import com.jeannimi.messenger.application.exception.NotFoundException;
+import com.jeannimi.messenger.application.message.MessageApplicationConstants;
 import com.jeannimi.messenger.application.message.command.FileUploadCommand;
 import com.jeannimi.messenger.application.message.dto.FileAttachmentResult;
 import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
 import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.message.dto.MessageWithSender;
 import com.jeannimi.messenger.application.message.dto.ReadResult;
 import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
@@ -19,24 +24,19 @@ import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
+import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.application.exception.ForbiddenException;
-import com.jeannimi.messenger.domain.exception.MessageError;
-import com.jeannimi.messenger.domain.exception.MessageException;
-import com.jeannimi.messenger.application.exception.NotFoundException;
-import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.domain.chat.Chat;
 import com.jeannimi.messenger.domain.chat.ChatMember;
+import com.jeannimi.messenger.domain.exception.MessageError;
+import com.jeannimi.messenger.domain.exception.MessageException;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.FileAttachmentConstants;
 import com.jeannimi.messenger.domain.message.Message;
 import com.jeannimi.messenger.domain.user.User;
-import com.jeannimi.messenger.application.message.MessageApplicationConstants;
-import com.jeannimi.messenger.application.port.out.StoredFile;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -62,23 +62,21 @@ public class MessageServiceImpl implements MessageService {
   @Transactional(readOnly = true)
   public FileDownloadResult getFile(Long chatId, Long messageId, Long userId) {
 
-    // Проверяем, что пользователь участник чата
     checkMembership(chatId, userId);
 
-    // Получаем сообщение
-    Message message =
+    MessageWithSender messageWithSender =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    // Получаем attachment
+    Message message = messageWithSender.message();
+
     FileAttachment attachment = message.getAttachment();
 
     if (attachment == null) {
       throw new NotFoundException("Message does not contain a file");
     }
 
-    // Загружаем физический файл
     InputStream inputStream = fileStoragePort.load(attachment.getStorageFileName());
 
     return new FileDownloadResult(
@@ -92,41 +90,17 @@ public class MessageServiceImpl implements MessageService {
   @Transactional
   public MessageResult sendFile(Long chatId, Long senderId, FileUploadCommand file) {
 
-    // =========================
-    // 1. Проверка входных данных
-    // =========================
-
     if (file == null) {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
-    // =========================
-    // 2. Проверяем чат
-    // =========================
-
     Chat chat = getChatForSending(chatId, senderId);
-
-    // =========================
-    // 3. Проверяем участника
-    // =========================
 
     checkMembership(chatId, senderId);
 
-    // =========================
-    // 4. Получаем отправителя
-    // =========================
-
     User sender = getUser(senderId);
 
-    // =========================
-    // 5. Проверяем имя файла
-    // =========================
-
     String originalFileName = sanitizeFileName(file.originalFileName());
-
-    // =========================
-    // 6. Сохраняем файл
-    // =========================
 
     StoredFile storedFile;
 
@@ -139,31 +113,18 @@ public class MessageServiceImpl implements MessageService {
       throw new MessageException(MessageError.FILE_STORAGE_FAILED, "Failed to read uploaded file");
     }
 
-    // =========================
-    // 7. Определяем MIME type
-    // =========================
-
-    String contentType = fileStoragePort
-        .detectContentType(storedFile.storageFileName());
+    String contentType = fileStoragePort.detectContentType(storedFile.storageFileName());
 
     if (contentType == null || contentType.isBlank()) {
 
       contentType = "application/octet-stream";
     }
 
-    // =========================
-    // 8. Создаём attachment
-    //    и message
-    // =========================
-
     try {
 
       FileAttachment attachment =
           FileAttachment.create(
-              originalFileName,
-              storedFile.storageFileName(),
-              contentType,
-              file.size());
+              originalFileName, storedFile.storageFileName(), contentType, file.size());
 
       Message message = Message.ofFile(chat.getId(), sender.getId(), attachment);
 
@@ -173,7 +134,11 @@ public class MessageServiceImpl implements MessageService {
 
       chatRepository.save(chat);
 
-      MessageResult result = toResult(savedMessage);
+      /*
+       * sender уже получен выше.
+       * Повторный запрос UserRepository не нужен.
+       */
+      MessageResult result = toResult(savedMessage, sender);
 
       publishMessageCreated(result);
 
@@ -181,11 +146,6 @@ public class MessageServiceImpl implements MessageService {
 
     } catch (RuntimeException e) {
 
-      /*
-       * Если сохранение в БД или создание события
-       * завершилось ошибкой, физический файл больше
-       * не должен оставаться в storage.
-       */
       try {
 
         fileStoragePort.delete(storedFile.storageFileName());
@@ -202,24 +162,11 @@ public class MessageServiceImpl implements MessageService {
   private String sanitizeFileName(String fileName) {
 
     if (fileName == null || fileName.isBlank()) {
+
       throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
     }
 
-    /*
-     * Убираем путь, переданный клиентом.
-     *
-     * Например:
-     *
-     * ../../secret.txt
-     * C:\Users\User\secret.txt
-     *
-     * превращается в:
-     *
-     * secret.txt
-     */
-
-    String sanitizedName =
-        fileName.replace('\\', '/');
+    String sanitizedName = fileName.replace('\\', '/');
 
     int lastSeparator = sanitizedName.lastIndexOf('/');
 
@@ -228,12 +175,10 @@ public class MessageServiceImpl implements MessageService {
     }
 
     if (sanitizedName.isBlank()) {
+
       throw new MessageException(MessageError.FILE_NAME_INVALID, "File name must not be empty");
     }
 
-    /*
-     * Дополнительная защита от управляющих символов.
-     */
     for (int i = 0; i < sanitizedName.length(); i++) {
 
       if (Character.isISOControl(sanitizedName.charAt(i))) {
@@ -243,54 +188,42 @@ public class MessageServiceImpl implements MessageService {
       }
     }
 
-    /*
-     * Не разрешаем слишком длинные имена.
-     */
     if (sanitizedName.length() > FileAttachmentConstants.MAX_FILE_NAME_LENGTH) {
+
       throw new MessageException(MessageError.FILE_NAME_INVALID, "File name is too long");
     }
 
     return sanitizedName;
   }
 
-  // =========================
-  // SEND
-  // =========================
-
   @Override
   @Transactional
   public MessageResult sendMessage(Long chatId, Long senderId, String content) {
 
-    // 1. Проверка: чат существует
     Chat chat = getChatForSending(chatId, senderId);
 
-    // 2. Проверка: пользователь участник чата
     checkMembership(chatId, senderId);
 
-    // 3. Получаем sender (можно через getReference для оптимизации)
     User sender = getUser(senderId);
 
-    // 4. Создаём сообщение
     Message message = Message.ofText(chat.getId(), sender.getId(), content);
 
-    // 5. Сохраняем
     Message saved = messageRepository.save(message);
 
     chat.updateLastMessageTime();
 
     chatRepository.save(chat);
 
-    MessageResult result = toResult(saved);
+    /*
+     * sender уже есть.
+     * Поэтому не выполняем findById() повторно.
+     */
+    MessageResult result = toResult(saved, sender);
 
     publishMessageCreated(result);
 
-    // 6. Возвращаем DTO
     return result;
   }
-
-  // =========================
-  // GET LIST (cursor pagination)
-  // =========================
 
   @Override
   @Transactional(readOnly = true)
@@ -303,7 +236,7 @@ public class MessageServiceImpl implements MessageService {
 
     int fetchSize = pageSize + 1;
 
-    List<Message> messages =
+    List<MessageWithSender> messages =
         query.cursorTime() == null
             ? messageRepository.findWithSenderByChatId(chatId, fetchSize)
             : messageRepository.findWithSenderByChatIdAndCursor(
@@ -312,6 +245,7 @@ public class MessageServiceImpl implements MessageService {
     boolean hasMore = messages.size() > pageSize;
 
     if (hasMore) {
+
       messages = messages.subList(0, pageSize);
     }
 
@@ -321,20 +255,17 @@ public class MessageServiceImpl implements MessageService {
         messages.stream().map(this::toResult).toList(), nextCursor, hasMore);
   }
 
-  private Cursor createNextCursor(List<Message> messages, boolean hasMore) {
+  private Cursor createNextCursor(List<MessageWithSender> messages, boolean hasMore) {
 
     if (!hasMore || messages.isEmpty()) {
+
       return null;
     }
 
-    Message last = messages.get(messages.size() - 1);
+    Message last = messages.get(messages.size() - 1).message();
 
     return new Cursor(last.getCreatedAt(), last.getId());
   }
-
-  // =========================
-  // GET ONE
-  // =========================
 
   @Override
   @Transactional(readOnly = true)
@@ -342,17 +273,13 @@ public class MessageServiceImpl implements MessageService {
 
     checkMembership(chatId, userId);
 
-    Message message =
+    MessageWithSender messageWithSender =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    return toResult(message);
+    return toResult(messageWithSender);
   }
-
-  // =========================
-  // MARK AS READ
-  // =========================
 
   @Override
   @Transactional
@@ -363,15 +290,13 @@ public class MessageServiceImpl implements MessageService {
             .findByChatIdAndUserId(chatId, userId)
             .orElseThrow(() -> new NotFoundException("Chat member not found"));
 
-    Message message =
+    MessageWithSender messageWithSender =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
-    /*
-     * Пользователь не может пометить
-     * собственное сообщение прочитанным.
-     */
+    Message message = messageWithSender.message();
+
     if (message.getSenderId().equals(userId)) {
 
       return new ReadResult(
@@ -383,6 +308,7 @@ public class MessageServiceImpl implements MessageService {
     Long lastReadMessageId = updated > 0 ? messageId : chatMember.getLastReadMessageId();
 
     if (updated == 0) {
+
       return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), false);
     }
 
@@ -394,37 +320,36 @@ public class MessageServiceImpl implements MessageService {
     return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), true);
   }
 
-  // =========================
-  // DELETE
-  // =========================
-
-  // не проверен
-
   @Override
   @Transactional
   public void deleteMessage(Long chatId, Long messageId, Long userId) {
 
     checkMembership(chatId, userId);
 
-    Message message =
+    MessageWithSender messageWithSender =
         messageRepository
             .findByIdAndChatId(messageId, chatId)
             .orElseThrow(() -> new NotFoundException("Message not found"));
 
+    Message message = messageWithSender.message();
+
     if (!message.getSenderId().equals(userId)) {
+
       throw new ForbiddenException("Only sender can delete message");
     }
 
-    MessageDeletedEvent messageDeletedEvent =
-        new MessageDeletedEvent(message.getId(), chatId, userId, Instant.now());
-
     FileAttachment attachment = message.getAttachment();
+
+    Instant deletedAt = Instant.now();
+
+    MessageDeletedEvent messageDeletedEvent =
+        new MessageDeletedEvent(message.getId(), chatId, userId, deletedAt);
 
     messageRepository.delete(message);
 
-    publishFileDeletion(attachment);
-
     eventPublisher.publish(EventType.MESSAGE_DELETED, String.valueOf(chatId), messageDeletedEvent);
+
+    publishFileDeletion(attachment);
   }
 
   @Override
@@ -441,11 +366,10 @@ public class MessageServiceImpl implements MessageService {
 
       List<UUID> attachmentIds = attachments.stream().map(FileAttachment::getId).toList();
 
-      fileAttachmentRepository.deleteAllByIds(attachmentIds);
-
-      deletedAttachments = attachmentIds.size();
+      deletedAttachments = fileAttachmentRepository.deleteAllByIds(attachmentIds);
 
       for (FileAttachment attachment : attachments) {
+
         publishFileDeletion(attachment);
       }
     }
@@ -459,24 +383,27 @@ public class MessageServiceImpl implements MessageService {
 
   private void publishFileDeletion(FileAttachment attachment) {
 
-    if (attachment != null) {
-
-      FileDeletionRequestedEvent event =
-          new FileDeletionRequestedEvent(attachment.getStorageFileName());
-
-      eventPublisher.publish(
-          EventType.FILE_DELETION_REQUESTED, attachment.getStorageFileName(), event);
+    if (attachment == null) {
+      return;
     }
+
+    FileDeletionRequestedEvent event =
+        new FileDeletionRequestedEvent(attachment.getStorageFileName());
+
+    eventPublisher.publish(
+        EventType.FILE_DELETION_REQUESTED, attachment.getStorageFileName(), event);
   }
 
   private void checkMembership(Long chatId, Long userId) {
+
     if (!chatMemberRepository.existsByChatIdAndUserId(chatId, userId)) {
+
       throw new ForbiddenException("You are not a member of this chat");
     }
   }
 
-
   private Chat getChatForSending(Long chatId, Long userId) {
+
     Chat chat =
         chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
 
@@ -486,18 +413,33 @@ public class MessageServiceImpl implements MessageService {
   }
 
   private User getUser(Long userId) {
+
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
   private void publishMessageCreated(MessageResult result) {
+
     MessageCreatedEvent event = new MessageCreatedEvent(result);
 
     eventPublisher.publish(EventType.MESSAGE_CREATED, String.valueOf(result.chatId()), event);
   }
 
-  private MessageResult toResult(Message message) {
+  /** Используется для сообщений, которые уже были загружены вместе с sender через JOIN FETCH. */
+  private MessageResult toResult(MessageWithSender messageWithSender) {
+
+    Message message = messageWithSender.message();
+
+    User sender = messageWithSender.sender();
+
+    return toResult(message, sender);
+  }
+
+  /**
+   * Используется при отправке сообщения, когда sender уже был загружен в sendMessage()/sendFile().
+   */
+  private MessageResult toResult(Message message, User sender) {
 
     FileAttachment attachment = message.getAttachment();
 
@@ -509,11 +451,6 @@ public class MessageServiceImpl implements MessageService {
                 attachment.getOriginalFileName(),
                 attachment.getContentType(),
                 attachment.getSize());
-
-    User sender =
-        userRepository
-            .findById(message.getSenderId())
-            .orElseThrow(() -> new NotFoundException("User not found"));
 
     UserResult senderResult =
         new UserResult(sender.getId(), sender.getUsername().getValue(), sender.getRole());

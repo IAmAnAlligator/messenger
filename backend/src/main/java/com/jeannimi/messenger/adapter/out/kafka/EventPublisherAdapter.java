@@ -9,8 +9,8 @@ import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaTopicMapper;
 import com.jeannimi.messenger.application.event.ApplicationEvent;
 import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
-import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.outbox.service.OutboxService;
+import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,7 @@ public class EventPublisherAdapter implements EventPublisherPort {
   private final KafkaTopicMapper kafkaTopicMapper;
 
   @Override
-  public void publish(
-      EventType type,
-      String aggregateId,
-      ApplicationEvent event) {
+  public void publish(EventType type, String aggregateId, ApplicationEvent event) {
 
     try {
       UUID eventId = UUID.randomUUID();
@@ -36,11 +33,7 @@ public class EventPublisherAdapter implements EventPublisherPort {
       JsonNode payload = toKafkaPayload(type, event);
 
       KafkaEventEnvelope envelope =
-          new KafkaEventEnvelope(
-              eventId,
-              type.name(),
-              aggregateId,
-              payload);
+          new KafkaEventEnvelope(eventId, type.name(), aggregateId, payload);
 
       outboxService.saveEvent(
           kafkaTopicMapper.toTopic(type),
@@ -49,21 +42,16 @@ public class EventPublisherAdapter implements EventPublisherPort {
           objectMapper.writeValueAsString(envelope));
 
     } catch (JsonProcessingException e) {
-      throw new OutboxException(
-          "Failed to serialize event", e);
+      throw new OutboxException("Failed to serialize event", e);
     }
   }
 
-  private JsonNode toKafkaPayload(
-      EventType type,
-      ApplicationEvent event) {
+  private JsonNode toKafkaPayload(EventType type, ApplicationEvent event) {
 
     if (type == EventType.MESSAGE_CREATED) {
-      MessageCreatedEvent messageCreatedEvent =
-          (MessageCreatedEvent) event;
+      MessageCreatedEvent messageCreatedEvent = (MessageCreatedEvent) event;
 
-      return objectMapper.valueToTree(
-          kafkaEventMapper.toKafkaEvent(messageCreatedEvent));
+      return objectMapper.valueToTree(kafkaEventMapper.toKafkaEvent(messageCreatedEvent));
     }
 
     return objectMapper.valueToTree(event);

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,14 +16,12 @@ public class FileAttachmentRepository implements FileAttachmentRepositoryPort {
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;
 
   @Override
-  @Transactional(readOnly = true)
   public List<String> findAllStorageFileNames() {
 
     return fileAttachmentJpaRepository.findAllStorageFileNames();
   }
 
   @Override
-  @Transactional(readOnly = true)
   public List<FileAttachment> findOrphanAttachments() {
 
     return fileAttachmentJpaRepository.findOrphanAttachments().stream()
@@ -33,24 +30,19 @@ public class FileAttachmentRepository implements FileAttachmentRepositoryPort {
   }
 
   @Override
-  @Transactional
-  public void deleteAllByIds(List<UUID> ids) {
-
+  public int deleteAllByIds(List<UUID> ids) {
     if (ids == null || ids.isEmpty()) {
-      return;
+      return 0;
     }
 
-    fileAttachmentJpaRepository.deleteAllByIds(ids);
+    return fileAttachmentJpaRepository.deleteAllByIds(ids);
   }
 
   @Override
-  @Transactional
   public void delete(FileAttachment fileAttachment) {
 
-    if (fileAttachment == null || fileAttachment.getId() == null) {
-      return;
+    if (fileAttachment != null) {
+      fileAttachmentJpaRepository.deleteById(fileAttachment.getId());
     }
-
-    fileAttachmentJpaRepository.deleteById(fileAttachment.getId());
   }
 }

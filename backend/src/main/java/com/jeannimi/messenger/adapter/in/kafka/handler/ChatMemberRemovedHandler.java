@@ -27,13 +27,10 @@ public class ChatMemberRemovedHandler implements ChatEventHandler {
       ChatMemberRemovedEvent event =
           objectMapper.treeToValue(payload, ChatMemberRemovedEvent.class);
 
-      realtimeEventPublisher.publish(
-          EventType.CHAT_MEMBER_REMOVED,
-          event);
+      realtimeEventPublisher.publish(EventType.CHAT_MEMBER_REMOVED, event);
 
     } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to process CHAT_MEMBER_REMOVED", e);
+      throw new RuntimeException("Failed to process CHAT_MEMBER_REMOVED", e);
     }
   }
 }

@@ -15,8 +15,7 @@ public interface MessageService {
 
   MessageResult sendMessage(Long chatId, Long senderId, String content);
 
-  CursorPageResult<MessageResult> getMessages(
-      Long chatId, Long userId, CursorPageQuery query);
+  CursorPageResult<MessageResult> getMessages(Long chatId, Long userId, CursorPageQuery query);
 
   MessageResult getMessage(Long chatId, Long messageId, Long userId);
 

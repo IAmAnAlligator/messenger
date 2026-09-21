@@ -1,19 +1,16 @@
 package com.jeannimi.messenger.adapter.in.web.mapper;
 
-import com.jeannimi.messenger.application.common.pagination.Cursor;
-import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
+import com.jeannimi.messenger.application.common.pagination.Cursor;
+import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CursorPaginationMapper {
 
   public CursorPageQuery toQuery(CursorPageRequest request) {
-    return new CursorPageQuery(
-        request.cursorId(),
-        request.cursorTime(),
-        request.limit());
+    return new CursorPageQuery(request.cursorId(), request.cursorTime(), request.limit());
   }
 
   public CursorDto toDto(Cursor cursor) {
@@ -21,8 +18,6 @@ public class CursorPaginationMapper {
       return null;
     }
 
-    return new CursorDto(
-        cursor.time(),
-        cursor.id());
+    return new CursorDto(cursor.time(), cursor.id());
   }
 }

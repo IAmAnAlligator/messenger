@@ -4,14 +4,14 @@ import com.jeannimi.messenger.application.port.out.FileStorageMaintenancePort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.StoredFileInfo;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Stream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,18 +20,13 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   private final Path rootLocation;
 
-  public LocalFileStorageAdapter(
-      @Value("${file.storage.location}") String storageLocation) {
+  public LocalFileStorageAdapter(@Value("${file.storage.location}") String storageLocation) {
 
-    this.rootLocation = Path.of(storageLocation)
-        .toAbsolutePath()
-        .normalize();
+    this.rootLocation = Path.of(storageLocation).toAbsolutePath().normalize();
   }
 
   @Override
-  public StoredFile store(
-      InputStream inputStream,
-      String originalFileName) {
+  public StoredFile store(InputStream inputStream, String originalFileName) {
 
     try {
       Files.createDirectories(rootLocation);
@@ -39,26 +34,18 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
       String extension = extractExtension(originalFileName);
       String storageFileName = UUID.randomUUID() + extension;
 
-      Path target = rootLocation
-          .resolve(storageFileName)
-          .normalize();
+      Path target = rootLocation.resolve(storageFileName).normalize();
 
       if (!target.startsWith(rootLocation)) {
         throw new FileStorageException("Invalid storage path");
       }
 
-      Files.copy(
-          inputStream,
-          target,
-          StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
 
-      return new StoredFile(
-          storageFileName);
+      return new StoredFile(storageFileName);
 
     } catch (IOException e) {
-      throw new FileStorageException(
-          "Failed to store file",
-          e);
+      throw new FileStorageException("Failed to store file", e);
     }
   }
 
@@ -66,9 +53,7 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
   public InputStream load(String storageFileName) {
 
     try {
-      Path file = rootLocation
-          .resolve(storageFileName)
-          .normalize();
+      Path file = rootLocation.resolve(storageFileName).normalize();
 
       if (!file.startsWith(rootLocation)) {
         throw new FileStorageException("Invalid storage path");
@@ -77,26 +62,20 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
       return Files.newInputStream(file);
 
     } catch (IOException e) {
-      throw new FileStorageException(
-          "Failed to load file",
-          e);
+      throw new FileStorageException("Failed to load file", e);
     }
   }
 
   @Override
   public void delete(String storageFileName) {
 
-    Path path = rootLocation
-        .resolve(storageFileName)
-        .normalize();
+    Path path = rootLocation.resolve(storageFileName).normalize();
 
     try {
       Files.deleteIfExists(path);
 
     } catch (IOException e) {
-      throw new FileStorageException(
-          "Failed to delete file: " + storageFileName,
-          e);
+      throw new FileStorageException("Failed to delete file: " + storageFileName, e);
     }
   }
 
@@ -105,16 +84,13 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
     try {
 
-      Path file = rootLocation
-          .resolve(storageFileName)
-          .normalize();
+      Path file = rootLocation.resolve(storageFileName).normalize();
 
       if (!file.startsWith(rootLocation)) {
         throw new FileStorageException("Invalid storage path");
       }
 
-      String contentType =
-          Files.probeContentType(file);
+      String contentType = Files.probeContentType(file);
 
       return contentType == null || contentType.isBlank()
           ? "application/octet-stream"
@@ -122,9 +98,7 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
     } catch (IOException e) {
 
-      throw new FileStorageException(
-          "Failed to detect content type: " + storageFileName,
-          e);
+      throw new FileStorageException("Failed to detect content type: " + storageFileName, e);
     }
   }
 
@@ -148,15 +122,11 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
     try (Stream<Path> stream = Files.list(rootLocation)) {
 
-      return stream
-          .filter(Files::isRegularFile)
-          .map(this::toStoredFileInfo)
-          .toList();
+      return stream.filter(Files::isRegularFile).map(this::toStoredFileInfo).toList();
 
     } catch (IOException e) {
 
-      throw new FileStorageException(
-          "Failed to list stored files", e);
+      throw new FileStorageException("Failed to list stored files", e);
     }
   }
 
@@ -165,13 +135,11 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
     try {
 
       return new StoredFileInfo(
-          file.getFileName().toString(),
-          Files.getLastModifiedTime(file).toInstant());
+          file.getFileName().toString(), Files.getLastModifiedTime(file).toInstant());
 
     } catch (IOException e) {
 
-      throw new FileStorageException(
-          "Failed to read file metadata: " + file, e);
+      throw new FileStorageException("Failed to read file metadata: " + file, e);
     }
   }
 }

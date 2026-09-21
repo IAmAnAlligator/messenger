@@ -18,6 +18,5 @@ public class OrphanFileCleanupScheduler {
     if (properties.enabled()) {
       cleanupService.cleanupOrphanFiles(properties.orphanAge());
     }
-
   }
 }

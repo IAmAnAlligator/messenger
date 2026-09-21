@@ -1,13 +1,13 @@
 package com.jeannimi.messenger.adapter.in.web.exception;
 
+import com.jeannimi.messenger.adapter.out.filestorage.FileStorageException;
 import com.jeannimi.messenger.application.exception.BadRequestException;
 import com.jeannimi.messenger.application.exception.ConflictException;
 import com.jeannimi.messenger.application.exception.ForbiddenException;
-import com.jeannimi.messenger.application.exception.UnauthorizedException;
-import com.jeannimi.messenger.adapter.out.filestorage.FileStorageException;
-import com.jeannimi.messenger.domain.exception.MessageException;
 import com.jeannimi.messenger.application.exception.NotFoundException;
+import com.jeannimi.messenger.application.exception.UnauthorizedException;
 import com.jeannimi.messenger.domain.exception.ChatException;
+import com.jeannimi.messenger.domain.exception.MessageException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
@@ -145,7 +145,7 @@ public class GlobalExceptionHandler {
               FILE_CONTENT_TYPE_TOO_LONG,
               FILE_STORAGE_PATH_INVALID,
               FILE_STORAGE_PATH_TOO_LONG,
-               CONTENT_NOT_ALLOWED -> HttpStatus.BAD_REQUEST;
+              CONTENT_NOT_ALLOWED -> HttpStatus.BAD_REQUEST;
 
           case FILE_STORAGE_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

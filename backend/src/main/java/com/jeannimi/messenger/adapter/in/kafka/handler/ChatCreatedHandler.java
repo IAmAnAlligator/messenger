@@ -24,16 +24,12 @@ public class ChatCreatedHandler implements ChatEventHandler {
   public void handle(JsonNode payload) {
 
     try {
-      ChatCreatedEvent event =
-          objectMapper.treeToValue(payload, ChatCreatedEvent.class);
+      ChatCreatedEvent event = objectMapper.treeToValue(payload, ChatCreatedEvent.class);
 
-      realtimeEventPublisher.publish(
-          EventType.CHAT_CREATED,
-          event);
+      realtimeEventPublisher.publish(EventType.CHAT_CREATED, event);
 
     } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to process CHAT_CREATED", e);
+      throw new RuntimeException("Failed to process CHAT_CREATED", e);
     }
   }
 }

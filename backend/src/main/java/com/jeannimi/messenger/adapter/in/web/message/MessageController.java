@@ -1,22 +1,22 @@
 package com.jeannimi.messenger.adapter.in.web.message;
 
+import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.mapper.CursorPaginationMapper;
-import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
-import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
-import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
-import com.jeannimi.messenger.application.message.dto.MessageResult;
-import com.jeannimi.messenger.application.user.dto.UserResult;
-import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
-import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
-import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageResponse;
 import com.jeannimi.messenger.adapter.in.web.message.dto.FileAttachmentDto;
 import com.jeannimi.messenger.adapter.in.web.message.dto.MessageDto;
 import com.jeannimi.messenger.adapter.in.web.message.dto.MessageSendRequest;
 import com.jeannimi.messenger.adapter.in.web.message.mapper.FileDownloadMapper;
 import com.jeannimi.messenger.adapter.in.web.message.mapper.FileUploadMapper;
-import com.jeannimi.messenger.application.message.service.MessageService;
-import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
+import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageResponse;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
+import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
+import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
+import com.jeannimi.messenger.application.message.dto.MessageResult;
+import com.jeannimi.messenger.application.message.service.MessageService;
+import com.jeannimi.messenger.application.user.dto.UserResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +56,7 @@ public class MessageController {
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    FileDownloadResult file =
-        messageService.getFile(chatId, messageId, user.id());
+    FileDownloadResult file = messageService.getFile(chatId, messageId, user.id());
 
     return fileDownloadMapper.toResponse(file);
   }
@@ -69,10 +68,7 @@ public class MessageController {
       @AuthenticationPrincipal CustomUserDetails user) {
 
     MessageResult result =
-        messageService.sendFile(
-            chatId,
-            user.id(),
-            fileUploadMapper.toFileUploadCommand(file));
+        messageService.sendFile(chatId, user.id(), fileUploadMapper.toFileUploadCommand(file));
 
     return MessageDto.fromResult(result);
   }
@@ -83,11 +79,7 @@ public class MessageController {
       @RequestBody @Valid MessageSendRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    MessageResult result =
-        messageService.sendMessage(
-            chatId,
-            user.id(),
-            request.content());
+    MessageResult result = messageService.sendMessage(chatId, user.id(), request.content());
 
     return MessageDto.fromResult(result);
   }
@@ -100,16 +92,10 @@ public class MessageController {
 
     CursorPageQuery query = cursorMapper.toQuery(request);
 
-    CursorPageResult<MessageResult> result =
-        messageService.getMessages(
-            chatId,
-            user.id(),
-            query);
+    CursorPageResult<MessageResult> result = messageService.getMessages(chatId, user.id(), query);
 
     return new CursorPageResponse<>(
-        result.content().stream()
-            .map(MessageDto::fromResult)
-            .toList(),
+        result.content().stream().map(MessageDto::fromResult).toList(),
         cursorMapper.toDto(result.nextCursor()),
         result.hasNext());
   }
@@ -120,11 +106,7 @@ public class MessageController {
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    MessageResult result =
-        messageService.getMessage(
-            chatId,
-            messageId,
-            user.id());
+    MessageResult result = messageService.getMessage(chatId, messageId, user.id());
 
     return MessageDto.fromResult(result);
   }
@@ -136,10 +118,7 @@ public class MessageController {
       @PathVariable @Positive Long messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    messageService.deleteMessage(
-        chatId,
-        messageId,
-        user.id());
+    messageService.deleteMessage(chatId, messageId, user.id());
   }
 
   private MessageDto toDto(MessageResult result, Long chatId) {
@@ -171,9 +150,7 @@ public class MessageController {
       CursorPageResult<MessageResult> result, Long chatId) {
 
     return new CursorPageResponse<>(
-        result.content().stream()
-            .map(message -> toDto(message, chatId))
-            .toList(),
+        result.content().stream().map(message -> toDto(message, chatId)).toList(),
         cursorMapper.toDto(result.nextCursor()),
         result.hasNext());
   }

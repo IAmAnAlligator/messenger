@@ -12,10 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UsernameJpaEntity {
 
-  @Column(
-      name = "username",
-      nullable = false,
-      length = 100)
+  @Column(name = "username", nullable = false, length = 100)
   private String value;
 
   public UsernameJpaEntity(String value) {

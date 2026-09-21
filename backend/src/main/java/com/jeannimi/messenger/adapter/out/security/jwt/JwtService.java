@@ -12,7 +12,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-
 import java.util.Date;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +71,6 @@ public class JwtService implements TokenServicePort {
     return Long.valueOf(extractClaims(token).getSubject());
   }
 
-
   @Override
   public String extractRole(String token) {
     return extractClaims(token).get(CLAIM_ROLE, String.class);
@@ -84,11 +82,7 @@ public class JwtService implements TokenServicePort {
   }
 
   private Claims extractClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(key)
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
+    return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
   }
 
   @Override
@@ -100,14 +94,10 @@ public class JwtService implements TokenServicePort {
       log.warn("Ошибка JWT, токен истёк: {}", e.getMessage());
       return false;
     } catch (JwtException e) {
-      log.warn(
-          "Ошибка JWT, неверная подпись, повреждённый токен и т.д.: {}",
-          e.getMessage());
+      log.warn("Ошибка JWT, неверная подпись, повреждённый токен и т.д.: {}", e.getMessage());
       return false;
     } catch (IllegalArgumentException e) {
-      log.warn(
-          "Ошибка JWT, null или пустая строка: {}",
-          e.getMessage());
+      log.warn("Ошибка JWT, null или пустая строка: {}", e.getMessage());
       return false;
     }
   }

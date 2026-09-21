@@ -7,10 +7,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class KafkaEventToApplicationEventMapper {
 
-  public MessageCreatedEvent toApplicationEvent(
-      MessageSentEvent event) {
+  public MessageCreatedEvent toApplicationEvent(MessageSentEvent event) {
 
-    return new MessageCreatedEvent(
-        event.toResult());
+    return new MessageCreatedEvent(event.toResult());
   }
 }

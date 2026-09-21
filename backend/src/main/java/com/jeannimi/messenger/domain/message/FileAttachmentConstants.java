@@ -9,5 +9,4 @@ public class FileAttachmentConstants {
   public static final int MAX_FILE_NAME_LENGTH = 255;
   public static final int MAX_STORAGE_FILE_NAME_LENGTH = 255;
   public static final int MAX_CONTENT_TYPE_LENGTH = 100;
-
 }

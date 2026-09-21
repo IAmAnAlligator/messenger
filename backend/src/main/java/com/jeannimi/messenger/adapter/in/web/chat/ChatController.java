@@ -1,22 +1,22 @@
 package com.jeannimi.messenger.adapter.in.web.chat;
 
-import com.jeannimi.messenger.adapter.in.web.mapper.CursorPaginationMapper;
-import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
-import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
-import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
-import com.jeannimi.messenger.application.chat.dto.ChatResult;
+import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatMemberDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.RenameChatRequest;
-import com.jeannimi.messenger.application.chat.service.ChatService;
-import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
-import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.adapter.in.web.mapper.CursorPaginationMapper;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageResponse;
-import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
+import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
+import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
+import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
+import com.jeannimi.messenger.application.chat.dto.ChatResult;
+import com.jeannimi.messenger.application.chat.service.ChatService;
+import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
+import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
@@ -26,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 @RestController
 @RequestMapping("/api/chats")
@@ -63,8 +63,7 @@ public class ChatController {
 
     CursorPageQuery query = cursorMapper.toQuery(request);
 
-    CursorPageResult<ChatResult> result =
-        chatService.getUserChats(user.id(), query);
+    CursorPageResult<ChatResult> result = chatService.getUserChats(user.id(), query);
 
     return toDto(result);
   }
@@ -163,24 +162,15 @@ public class ChatController {
         result.lastReadMessageId());
   }
 
-  private CursorPageResponse<ChatDto, CursorDto> toDto(
-      CursorPageResult<ChatResult> result) {
+  private CursorPageResponse<ChatDto, CursorDto> toDto(CursorPageResult<ChatResult> result) {
 
-    List<ChatDto> content =
-        result.content().stream()
-            .map(this::toDto)
-            .toList();
+    List<ChatDto> content = result.content().stream().map(this::toDto).toList();
 
     CursorDto nextCursor =
         result.nextCursor() == null
             ? null
-            : new CursorDto(
-                result.nextCursor().time(),
-                result.nextCursor().id());
+            : new CursorDto(result.nextCursor().time(), result.nextCursor().id());
 
-    return new CursorPageResponse<>(
-        content,
-        nextCursor,
-        result.hasNext());
+    return new CursorPageResponse<>(content, nextCursor, result.hasNext());
   }
 }

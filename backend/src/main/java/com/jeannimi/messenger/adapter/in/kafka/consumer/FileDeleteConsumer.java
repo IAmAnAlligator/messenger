@@ -2,12 +2,12 @@ package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
-import com.jeannimi.messenger.domain.message.ProcessedMessage;
-import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
+import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
+import com.jeannimi.messenger.domain.message.ProcessedMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
