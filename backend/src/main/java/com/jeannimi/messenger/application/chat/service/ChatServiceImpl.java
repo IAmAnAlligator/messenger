@@ -156,17 +156,26 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResult<ChatResult> getUserChats(Long userId, CursorPageQuery query) {
+  public CursorPageResult<ChatResult> getUserChats(
+      Long userId,
+      CursorPageQuery query) {
 
-    int pageSize = Math.min(query.limit(), ChatApplicationConstants.MAX_CHAT_PAGE_SIZE);
+    int pageSize =
+        Math.min(
+            query.limit(),
+            ChatApplicationConstants.MAX_CHAT_PAGE_SIZE);
 
     int fetchSize = pageSize + 1;
 
     List<Long> ids =
         query.cursorTime() == null
-            ? chatMemberRepository.findFirstPageIds(userId, fetchSize)
+            ? chatMemberRepository.findFirstPageIds(
+            userId, fetchSize)
             : chatMemberRepository.findNextPageIds(
-                userId, query.cursorTime(), query.cursorId(), fetchSize);
+                userId,
+                query.cursorTime(),
+                query.cursorId(),
+                fetchSize);
 
     if (ids.isEmpty()) {
       return emptyPage();
@@ -176,14 +185,21 @@ public class ChatServiceImpl implements ChatService {
 
     ids = takePage(ids, pageSize);
 
-    List<Chat> chats = chatRepository.findByIdsWithMembers(ids);
+    List<Chat> chats =
+        chatRepository.findByIdsWithMembers(ids);
 
-    List<Chat> orderedChats = restoreOrder(ids, chats);
+    List<Chat> orderedChats =
+        restoreOrder(ids, chats);
 
-    Cursor nextCursor = createNextCursor(orderedChats, hasMore);
+    Cursor nextCursor =
+        createNextCursor(orderedChats, hasMore);
 
     return new CursorPageResult<>(
-        orderedChats.stream().map(this::toResult).toList(), nextCursor, hasMore);
+        orderedChats.stream()
+            .map(this::toResult)
+            .toList(),
+        nextCursor,
+        hasMore);
   }
 
   private List<Long> takePage(List<Long> ids, int pageSize) {
@@ -321,7 +337,9 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<ChatMemberResult> getMembers(Long chatId, Long currentUserId) {
+  public List<ChatMemberResult> getMembers(
+      Long chatId,
+      Long currentUserId) {
 
     Chat chat = loadChat(chatId);
 
@@ -329,16 +347,9 @@ public class ChatServiceImpl implements ChatService {
       throw new ForbiddenException("Access denied");
     }
 
-    List<ChatMember> members =
-        chat.getMembers() == null ? List.of() : chat.getMembers().stream().toList();
-
-    Map<Long, User> users =
-        userRepository
-            .findAllById(members.stream().map(ChatMember::getUserId).collect(Collectors.toSet()))
-            .stream()
-            .collect(Collectors.toMap(User::getId, Function.identity()));
-
-    return members.stream().map(member -> toMemberResult(member, users)).toList();
+    return chat.getMembers().stream()
+        .map(this::toMemberResult)
+        .toList();
   }
 
   @Transactional
@@ -387,17 +398,10 @@ public class ChatServiceImpl implements ChatService {
 
   private ChatResult toResult(Chat chat) {
 
-    List<ChatMember> members =
-        chat.getMembers() == null ? List.of() : chat.getMembers().stream().toList();
-
-    Map<Long, User> users =
-        userRepository
-            .findAllById(members.stream().map(ChatMember::getUserId).collect(Collectors.toSet()))
-            .stream()
-            .collect(Collectors.toMap(User::getId, Function.identity()));
-
     List<ChatMemberResult> memberResults =
-        members.stream().map(member -> toMemberResult(member, users)).toList();
+        chat.getMembers().stream()
+            .map(this::toMemberResult)
+            .toList();
 
     return new ChatResult(
         chat.getId(),
@@ -408,18 +412,22 @@ public class ChatServiceImpl implements ChatService {
         chat.getLastMessageAt());
   }
 
-  private ChatMemberResult toMemberResult(ChatMember member, Map<Long, User> users) {
+  private ChatMemberResult toMemberResult(ChatMember member) {
 
-    User user = users.get(member.getUserId());
-
-    if (user == null) {
-      throw new NotFoundException("User not found: " + member.getUserId());
-    }
+    User user = member.getUser();
 
     UserResult userResult =
-        new UserResult(user.getId(), user.getUsername().getValue(), user.getRole());
+        new UserResult(
+            user.getId(),
+            user.getUsername().getValue(),
+            user.getRole());
 
     return new ChatMemberResult(
-        userResult, member.getRole(), member.getJoinedAt(), member.getLastReadMessageId());
+        userResult,
+        member.getRole(),
+        member.getJoinedAt(),
+        member.getLastReadMessageId());
   }
+
+
 }

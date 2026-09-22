@@ -359,7 +359,7 @@ public final class Chat {
     }
 
     ChatMember member =
-        ChatMember.create(user.getId(), role);
+        ChatMember.create(user, role);
 
     members.add(member);
   }

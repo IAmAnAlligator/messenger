@@ -4,10 +4,14 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.ChatMemberJpaEntity
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.domain.chat.ChatMember;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class ChatMemberPersistenceMapper {
+
+  private final UserPersistenceMapper userPersistenceMapper;
 
   public ChatMember toDomain(ChatMemberJpaEntity entity) {
 
@@ -17,7 +21,7 @@ public class ChatMemberPersistenceMapper {
 
     return ChatMember.reconstitute(
         entity.getId(),
-        entity.getUser().getId(),
+        userPersistenceMapper.toDomain(entity.getUser()),
         entity.getRole(),
         entity.getJoinedAt(),
         entity.getLastReadMessageId());

@@ -38,7 +38,7 @@ public class ChatRepository implements ChatRepositoryPort {
 
     ChatJpaEntity entity =
         chatJpaRepository
-            .findById(chat.getId())
+            .findChatWithMembersById(chat.getId())
             .orElseThrow(() -> new IllegalStateException("Chat not found: " + chat.getId()));
 
     chatPersistenceMapper.updateEntity(chat, entity, users);
@@ -51,28 +51,35 @@ public class ChatRepository implements ChatRepositoryPort {
   @Override
   public Optional<Chat> findById(Long chatId) {
 
-    return chatJpaRepository.findById(chatId).map(chatPersistenceMapper::toDomain);
-  }
-
-  @Override
-  public void delete(Chat chat) {
-
-    if (chat != null && chat.getId() != null) {
-      chatJpaRepository.deleteById(chat.getId());
-    }
-  }
-
-  @Override
-  public boolean existsById(Long chatId) {
-
-    return chatJpaRepository.existsById(chatId);
+    return chatJpaRepository
+        .findById(chatId)
+        .map(chatPersistenceMapper::toDomain);
   }
 
   @Override
   public Optional<Chat> findByIdWithMembers(Long chatId) {
 
-    return chatJpaRepository.findById(chatId).map(chatPersistenceMapper::toDomain);
+    return chatJpaRepository
+        .findChatWithMembersById(chatId)
+        .map(chatPersistenceMapper::toDomain);
   }
+
+  @Override
+  public void delete(Chat chat) {
+    if (chat == null || chat.getId() == null) {
+      throw new IllegalArgumentException("Chat must have an id");
+    }
+
+    chatJpaRepository.deleteById(chat.getId());
+  }
+
+//  @Override
+//  public boolean existsById(Long chatId) {
+//
+//    return chatJpaRepository.existsById(chatId);
+//  }
+
+
 
   @Override
   public Optional<Chat> findByPrivateKey(String privateKey) {
@@ -94,13 +101,27 @@ public class ChatRepository implements ChatRepositoryPort {
 
   private Map<Long, UserJpaEntity> loadUsers(Chat chat) {
 
-    List<Long> userIds = chat.getMembers().stream().map(ChatMember::getUserId).distinct().toList();
+    List<Long> userIds =
+        chat.getMembers().stream()
+            .map(ChatMember::getUserId)
+            .distinct()
+            .toList();
 
     if (userIds.isEmpty()) {
       return Map.of();
     }
 
-    return userJpaRepository.findAllById(userIds).stream()
-        .collect(Collectors.toMap(UserJpaEntity::getId, Function.identity()));
+    Map<Long, UserJpaEntity> users =
+        userJpaRepository.findAllById(userIds).stream()
+            .collect(Collectors.toMap(
+                UserJpaEntity::getId,
+                Function.identity()));
+
+    if (users.size() != userIds.size()) {
+      throw new IllegalStateException(
+          "Some chat members reference missing users");
+    }
+
+    return users;
   }
 }

@@ -18,5 +18,5 @@ public interface ChatRepositoryPort {
 
   void delete(Chat chat);
 
-  boolean existsById(Long chatId);
+//  boolean existsById(Long chatId);
 }

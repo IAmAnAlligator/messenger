@@ -43,7 +43,7 @@ public class ChatJpaEntity {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  private Set<ChatMemberJpaEntity> members = new HashSet<>();
+  private final Set<ChatMemberJpaEntity> members = new HashSet<>();
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
@@ -51,7 +51,7 @@ public class ChatJpaEntity {
   @Column(name = "last_message_at")
   private Instant lastMessageAt;
 
-  @Column(name = "private_key", unique = true, length = 255)
+  @Column(name = "private_key", unique = true, length = 39)
   private String privateKey;
 
   @Version

@@ -12,7 +12,7 @@ public interface ChatJpaRepository extends JpaRepository<ChatJpaEntity, Long> {
   List<ChatJpaEntity> findAllByIdIn(List<Long> ids);
 
   @EntityGraph(attributePaths = {"members", "members.user"})
-  Optional<ChatJpaEntity> findById(Long id);
+  Optional<ChatJpaEntity> findChatWithMembersById(Long id);
 
   @EntityGraph(attributePaths = {"members", "members.user"})
   Optional<ChatJpaEntity> findByPrivateKey(String privateKey);
