@@ -147,7 +147,7 @@ public class ChatServiceImpl implements ChatService {
 
     eventPublisher.publish(EventType.CHAT_CREATED, String.valueOf(saved.getId()), chatCreatedEvent);
 
-    return toResult(saved);
+    return result;
   }
 
   // =========================

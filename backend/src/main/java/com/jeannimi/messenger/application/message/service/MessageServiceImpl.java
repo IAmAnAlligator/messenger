@@ -130,7 +130,7 @@ public class MessageServiceImpl implements MessageService {
 
       Message savedMessage = messageRepository.save(message);
 
-      chat.updateLastMessageTime();
+      chat.markMessageAdded(savedMessage.getCreatedAt());
 
       chatRepository.save(chat);
 
@@ -210,7 +210,7 @@ public class MessageServiceImpl implements MessageService {
 
     Message saved = messageRepository.save(message);
 
-    chat.updateLastMessageTime();
+    chat.markMessageAdded(saved.getCreatedAt());
 
     chatRepository.save(chat);
 
@@ -284,7 +284,6 @@ public class MessageServiceImpl implements MessageService {
   @Override
   @Transactional
   public ReadResult markAsRead(Long chatId, Long messageId, Long userId) {
-
     ChatMember chatMember =
         chatMemberRepository
             .findByChatIdAndUserId(chatId, userId)
@@ -298,18 +297,19 @@ public class MessageServiceImpl implements MessageService {
     Message message = messageWithSender.message();
 
     if (message.getSenderId().equals(userId)) {
-
       return new ReadResult(
           new ChatMemberReadResult(userId, chatMember.getLastReadMessageId()), false);
     }
+    Long previousLastReadMessageId = chatMember.getLastReadMessageId();
 
-    int updated = chatMemberRepository.updateLastReadMessageId(chatId, userId, messageId);
+    chatMember.markAsRead(messageId);
 
-    Long lastReadMessageId = updated > 0 ? messageId : chatMember.getLastReadMessageId();
+    Long lastReadMessageId = chatMember.getLastReadMessageId();
+
+    int updated = chatMemberRepository.updateLastReadMessageId(chatId, userId, lastReadMessageId);
 
     if (updated == 0) {
-
-      return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), false);
+      return new ReadResult(new ChatMemberReadResult(userId, previousLastReadMessageId), false);
     }
 
     MessageReadEvent event =

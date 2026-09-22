@@ -39,6 +39,10 @@ public final class ChatMember {
     return role == ChatRole.ADMIN;
   }
 
+  public void markAsRead(Long messageId) {
+    this.lastReadMessageId = Objects.requireNonNull(messageId, "messageId");
+  }
+
   @Override
   public boolean equals(Object o) {
 

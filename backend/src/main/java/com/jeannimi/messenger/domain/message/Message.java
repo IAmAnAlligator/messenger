@@ -38,9 +38,8 @@ public final class Message {
 
   public static Message ofText(Long chatId, Long senderId, String content) {
 
-    validateTextContent(content);
-
-    String normalizedContent = content.trim();
+    String normalizedContent = normalizeContent(content);
+    validateTextContent(normalizedContent);
 
     return new Message(
         null, chatId, senderId, normalizedContent, Instant.now(), MessageType.TEXT, null);
@@ -84,17 +83,24 @@ public final class Message {
     }
   }
 
+  private static String normalizeContent(String content) {
+    return Objects.requireNonNull(content, "content").trim();
+  }
+
   private static void validateTextContent(String content) {
 
-    if (content == null || content.isBlank()) {
+    if (content.isBlank()) {
       throw new MessageException(
-          MessageError.CONTENT_BLANK, "Text message content must not be blank");
+          MessageError.CONTENT_BLANK,
+          "Text message content must not be blank");
     }
 
     if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
       throw new MessageException(
           MessageError.CONTENT_TOO_LONG,
-          "Message content exceeds " + MessageConstants.MAX_CONTENT_LENGTH + " characters");
+          "Message content exceeds "
+              + MessageConstants.MAX_CONTENT_LENGTH
+              + " characters");
     }
   }
 
