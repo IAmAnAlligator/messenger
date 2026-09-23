@@ -141,15 +141,11 @@ public class MessageServiceImpl implements MessageService {
       MessageResult result = toResult(savedMessage, sender);
 
       List<Long> recipientUserIds =
-          chatMemberRepository
-              .findAllByChatId(chat.getId())
-              .stream()
+          chatMemberRepository.findAllByChatId(chat.getId()).stream()
               .map(ChatMember::getUserId)
               .toList();
 
-      publishMessageCreated(
-          result,
-          recipientUserIds);
+      publishMessageCreated(result, recipientUserIds);
 
       return result;
 
@@ -230,15 +226,11 @@ public class MessageServiceImpl implements MessageService {
     MessageResult result = toResult(saved, sender);
 
     List<Long> recipientUserIds =
-        chatMemberRepository
-            .findAllByChatId(chat.getId())
-            .stream()
+        chatMemberRepository.findAllByChatId(chat.getId()).stream()
             .map(ChatMember::getUserId)
             .toList();
 
-    publishMessageCreated(
-        result,
-        recipientUserIds);
+    publishMessageCreated(result, recipientUserIds);
 
     return result;
   }

@@ -91,16 +91,13 @@ public final class Message {
 
     if (content.isBlank()) {
       throw new MessageException(
-          MessageError.CONTENT_BLANK,
-          "Text message content must not be blank");
+          MessageError.CONTENT_BLANK, "Text message content must not be blank");
     }
 
     if (content.length() > MessageConstants.MAX_CONTENT_LENGTH) {
       throw new MessageException(
           MessageError.CONTENT_TOO_LONG,
-          "Message content exceeds "
-              + MessageConstants.MAX_CONTENT_LENGTH
-              + " characters");
+          "Message content exceeds " + MessageConstants.MAX_CONTENT_LENGTH + " characters");
     }
   }
 

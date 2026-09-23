@@ -79,35 +79,27 @@ public final class Chat {
 
     if (members.isEmpty()) {
       throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_MEMBERS,
-          "Group must have at least one member");
+          ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
     }
 
     if (members.size() > ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than "
-              + ChatConstants.MAX_GROUP_MEMBERS
-              + " members");
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     if (countAdmins() == 0) {
       throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_ADMIN,
-          "Group must have at least one admin");
+          ChatError.GROUP_MUST_HAVE_ADMIN, "Group must have at least one admin");
     }
 
     if (privateKey != null) {
       throw new ChatException(
-          ChatError.GROUP_CANNOT_HAVE_PRIVATE_KEY,
-          "Group chat cannot have privateKey");
+          ChatError.GROUP_CANNOT_HAVE_PRIVATE_KEY, "Group chat cannot have privateKey");
     }
   }
 
-  public static Chat createGroup(
-      String name,
-      User creator,
-      List<User> additionalMembers) {
+  public static Chat createGroup(String name, User creator, List<User> additionalMembers) {
 
     Objects.requireNonNull(creator, "creator");
     Objects.requireNonNull(additionalMembers, "additionalMembers");
@@ -120,22 +112,12 @@ public final class Chat {
     if (requestedMembers > ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than "
-              + ChatConstants.MAX_GROUP_MEMBERS
-              + " members");
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     Instant now = Instant.now();
 
-    Chat chat =
-        new Chat(
-            null,
-            normalizedName,
-            ChatType.GROUP,
-            new HashSet<>(),
-            now,
-            null,
-            null);
+    Chat chat = new Chat(null, normalizedName, ChatType.GROUP, new HashSet<>(), now, null, null);
 
     chat.addMemberInternal(creator, ChatRole.ADMIN);
 
@@ -147,9 +129,7 @@ public final class Chat {
     if (chat.members.size() < ChatConstants.MIN_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MUST_HAVE_MINIMUM_MEMBERS,
-          "Group must contain at least "
-              + ChatConstants.MIN_GROUP_MEMBERS
-              + " members");
+          "Group must contain at least " + ChatConstants.MIN_GROUP_MEMBERS + " members");
     }
 
     return chat;
@@ -162,31 +142,19 @@ public final class Chat {
 
     if (userA.getId().equals(userB.getId())) {
       throw new ChatException(
-          ChatError.CANNOT_CREATE_PRIVATE_WITH_YOURSELF,
-          "Cannot create chat with yourself");
+          ChatError.CANNOT_CREATE_PRIVATE_WITH_YOURSELF, "Cannot create chat with yourself");
     }
 
     Instant now = Instant.now();
 
     String name =
-        userA.getUsername().getValue()
-            + ChatConstants.SEPARATOR
-            + userB.getUsername().getValue();
+        userA.getUsername().getValue() + ChatConstants.SEPARATOR + userB.getUsername().getValue();
 
-    String privateKey =
-        buildPrivateKey(userA.getId(), userB.getId());
+    String privateKey = buildPrivateKey(userA.getId(), userB.getId());
 
     Set<ChatMember> members = new HashSet<>();
 
-    Chat chat =
-        new Chat(
-            null,
-            name,
-            ChatType.PRIVATE,
-            members,
-            now,
-            null,
-            privateKey);
+    Chat chat = new Chat(null, name, ChatType.PRIVATE, members, now, null, privateKey);
 
     chat.addMemberInternal(userA, ChatRole.ADMIN);
     chat.addMemberInternal(userB, ChatRole.MEMBER);
@@ -211,14 +179,12 @@ public final class Chat {
 
     Objects.requireNonNull(userId, "userId");
 
-    return members.stream()
-        .anyMatch(member -> member.getUserId().equals(userId));
+    return members.stream().anyMatch(member -> member.getUserId().equals(userId));
   }
 
   public void markMessageAdded(Instant messageCreatedAt) {
 
-    this.lastMessageAt =
-        Objects.requireNonNull(messageCreatedAt, "messageCreatedAt");
+    this.lastMessageAt = Objects.requireNonNull(messageCreatedAt, "messageCreatedAt");
   }
 
   public boolean isPrivate() {
@@ -239,17 +205,13 @@ public final class Chat {
     if (members.size() >= ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than "
-              + ChatConstants.MAX_GROUP_MEMBERS
-              + " members");
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     addMemberInternal(user, ChatRole.MEMBER);
   }
 
-  public void removeMember(
-      Long targetUserId,
-      Long currentUserId) {
+  public void removeMember(Long targetUserId, Long currentUserId) {
 
     Objects.requireNonNull(targetUserId, "targetUserId");
     Objects.requireNonNull(currentUserId, "currentUserId");
@@ -261,17 +223,13 @@ public final class Chat {
     requireAdmin(currentUser);
 
     if (targetUserId.equals(currentUserId)) {
-      throw new ChatException(
-          ChatError.CANNOT_REMOVE_YOURSELF,
-          "Cannot remove yourself");
+      throw new ChatException(ChatError.CANNOT_REMOVE_YOURSELF, "Cannot remove yourself");
     }
 
     ChatMember target = requireMember(targetUserId);
 
     if (target.isAdmin() && countAdmins() <= 1) {
-      throw new ChatException(
-          ChatError.LAST_ADMIN_CANNOT_BE_REMOVED,
-          "Cannot remove last admin");
+      throw new ChatException(ChatError.LAST_ADMIN_CANNOT_BE_REMOVED, "Cannot remove last admin");
     }
 
     removeMemberInternal(target);
@@ -286,17 +244,13 @@ public final class Chat {
     ChatMember currentUser = requireMember(currentUserId);
 
     if (currentUser.isAdmin()) {
-      throw new ChatException(
-          ChatError.ADMIN_CANNOT_LEAVE,
-          "Admin cannot leave chat");
+      throw new ChatException(ChatError.ADMIN_CANNOT_LEAVE, "Admin cannot leave chat");
     }
 
     removeMemberInternal(currentUser);
   }
 
-  public void renameChat(
-      Long currentUserId,
-      String chatName) {
+  public void renameChat(Long currentUserId, String chatName) {
 
     Objects.requireNonNull(currentUserId, "currentUserId");
 
@@ -320,15 +274,11 @@ public final class Chat {
   private static void validateName(String name) {
 
     if (name.isBlank()) {
-      throw new ChatException(
-          ChatError.CHAT_NAME_EMPTY,
-          "Chat name cannot be empty");
+      throw new ChatException(ChatError.CHAT_NAME_EMPTY, "Chat name cannot be empty");
     }
 
     if (name.length() > ChatConstants.MAX_CHAT_NAME_LENGTH) {
-      throw new ChatException(
-          ChatError.CHAT_NAME_TOO_LONG,
-          "Chat name is too long");
+      throw new ChatException(ChatError.CHAT_NAME_TOO_LONG, "Chat name is too long");
     }
   }
 
@@ -339,44 +289,33 @@ public final class Chat {
     ChatMember currentUser = requireMember(currentUserId);
 
     if (!isPrivate() && !currentUser.isAdmin()) {
-      throw new ChatException(
-          ChatError.ONLY_ADMIN_ALLOWED,
-          "Only admins can do this");
+      throw new ChatException(ChatError.ONLY_ADMIN_ALLOWED, "Only admins can do this");
     }
   }
 
-  private void addMemberInternal(
-      User user,
-      ChatRole role) {
+  private void addMemberInternal(User user, ChatRole role) {
 
     Objects.requireNonNull(user, "user");
     Objects.requireNonNull(role, "role");
 
     if (hasMember(user.getId())) {
-      throw new ChatException(
-          ChatError.USER_ALREADY_IN_CHAT,
-          "User already in chat");
+      throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "User already in chat");
     }
 
-    ChatMember member =
-        ChatMember.create(user, role);
+    ChatMember member = ChatMember.create(user, role);
 
     members.add(member);
   }
 
   private long countAdmins() {
 
-    return members.stream()
-        .filter(member -> member.getRole() == ChatRole.ADMIN)
-        .count();
+    return members.stream().filter(member -> member.getRole() == ChatRole.ADMIN).count();
   }
 
   private void removeMemberInternal(ChatMember member) {
 
     if (!members.remove(member)) {
-      throw new ChatException(
-          ChatError.MEMBER_NOT_IN_CHAT,
-          "Member not in this chat");
+      throw new ChatException(ChatError.MEMBER_NOT_IN_CHAT, "Member not in this chat");
     }
   }
 
@@ -384,20 +323,17 @@ public final class Chat {
 
     if (members.size() != 2) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS,
-          "Private chat must have exactly 2 members");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS, "Private chat must have exactly 2 members");
     }
 
     if (privateKey == null || privateKey.isBlank()) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY,
-          "Private chat must have privateKey");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY, "Private chat must have privateKey");
     }
 
     if (countAdmins() != 1) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_ONE_ADMIN,
-          "Private chat must have exactly one admin");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_ONE_ADMIN, "Private chat must have exactly one admin");
     }
 
     validatePrivateKey();
@@ -410,13 +346,11 @@ public final class Chat {
     Long firstUserId = iterator.next().getUserId();
     Long secondUserId = iterator.next().getUserId();
 
-    String expectedPrivateKey =
-        buildPrivateKey(firstUserId, secondUserId);
+    String expectedPrivateKey = buildPrivateKey(firstUserId, secondUserId);
 
     if (!privateKey.equals(expectedPrivateKey)) {
       throw new ChatException(
-          ChatError.INVALID_PRIVATE_KEY,
-          "Private key does not match chat members");
+          ChatError.INVALID_PRIVATE_KEY, "Private key does not match chat members");
     }
   }
 
@@ -426,18 +360,13 @@ public final class Chat {
         .filter(member -> member.getUserId().equals(userId))
         .findFirst()
         .orElseThrow(
-            () ->
-                new ChatException(
-                    ChatError.NOT_CHAT_MEMBER,
-                    "Not a member of this chat"));
+            () -> new ChatException(ChatError.NOT_CHAT_MEMBER, "Not a member of this chat"));
   }
 
   private void requireAdmin(ChatMember currentUser) {
 
     if (!currentUser.isAdmin()) {
-      throw new ChatException(
-          ChatError.ONLY_ADMIN_ALLOWED,
-          "Only admins can do this");
+      throw new ChatException(ChatError.ONLY_ADMIN_ALLOWED, "Only admins can do this");
     }
   }
 

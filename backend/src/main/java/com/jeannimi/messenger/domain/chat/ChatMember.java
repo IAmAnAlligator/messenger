@@ -14,12 +14,7 @@ public final class ChatMember {
   private final Instant joinedAt;
   private Long lastReadMessageId;
 
-  private ChatMember(
-      Long id,
-      User user,
-      ChatRole role,
-      Instant joinedAt,
-      Long lastReadMessageId) {
+  private ChatMember(Long id, User user, ChatRole role, Instant joinedAt, Long lastReadMessageId) {
 
     this.id = id;
     this.user = Objects.requireNonNull(user, "user");
@@ -28,31 +23,16 @@ public final class ChatMember {
     this.lastReadMessageId = lastReadMessageId;
   }
 
-  public static ChatMember create(
-      User user,
-      ChatRole role) {
+  public static ChatMember create(User user, ChatRole role) {
 
-    return new ChatMember(
-        null,
-        user,
-        role,
-        Instant.now(),
-        null);
+    return new ChatMember(null, user, role, Instant.now(), null);
   }
 
   public static ChatMember reconstitute(
-      Long id,
-      User user,
-      ChatRole role,
-      Instant joinedAt,
-      Long lastReadMessageId) {
+      Long id, User user, ChatRole role, Instant joinedAt, Long lastReadMessageId) {
 
     return new ChatMember(
-        Objects.requireNonNull(id, "id"),
-        user,
-        role,
-        joinedAt,
-        lastReadMessageId);
+        Objects.requireNonNull(id, "id"), user, role, joinedAt, lastReadMessageId);
   }
 
   public Long getUserId() {
@@ -64,8 +44,7 @@ public final class ChatMember {
   }
 
   public void markAsRead(Long messageId) {
-    this.lastReadMessageId =
-        Objects.requireNonNull(messageId, "messageId");
+    this.lastReadMessageId = Objects.requireNonNull(messageId, "messageId");
   }
 
   @Override
