@@ -308,9 +308,14 @@ public class ChatServiceImpl implements ChatService {
 
     Long deletedChatId = chat.getId();
 
+    List<Long> recipientUserIds =
+        chat.getMembers().stream()
+            .map(ChatMember::getUserId)
+            .toList();
+
     messageService.deleteAllByChat(chatId);
 
-    ChatDeletedEvent chatDeletedEvent = new ChatDeletedEvent(chatId);
+    ChatDeletedEvent chatDeletedEvent = new ChatDeletedEvent(chatId, recipientUserIds);
 
     eventPublisher.publish(EventType.CHAT_DELETED, String.valueOf(deletedChatId), chatDeletedEvent);
 
@@ -360,13 +365,18 @@ public class ChatServiceImpl implements ChatService {
 
     String oldName = chat.getName();
 
+    List<Long> recipientUserIds =
+        chat.getMembers().stream()
+            .map(ChatMember::getUserId)
+            .toList();
+
     chat.renameChat(currentUserId, command.name());
 
     chatRepository.save(chat);
 
     String newName = chat.getName();
 
-    ChatRenamedEvent event = new ChatRenamedEvent(chat.getId(), oldName, newName);
+    ChatRenamedEvent event = new ChatRenamedEvent(chat.getId(), oldName, newName, recipientUserIds);
 
     eventPublisher.publish(EventType.CHAT_RENAMED, String.valueOf(chat.getId()), event);
   }

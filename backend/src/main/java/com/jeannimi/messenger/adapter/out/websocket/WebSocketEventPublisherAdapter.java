@@ -21,157 +21,236 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class WebSocketEventPublisherAdapter implements RealtimeEventPublisherPort {
+public class WebSocketEventPublisherAdapter
+    implements RealtimeEventPublisherPort {
 
   private final SimpMessagingTemplate messagingTemplate;
 
   @Override
-  public void publish(EventType eventType, ApplicationEvent event) {
+  public void publish(
+      EventType eventType,
+      ApplicationEvent event) {
 
     switch (eventType) {
-      case MESSAGE_DELETED -> {
-        MessageDeletedEvent messageDeletedEvent = (MessageDeletedEvent) event;
 
-        WebSocketEvent<MessageDeletedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, messageDeletedEvent);
+      case MESSAGE_CREATED ->
+          publishMessageCreated(
+              (MessageCreatedEvent) event);
 
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + messageDeletedEvent.chatId(), webSocketEvent);
-      }
+      case MESSAGE_READ ->
+          publishMessageRead(
+              (MessageReadEvent) event);
 
-      case MESSAGE_READ -> {
-        MessageReadEvent messageReadEvent = (MessageReadEvent) event;
+      case MESSAGE_DELETED ->
+          publishMessageDeleted(
+              (MessageDeletedEvent) event);
 
-        WebSocketEvent<MessageReadEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, messageReadEvent);
+      case CHAT_CREATED ->
+          publishChatCreated(
+              (ChatCreatedEvent) event);
 
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + messageReadEvent.chatId(), webSocketEvent);
-      }
+      case CHAT_DELETED ->
+          publishChatDeleted(
+              (ChatDeletedEvent) event);
 
-      case MESSAGE_CREATED -> {
-        MessageCreatedEvent messageCreatedEvent = (MessageCreatedEvent) event;
+      case CHAT_MEMBER_ADDED ->
+          publishChatMemberAdded(
+              (ChatMemberAddedEvent) event);
 
-        MessageDto messageDto = MessageDto.fromResult(messageCreatedEvent.message());
+      case CHAT_MEMBER_REMOVED ->
+          publishChatMemberRemoved(
+              (ChatMemberRemovedEvent) event);
 
-        WebSocketEvent<MessageDto> webSocketEvent = WebSocketEvent.of(eventType, messageDto);
+      case CHAT_MEMBER_LEFT ->
+          publishChatMemberLeft(
+              (ChatMemberLeftEvent) event);
 
-        messagingTemplate.convertAndSend("/topic/chat/" + messageDto.chatId(), webSocketEvent);
+      case CHAT_RENAMED ->
+          publishChatRenamed(
+              (ChatRenamedEvent) event);
 
-        // Обновление списка чатов
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported realtime event: " + eventType);
+    }
+  }
 
-        for (Long memberId : messageCreatedEvent.recipientUserIds()) {
-          messagingTemplate.convertAndSend(
-              "/topic/user/" + memberId + "/chats",
-              webSocketEvent);
-        }
+  private void publishMessageCreated(
+      MessageCreatedEvent event) {
 
-      }
+    MessageDto messageDto =
+        MessageDto.fromResult(event.message());
 
-      case CHAT_CREATED -> {
-        ChatCreatedEvent chatCreatedEvent = (ChatCreatedEvent) event;
+    WebSocketEvent<MessageDto> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.MESSAGE_CREATED,
+            messageDto);
 
-        WebSocketEvent<ChatCreatedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatCreatedEvent);
+    sendToChat(
+        messageDto.chatId(),
+        webSocketEvent);
 
-        /*
-         * Уведомляем подписчиков,
-         * которые слушают создание чатов.
-         */
-        messagingTemplate.convertAndSend("/topic/chat.created", webSocketEvent);
+    sendToUsers(
+        event.recipientUserIds(),
+        webSocketEvent);
+  }
 
-        /*
-         * Обновляем список чатов
-         * у каждого пользователя.
-         */
-        for (Long memberId : chatCreatedEvent.memberIds()) {
-          messagingTemplate.convertAndSend("/topic/user/" + memberId + "/chats", webSocketEvent);
-        }
-      }
+  private void publishMessageRead(
+      MessageReadEvent event) {
 
-      case CHAT_DELETED -> {
-        ChatDeletedEvent chatDeletedEvent = (ChatDeletedEvent) event;
+    WebSocketEvent<MessageReadEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.MESSAGE_READ,
+            event);
 
-        WebSocketEvent<ChatDeletedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatDeletedEvent);
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
+  }
 
-        /*
-         * Сообщаем участникам,
-         * что чат удалён.
-         */
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatDeletedEvent.chatId(), webSocketEvent);
+  private void publishMessageDeleted(
+      MessageDeletedEvent event) {
 
-        /*
-         * Глобальное событие удаления.
-         */
-        messagingTemplate.convertAndSend("/topic/chat.deleted", webSocketEvent);
-      }
+    WebSocketEvent<MessageDeletedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.MESSAGE_DELETED,
+            event);
 
-      case CHAT_MEMBER_ADDED -> {
-        ChatMemberAddedEvent chatMemberAddedEvent = (ChatMemberAddedEvent) event;
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
+  }
 
-        WebSocketEvent<ChatMemberAddedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatMemberAddedEvent);
+  private void publishChatCreated(
+      ChatCreatedEvent event) {
 
-        /*
-         * Уведомляем участников чата.
-         */
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberAddedEvent.chatId(), webSocketEvent);
+    WebSocketEvent<ChatCreatedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_CREATED,
+            event);
 
-        /*
-         * Отдельно уведомляем нового пользователя,
-         * чтобы обновить список чатов.
-         */
-        messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberAddedEvent.userId() + "/chats", webSocketEvent);
-      }
+    messagingTemplate.convertAndSend(
+        "/topic/chat.created",
+        webSocketEvent);
 
-      case CHAT_MEMBER_REMOVED -> {
-        ChatMemberRemovedEvent chatMemberRemovedEvent = (ChatMemberRemovedEvent) event;
+    sendToUsers(
+        event.memberIds(),
+        webSocketEvent);
+  }
 
-        WebSocketEvent<ChatMemberRemovedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatMemberRemovedEvent);
+  private void publishChatDeleted(
+      ChatDeletedEvent event) {
 
-        /*
-         * Уведомляем участников чата.
-         */
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberRemovedEvent.chatId(), webSocketEvent);
+    WebSocketEvent<ChatDeletedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_DELETED,
+            event);
 
-        /*
-         * Обновляем список чатов
-         * удалённого пользователя.
-         */
-        messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberRemovedEvent.userId() + "/chats", webSocketEvent);
-      }
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
 
-      case CHAT_MEMBER_LEFT -> {
-        ChatMemberLeftEvent chatMemberLeftEvent = (ChatMemberLeftEvent) event;
+    messagingTemplate.convertAndSend(
+        "/topic/chat.deleted",
+        webSocketEvent);
 
-        WebSocketEvent<ChatMemberLeftEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatMemberLeftEvent);
+    sendToUsers(
+        event.recipientUserIds(),
+        webSocketEvent);
+  }
 
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatMemberLeftEvent.chatId(), webSocketEvent);
+  private void publishChatMemberAdded(
+      ChatMemberAddedEvent event) {
 
-        messagingTemplate.convertAndSend(
-            "/topic/user/" + chatMemberLeftEvent.userId() + "/chats", webSocketEvent);
-      }
+    WebSocketEvent<ChatMemberAddedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_MEMBER_ADDED,
+            event);
 
-      case CHAT_RENAMED -> {
-        ChatRenamedEvent chatRenamedEvent = (ChatRenamedEvent) event;
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
 
-        WebSocketEvent<ChatRenamedEvent> webSocketEvent =
-            WebSocketEvent.of(eventType, chatRenamedEvent);
+    sendToUser(
+        event.userId(),
+        webSocketEvent);
+  }
 
-        messagingTemplate.convertAndSend(
-            "/topic/chat/" + chatRenamedEvent.chatId(), webSocketEvent);
-      }
+  private void publishChatMemberRemoved(
+      ChatMemberRemovedEvent event) {
 
-      default -> throw new IllegalArgumentException("Unsupported realtime event: " + eventType);
+    WebSocketEvent<ChatMemberRemovedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_MEMBER_REMOVED,
+            event);
+
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
+
+    sendToUser(
+        event.userId(),
+        webSocketEvent);
+  }
+
+  private void publishChatMemberLeft(
+      ChatMemberLeftEvent event) {
+
+    WebSocketEvent<ChatMemberLeftEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_MEMBER_LEFT,
+            event);
+
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
+
+    sendToUser(
+        event.userId(),
+        webSocketEvent);
+  }
+
+  private void publishChatRenamed(
+      ChatRenamedEvent event) {
+
+    WebSocketEvent<ChatRenamedEvent> webSocketEvent =
+        WebSocketEvent.of(
+            EventType.CHAT_RENAMED,
+            event);
+
+    sendToChat(
+        event.chatId(),
+        webSocketEvent);
+
+    sendToUsers(
+        event.recipientUserIds(),
+        webSocketEvent);
+  }
+
+  private void sendToChat(
+      Long chatId,
+      Object event) {
+
+    messagingTemplate.convertAndSend(
+        "/topic/chat/" + chatId,
+        event);
+  }
+
+  private void sendToUser(
+      Long userId,
+      Object event) {
+
+    messagingTemplate.convertAndSend(
+        "/topic/user/" + userId + "/chats",
+        event);
+  }
+
+  private void sendToUsers(
+      List<Long> userIds,
+      Object event) {
+
+    for (Long userId : userIds) {
+      sendToUser(userId, event);
     }
   }
 }

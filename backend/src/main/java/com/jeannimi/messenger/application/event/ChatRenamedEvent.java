@@ -1,4 +1,10 @@
 package com.jeannimi.messenger.application.event;
 
-public record ChatRenamedEvent(Long chatId, String oldName, String newName)
-    implements ApplicationEvent {}
+import java.util.List;
+
+public record ChatRenamedEvent(
+    Long chatId,
+    String oldName,
+    String newName,
+    List<Long> recipientUserIds
+) implements ApplicationEvent {}

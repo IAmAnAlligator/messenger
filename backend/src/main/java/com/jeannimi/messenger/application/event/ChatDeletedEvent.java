@@ -1,3 +1,8 @@
 package com.jeannimi.messenger.application.event;
 
-public record ChatDeletedEvent(Long chatId) implements ApplicationEvent {}
+import java.util.List;
+
+public record ChatDeletedEvent(
+    Long chatId,
+    List<Long> recipientUserIds
+) implements ApplicationEvent {}
