@@ -4,6 +4,7 @@ import com.jeannimi.messenger.application.message.dto.FileAttachmentResult;
 import com.jeannimi.messenger.application.message.dto.MessageResult;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import java.time.Instant;
+import java.util.List;
 
 public record MessageSentEvent(
     Long messageId,
@@ -11,16 +12,18 @@ public record MessageSentEvent(
     UserResult sender,
     String content,
     Instant createdAt,
-    FileAttachmentResult attachment) {
+    FileAttachmentResult attachment,
+    List<Long> recipientUserIds) {
 
-  public static MessageSentEvent from(MessageResult result) {
+  public static MessageSentEvent from(MessageResult result, List<Long> recipientUserIds) {
     return new MessageSentEvent(
         result.id(),
         result.chatId(),
         result.sender(),
         result.content(),
         result.createdAt(),
-        result.attachment());
+        result.attachment(),
+        recipientUserIds);
   }
 
   public MessageResult toResult() {

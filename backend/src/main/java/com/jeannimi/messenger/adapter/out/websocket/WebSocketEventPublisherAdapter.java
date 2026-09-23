@@ -14,6 +14,7 @@ import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,15 @@ public class WebSocketEventPublisherAdapter implements RealtimeEventPublisherPor
         WebSocketEvent<MessageDto> webSocketEvent = WebSocketEvent.of(eventType, messageDto);
 
         messagingTemplate.convertAndSend("/topic/chat/" + messageDto.chatId(), webSocketEvent);
+
+        // Обновление списка чатов
+
+        for (Long memberId : messageCreatedEvent.recipientUserIds()) {
+          messagingTemplate.convertAndSend(
+              "/topic/user/" + memberId + "/chats",
+              webSocketEvent);
+        }
+
       }
 
       case CHAT_CREATED -> {

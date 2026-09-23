@@ -140,7 +140,16 @@ public class MessageServiceImpl implements MessageService {
        */
       MessageResult result = toResult(savedMessage, sender);
 
-      publishMessageCreated(result);
+      List<Long> recipientUserIds =
+          chatMemberRepository
+              .findAllByChatId(chat.getId())
+              .stream()
+              .map(ChatMember::getUserId)
+              .toList();
+
+      publishMessageCreated(
+          result,
+          recipientUserIds);
 
       return result;
 
@@ -220,7 +229,16 @@ public class MessageServiceImpl implements MessageService {
      */
     MessageResult result = toResult(saved, sender);
 
-    publishMessageCreated(result);
+    List<Long> recipientUserIds =
+        chatMemberRepository
+            .findAllByChatId(chat.getId())
+            .stream()
+            .map(ChatMember::getUserId)
+            .toList();
+
+    publishMessageCreated(
+        result,
+        recipientUserIds);
 
     return result;
   }
@@ -419,9 +437,9 @@ public class MessageServiceImpl implements MessageService {
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
-  private void publishMessageCreated(MessageResult result) {
+  private void publishMessageCreated(MessageResult result, List<Long> recipientUserIds) {
 
-    MessageCreatedEvent event = new MessageCreatedEvent(result);
+    MessageCreatedEvent event = new MessageCreatedEvent(result, recipientUserIds);
 
     eventPublisher.publish(EventType.MESSAGE_CREATED, String.valueOf(result.chatId()), event);
   }

@@ -9,6 +9,6 @@ public class KafkaEventToApplicationEventMapper {
 
   public MessageCreatedEvent toApplicationEvent(MessageSentEvent event) {
 
-    return new MessageCreatedEvent(event.toResult());
+    return new MessageCreatedEvent(event.toResult(), event.recipientUserIds());
   }
 }

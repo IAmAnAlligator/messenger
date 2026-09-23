@@ -9,14 +9,6 @@ public class KafkaEventMapper {
 
   public MessageSentEvent toKafkaEvent(MessageCreatedEvent event) {
 
-    var message = event.message();
-
-    return new MessageSentEvent(
-        message.id(),
-        message.chatId(),
-        message.sender(),
-        message.content(),
-        message.createdAt(),
-        message.attachment());
+    return MessageSentEvent.from(event.message(), event.recipientUserIds());
   }
 }

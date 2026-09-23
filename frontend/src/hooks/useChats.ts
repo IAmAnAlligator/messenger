@@ -15,6 +15,9 @@ import {
 
 import { useAuth } from "../contexts/AuthContext";
 
+import type {
+    IMessage
+} from "@stomp/stompjs";
 
 
 export type UserDto = {
@@ -28,7 +31,6 @@ export type UserDto = {
 };
 
 
-
 export type ChatMemberDto = {
 
     user:UserDto;
@@ -38,7 +40,6 @@ export type ChatMemberDto = {
     joinedAt:string;
 
 };
-
 
 
 export type ChatDto = {
@@ -58,7 +59,6 @@ export type ChatDto = {
 };
 
 
-
 type ChatCursor = {
 
     cursorTime:string;
@@ -66,7 +66,6 @@ type ChatCursor = {
     cursorId:number;
 
 };
-
 
 
 type ChatPageResponse = {
@@ -80,17 +79,6 @@ type ChatPageResponse = {
 };
 
 
-
-type ChatMemberEvent = {
-
-    chatId:number;
-
-    userId:number;
-
-};
-
-
-
 type WebSocketEvent<T> = {
 
     type:string;
@@ -98,8 +86,6 @@ type WebSocketEvent<T> = {
     payload:T;
 
 };
-
-
 
 
 function mergeChats(
@@ -119,7 +105,6 @@ function mergeChats(
         );
 
 
-
     return [
 
         ...oldChats,
@@ -134,9 +119,6 @@ function mergeChats(
 }
 
 
-
-
-
 export function useChats(){
 
 
@@ -144,59 +126,42 @@ export function useChats(){
         useAuth();
 
 
-
-
     const [chats,setChats] =
         useState<ChatDto[]>([]);
-
 
 
     const [loading,setLoading] =
         useState(true);
 
 
-
     const [loadingMore,setLoadingMore] =
         useState(false);
-
 
 
     const [hasNext,setHasNext] =
         useState(true);
 
 
-
     const [cursor,setCursor] =
         useState<ChatCursor | null>(null);
-
-
 
 
     const loadingMoreRef =
         useRef(false);
 
 
-
-
-
-
-
     const loadChats =
         useCallback(
             async()=>{
-
 
                 console.log(
                     "[loadChats] start"
                 );
 
 
-
                 try {
 
-
                     setLoading(true);
-
 
 
                     const response =
@@ -208,8 +173,6 @@ export function useChats(){
                                 }
                             }
                         );
-
-
 
 
                     console.log(
@@ -235,18 +198,14 @@ export function useChats(){
                     );
 
 
-
-
                     setChats(
                         response.data.content ?? []
                     );
 
 
-
                     setCursor(
                         response.data.nextCursor
                     );
-
 
 
                     setHasNext(
@@ -257,7 +216,6 @@ export function useChats(){
                 }
                 catch(error){
 
-
                     console.error(
                         "[loadChats] error",
                         error
@@ -266,22 +224,17 @@ export function useChats(){
 
                     setChats([]);
 
-
                 }
                 finally{
 
-
                     setLoading(false);
-
 
 
                     console.log(
                         "[loadChats] finished"
                     );
 
-
                 }
-
 
             },
             []
@@ -289,24 +242,15 @@ export function useChats(){
         );
 
 
-
-
-
-
-
-
-
     const loadMore =
         useCallback(
             async()=>{
-
 
                 console.log(
                     "[loadMore] called",
                     {
 
                         loadingMore:
-
                             loadingMoreRef.current,
 
                         stateLoadingMore:
@@ -318,8 +262,6 @@ export function useChats(){
 
                     }
                 );
-
-
 
 
                 if(
@@ -334,7 +276,6 @@ export function useChats(){
 
                 ){
 
-
                     console.log(
                         "[loadMore] blocked"
                     );
@@ -345,20 +286,13 @@ export function useChats(){
                 }
 
 
-
-
                 try {
-
-
 
                     loadingMoreRef.current =
                         true;
 
 
-
                     setLoadingMore(true);
-
-
 
 
                     console.log(
@@ -373,9 +307,6 @@ export function useChats(){
 
                         }
                     );
-
-
-
 
 
                     const response =
@@ -397,9 +328,6 @@ export function useChats(){
                         );
 
 
-
-
-
                     console.log(
                         "[loadMore] response",
                         {
@@ -407,17 +335,14 @@ export function useChats(){
                             size:
                                 response.data.content.length,
 
-
                             ids:
                                 response.data.content.map(
                                     chat =>
                                         chat.id
                                 ),
 
-
                             hasNext:
                                 response.data.hasNext,
-
 
                             nextCursor:
                                 response.data.nextCursor
@@ -426,18 +351,13 @@ export function useChats(){
                     );
 
 
-
-
-
                     setChats(prev =>{
-
 
                         const merged =
                             mergeChats(
                                 prev,
                                 response.data.content ?? []
                             );
-
 
 
                         console.log(
@@ -454,13 +374,9 @@ export function useChats(){
                         );
 
 
-
                         return merged;
 
                     });
-
-
-
 
 
                     setCursor(
@@ -468,67 +384,46 @@ export function useChats(){
                     );
 
 
-
                     setHasNext(
                         response.data.hasNext
                     );
 
 
-
                 }
                 catch(error){
-
 
                     console.error(
                         "[loadMore] error",
                         error
                     );
 
-
                 }
                 finally{
-
 
                     loadingMoreRef.current =
                         false;
 
 
-
                     setLoadingMore(false);
-
 
 
                     console.log(
                         "[loadMore] finished"
                     );
 
-
                 }
-
 
             },
             [
-
                 cursor,
-
                 hasNext,
-
                 loadingMore
-
             ]
 
         );
 
 
-
-
-
-
-
-
-
     useEffect(()=>{
-
 
         console.log(
             "[pagination state]",
@@ -546,7 +441,6 @@ export function useChats(){
             }
         );
 
-
     },[
         chats,
         cursor,
@@ -555,32 +449,16 @@ export function useChats(){
     ]);
 
 
-
-
-
-
-
-
     useEffect(()=>{
 
-
         loadChats();
-
 
     },[
         loadChats
     ]);
 
 
-
-
-
-
-
-
-
-    useEffect(()=>{
-
+    useEffect(() => {
 
         const token =
             localStorage.getItem(
@@ -588,39 +466,38 @@ export function useChats(){
             );
 
 
-
-        if(!token || !user){
-
+        if (!token || !user) {
             return;
-
         }
-
-
 
 
         connectSocket(token);
 
 
+        /*
+         * Новый чат.
+         *
+         * Перезагружаем первую страницу,
+         * чтобы cursor pagination оставалась
+         * согласованной.
+         */
+
+        const handleChatCreated =
+            () => {
+
+                void loadChats();
+
+            };
 
 
+        /*
+         * Удаление чата.
+         *
+         * Удаляем локально без HTTP-запроса.
+         */
 
-        subscribe(
-            "/topic/chat.created",
-            ()=>{
-
-                loadChats();
-
-            }
-        );
-
-
-
-
-
-        subscribe(
-            "/topic/chat.deleted",
-            message=>{
-
+        const handleChatDeleted =
+            (message: IMessage) => {
 
                 const event =
                     JSON.parse(
@@ -628,174 +505,102 @@ export function useChats(){
                     );
 
 
-
                 setChats(prev =>
-
                     prev.filter(
                         chat =>
-                            chat.id !== event.chatId
+                            chat.id !==
+                            event.chatId
                     )
+                );
 
+            };
+
+
+        /*
+         * События персонального списка чатов.
+         *
+         * Backend отправляет сюда:
+         *
+         * CHAT_MEMBER_ADDED
+         * CHAT_MEMBER_REMOVED
+         * CHAT_MEMBER_LEFT
+         * MESSAGE_CREATED
+         *
+         * Любое такое событие означает,
+         * что список нужно перечитать через HTTP.
+         */
+
+        const handleUserChats =
+            (message: IMessage) => {
+
+                const event:
+                    WebSocketEvent<unknown> =
+                    JSON.parse(
+                        message.body
+                    );
+
+
+                console.log(
+                    "[user chats event]",
+                    event.type
                 );
 
 
-            }
-        );
+                void loadChats();
 
-
-
-
-
-
+            };
 
 
         const userTopic =
             `/topic/user/${user.id}/chats`;
 
 
+        subscribe(
+            "/topic/chat.created",
+            handleChatCreated
+        );
 
 
+        subscribe(
+            "/topic/chat.deleted",
+            handleChatDeleted
+        );
 
 
         subscribe(
             userTopic,
-            async message=>{
-
-
-                const event:
-                    WebSocketEvent<ChatMemberEvent> =
-                    JSON.parse(
-                        message.body
-                    );
-
-
-
-
-                switch(event.type){
-
-
-                    case "CHAT_MEMBER_ADDED":{
-
-
-                        try{
-
-
-                            const response =
-                                await api.get<ChatDto>(
-                                    `/chats/${event.payload.chatId}`
-                                );
-
-
-
-                            const chat =
-                                response.data;
-
-
-
-                            setChats(prev =>
-
-                                mergeChats(
-                                    [
-                                        chat,
-                                        ...prev
-                                    ],
-                                    []
-                                )
-
-                            );
-
-
-                        }
-                        catch(error){
-
-                            console.error(error);
-
-                        }
-
-
-                        break;
-
-                    }
-
-
-
-
-
-                    case "CHAT_MEMBER_REMOVED":{
-
-
-                        setChats(prev =>
-
-                            prev.filter(
-                                chat =>
-                                    chat.id !==
-                                    event.payload.chatId
-                            )
-
-                        );
-
-
-                        break;
-
-                    }
-
-
-
-
-
-                    default:
-
-                        break;
-
-
-                }
-
-
-            }
-
+            handleUserChats
         );
 
 
-
-
-
-
-
-        return ()=>{
-
+        return () => {
 
             unsubscribe(
-                "/topic/chat.created"
+                "/topic/chat.created",
+                handleChatCreated
             );
 
 
             unsubscribe(
-                "/topic/chat.deleted"
+                "/topic/chat.deleted",
+                handleChatDeleted
             );
 
 
             unsubscribe(
-                userTopic
+                userTopic,
+                handleUserChats
             );
-
 
         };
 
-
-
-    },[
+    }, [
         user,
         loadChats
     ]);
 
 
-
-
-
-
-
     return {
-
 
         chats,
 
@@ -811,6 +616,5 @@ export function useChats(){
             loadChats
 
     };
-
 
 }
