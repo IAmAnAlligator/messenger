@@ -48,6 +48,12 @@ public class OutboxEventJpaEntity {
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
+  @Column(name = "attempt_count", nullable = false)
+  private int attemptCount;
+
+  @Column(name = "next_attempt_at", nullable = false)
+  private Instant nextAttemptAt;
+
   public OutboxEventJpaEntity(
       Long id,
       UUID eventId,
@@ -56,7 +62,9 @@ public class OutboxEventJpaEntity {
       String aggregateId,
       OutboxStatus status,
       String payload,
-      Instant createdAt) {
+      Instant createdAt,
+      int attemptCount,
+      Instant nextAttemptAt) {
 
     this.id = id;
     this.eventId = eventId;
@@ -66,5 +74,7 @@ public class OutboxEventJpaEntity {
     this.status = status;
     this.payload = payload;
     this.createdAt = createdAt;
+    this.attemptCount = attemptCount;
+    this.nextAttemptAt = nextAttemptAt;
   }
 }

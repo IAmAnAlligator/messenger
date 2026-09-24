@@ -3,7 +3,6 @@ package com.jeannimi.messenger.adapter.out.kafka;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaEventMapper;
 import com.jeannimi.messenger.adapter.out.kafka.mapper.KafkaTopicMapper;
 import com.jeannimi.messenger.application.event.ApplicationEvent;
@@ -11,7 +10,6 @@ import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.outbox.service.OutboxService;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,18 +26,14 @@ public class EventPublisherAdapter implements EventPublisherPort {
   public void publish(EventType type, String aggregateId, ApplicationEvent event) {
 
     try {
-      UUID eventId = UUID.randomUUID();
 
       JsonNode payload = toKafkaPayload(type, event);
 
-      KafkaEventEnvelope envelope =
-          new KafkaEventEnvelope(eventId, type.name(), aggregateId, payload);
-
       outboxService.saveEvent(
           kafkaTopicMapper.toTopic(type),
-          envelope.eventType(),
+          type.name(),
           aggregateId,
-          objectMapper.writeValueAsString(envelope));
+          objectMapper.writeValueAsString(payload));
 
     } catch (JsonProcessingException e) {
       throw new OutboxException("Failed to serialize event", e);

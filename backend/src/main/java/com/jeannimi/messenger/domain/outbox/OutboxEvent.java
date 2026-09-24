@@ -13,9 +13,11 @@ public final class OutboxEvent {
   private final String topic;
   private final String eventType;
   private final String aggregateId;
-  private OutboxStatus status;
+  private final OutboxStatus status;
   private final String payload;
   private final Instant createdAt;
+  private final int attemptCount;
+  private final Instant nextAttemptAt;
 
   private OutboxEvent(
       Long id,
@@ -25,7 +27,9 @@ public final class OutboxEvent {
       String aggregateId,
       OutboxStatus status,
       String payload,
-      Instant createdAt) {
+      Instant createdAt,
+      int attemptCount,
+      Instant nextAttemptAt) {
 
     this.id = id;
     this.eventId = Objects.requireNonNull(eventId, "eventId");
@@ -35,13 +39,35 @@ public final class OutboxEvent {
     this.status = Objects.requireNonNull(status, "status");
     this.payload = Objects.requireNonNull(payload, "payload");
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+
+    if (attemptCount < 0) {
+      throw new IllegalArgumentException("Attempt count cannot be negative");
+    }
+
+    this.attemptCount = attemptCount;
+    this.nextAttemptAt = Objects.requireNonNull(nextAttemptAt, "nextAttemptAt");
   }
 
   public static OutboxEvent create(
-      UUID eventId, String topic, String eventType, String aggregateId, String payload) {
+      UUID eventId,
+      String topic,
+      String eventType,
+      String aggregateId,
+      String payload) {
+
+    Instant now = Instant.now();
 
     return new OutboxEvent(
-        null, eventId, topic, eventType, aggregateId, OutboxStatus.NEW, payload, Instant.now());
+        null,
+        eventId,
+        topic,
+        eventType,
+        aggregateId,
+        OutboxStatus.NEW,
+        payload,
+        now,
+        0,
+        now);
   }
 
   public static OutboxEvent reconstitute(
@@ -52,7 +78,9 @@ public final class OutboxEvent {
       String aggregateId,
       OutboxStatus status,
       String payload,
-      Instant createdAt) {
+      Instant createdAt,
+      int attemptCount,
+      Instant nextAttemptAt) {
 
     return new OutboxEvent(
         Objects.requireNonNull(id, "id"),
@@ -62,15 +90,9 @@ public final class OutboxEvent {
         aggregateId,
         status,
         payload,
-        createdAt);
-  }
-
-  public void markSent() {
-    this.status = OutboxStatus.SENT;
-  }
-
-  public void markFailed() {
-    this.status = OutboxStatus.FAILED;
+        createdAt,
+        attemptCount,
+        nextAttemptAt);
   }
 
   @Override

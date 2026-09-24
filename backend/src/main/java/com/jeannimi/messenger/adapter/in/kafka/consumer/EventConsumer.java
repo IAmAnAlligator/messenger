@@ -140,28 +140,34 @@ public class EventConsumer {
   */
 
   private void processEnvelope(
-      String payload, Acknowledgment ack, Consumer<KafkaEventEnvelope> consumer) {
+      String payload,
+      Acknowledgment ack,
+      Consumer<KafkaEventEnvelope> consumer) {
 
     try {
 
-      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
+      KafkaEventEnvelope envelope =
+          objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
       UUID eventId = envelope.eventId();
 
-      try {
-
-        processedRepository.save(ProcessedMessage.create(eventId));
-
-      } catch (DataIntegrityViolationException e) {
-
-        log.info("Duplicate event skipped {}", eventId);
-
-        ack.acknowledge();
-
-        return;
+      if (eventId == null) {
+        throw new IllegalArgumentException("Kafka eventId must not be null");
       }
 
       consumer.accept(envelope);
+
+      try {
+
+        processedRepository.save(
+            ProcessedMessage.create(eventId));
+
+      } catch (DataIntegrityViolationException e) {
+
+        log.info(
+            "Event was already processed: eventId={}",
+            eventId);
+      }
 
       ack.acknowledge();
 

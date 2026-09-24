@@ -21,7 +21,9 @@ public class OutboxEventPersistenceMapper {
         entity.getAggregateId(),
         entity.getStatus(),
         entity.getPayload(),
-        entity.getCreatedAt());
+        entity.getCreatedAt(),
+        entity.getAttemptCount(),
+        entity.getNextAttemptAt());
   }
 
   public OutboxEventJpaEntity toEntity(OutboxEvent event) {
@@ -38,6 +40,8 @@ public class OutboxEventPersistenceMapper {
         event.getAggregateId(),
         event.getStatus(),
         event.getPayload(),
-        event.getCreatedAt());
+        event.getCreatedAt(),
+        event.getAttemptCount(),
+        event.getNextAttemptAt());
   }
 }
