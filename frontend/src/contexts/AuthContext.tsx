@@ -9,12 +9,18 @@ import {
 import { api } from "../api/client";
 import {
     connectSocket,
-    disconnectSocket
+    disconnectSocket,
 } from "../services/chatSocket";
 
 type User = {
     id: number;
     username: string;
+};
+
+type CurrentUserResponse = {
+    id: number;
+    username: string;
+    role: string;
 };
 
 type AuthContextType = {
@@ -26,17 +32,18 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-
+export function AuthProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     const initialized = useRef(false);
 
     async function fetchMe() {
-
         try {
-
             const token = localStorage.getItem("accessToken");
 
             if (!token) {
@@ -44,19 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            const res = await api.get("/users/me");
+            const res = await api.get<CurrentUserResponse>("/users/me");
 
             setUser({
                 id: res.data.id,
-                username: res.data.username?.value ?? res.data.username
+                username: res.data.username,
             });
 
-            // 🔥 важно: пересоздаём socket при каждом fresh auth
             disconnectSocket();
             connectSocket(token);
 
-        } catch (e) {
-
+        } catch {
             setUser(null);
             localStorage.removeItem("accessToken");
 
@@ -68,14 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     useEffect(() => {
-        if (initialized.current) return;
+        if (initialized.current) {
+            return;
+        }
 
         initialized.current = true;
         fetchMe();
     }, []);
 
     async function login(access: string) {
-
         localStorage.setItem("accessToken", access);
         setLoading(true);
 
@@ -83,7 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function logout() {
-
         disconnectSocket();
         localStorage.removeItem("accessToken");
 
@@ -98,12 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            loading,
-            login,
-            logout
-        }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                loading,
+                login,
+                logout,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

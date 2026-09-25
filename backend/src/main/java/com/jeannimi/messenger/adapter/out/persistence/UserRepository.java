@@ -18,23 +18,28 @@ public class UserRepository implements UserRepositoryPort {
   private final UserPersistenceMapper userPersistenceMapper;
 
   @Override
-  public Optional<User> findByUsernameIgnoreCase(String username) {
+  public Optional<User> findByEmail(String email) {
 
     return userJpaRepository
-        .findByUsername_ValueIgnoreCase(username)
+        .findByEmail_Value(email)
         .map(userPersistenceMapper::toDomain);
   }
 
   @Override
-  public boolean existsByUsernameIgnoreCase(String username) {
+  public boolean existsByEmail(String email) {
 
-    return userJpaRepository.existsByUsername_ValueIgnoreCase(username);
+    return userJpaRepository
+        .existsByEmail_Value(email);
   }
 
   @Override
-  public List<User> searchByUsername(String query, Long currentUserId) {
+  public List<User> searchByUsername(
+      String query,
+      Long currentUserId) {
 
-    return userJpaRepository.searchByUsername(query, currentUserId).stream()
+    return userJpaRepository
+        .searchByUsername(query, currentUserId)
+        .stream()
         .map(userPersistenceMapper::toDomain)
         .toList();
   }
@@ -42,9 +47,11 @@ public class UserRepository implements UserRepositoryPort {
   @Override
   public User save(User user) {
 
-    UserJpaEntity entity = userPersistenceMapper.toEntity(user);
+    UserJpaEntity entity =
+        userPersistenceMapper.toEntity(user);
 
-    UserJpaEntity saved = userJpaRepository.save(entity);
+    UserJpaEntity saved =
+        userJpaRepository.save(entity);
 
     return userPersistenceMapper.toDomain(saved);
   }
@@ -52,13 +59,17 @@ public class UserRepository implements UserRepositoryPort {
   @Override
   public Optional<User> findById(Long userId) {
 
-    return userJpaRepository.findById(userId).map(userPersistenceMapper::toDomain);
+    return userJpaRepository
+        .findById(userId)
+        .map(userPersistenceMapper::toDomain);
   }
 
   @Override
   public List<User> findAllById(Set<Long> ids) {
 
-    return userJpaRepository.findAllById(ids).stream()
+    return userJpaRepository
+        .findAllById(ids)
+        .stream()
         .map(userPersistenceMapper::toDomain)
         .toList();
   }

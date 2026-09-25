@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class UserPersistenceMapper {
 
   private final UsernamePersistenceMapper usernamePersistenceMapper;
+  private final EmailPersistenceMapper emailPersistenceMapper;
 
   public User toDomain(UserJpaEntity entity) {
 
@@ -20,6 +21,7 @@ public class UserPersistenceMapper {
     return User.reconstitute(
         entity.getId(),
         usernamePersistenceMapper.toDomain(entity.getUsername()),
+        emailPersistenceMapper.toDomain(entity.getEmail()),
         entity.getPassword(),
         entity.getRole(),
         entity.getCreatedAt());
@@ -33,6 +35,7 @@ public class UserPersistenceMapper {
 
     return new UserJpaEntity(
         usernamePersistenceMapper.toEntity(user.getUsername()),
+        emailPersistenceMapper.toEntity(user.getEmail()),
         user.getPasswordHash(),
         user.getRole(),
         user.getCreatedAt());

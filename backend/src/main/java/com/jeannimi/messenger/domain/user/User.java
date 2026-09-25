@@ -9,28 +9,30 @@ public final class User {
 
   private final Long id;
   private final Username username;
+  private final Email email;
   private final String passwordHash;
   private final Role role;
   private final Instant createdAt;
 
-  private User(Long id, Username username, String passwordHash, Role role, Instant createdAt) {
+  private User(Long id, Username username, Email email, String passwordHash, Role role, Instant createdAt) {
 
     this.id = id;
     this.username = Objects.requireNonNull(username, "username");
+    this.email = Objects.requireNonNull(email, "email");
     this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
     this.role = Objects.requireNonNull(role, "role");
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
   }
 
-  public static User create(Username username, String passwordHash, Role role) {
+  public static User create(Username username, Email email, String passwordHash, Role role) {
 
-    return new User(null, username, passwordHash, role, Instant.now());
+    return new User(null, username, email, passwordHash, role, Instant.now());
   }
 
   public static User reconstitute(
-      Long id, Username username, String passwordHash, Role role, Instant createdAt) {
+      Long id, Username username, Email email, String passwordHash, Role role, Instant createdAt) {
 
-    return new User(Objects.requireNonNull(id, "id"), username, passwordHash, role, createdAt);
+    return new User(Objects.requireNonNull(id, "id"), username, email, passwordHash, role, createdAt);
   }
 
   @Override

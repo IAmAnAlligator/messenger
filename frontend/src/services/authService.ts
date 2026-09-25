@@ -9,13 +9,13 @@ import { api } from "../api/client";
 import type {
     LoginRequest,
     RegisterRequest,
-    AuthResponse
+    AuthResponse,
 } from "../api/auth";
 
 /**
  * 🔐 LOGIN REQUEST
  *
- * Отвечает только за HTTP-запрос на backend
+ * Отвечает только за HTTP-запрос на backend.
  *
  * ❗ НЕ делает:
  * - localStorage
@@ -30,23 +30,20 @@ export async function login(
 
     /**
      * 🌐 POST /auth/login
-     * отправляем username + password
      *
-     * backend возвращает:
+     * Отправляем:
      * {
-     *   accessToken,
-     *   refreshToken
+     *   email,
+     *   password
      * }
      */
-    const response =
-        await api.post(
-            "/auth/login",
-            data
-        );
+    const response = await api.post(
+        "/auth/login",
+        data
+    );
 
     /**
-     * 📤 возвращаем только полезные данные
-     * (axios оборачивает ответ в response.data)
+     * 📤 Возвращаем данные авторизации.
      */
     return response.data;
 }
@@ -54,10 +51,9 @@ export async function login(
 /**
  * 📝 REGISTER REQUEST
  *
- * Создание нового пользователя
+ * Создание нового пользователя.
  *
- * ❗ Тоже чистый API слой:
- * не управляет состоянием приложения
+ * Отвечает только за HTTP-запрос.
  */
 export async function register(
     data: RegisterRequest
@@ -65,16 +61,21 @@ export async function register(
 
     /**
      * 🌐 POST /auth/register
-     * создаёт пользователя на backend
+     *
+     * Отправляем:
+     * {
+     *   username,
+     *   email,
+     *   password
+     * }
      */
-    const response =
-        await api.post(
-            "/auth/register",
-            data
-        );
+    const response = await api.post(
+        "/auth/register",
+        data
+    );
 
     /**
-     * 📤 возвращаем результат backend-а
+     * 📤 Возвращаем данные авторизации.
      */
     return response.data;
 }

@@ -9,6 +9,7 @@ import com.jeannimi.messenger.application.exception.UnauthorizedException;
 import com.jeannimi.messenger.application.port.out.PasswordHashPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.Username;
 import lombok.RequiredArgsConstructor;
@@ -22,29 +23,46 @@ public class AuthService {
   private final PasswordHashPort passwordHashPort;
   private final TokenServicePort tokenService;
 
-  public AuthResult login(String usernameValue, String password) {
-    Username username = new Username(usernameValue);
+  public AuthResult login(
+      String emailValue,
+      String password) {
+
+    Email email = new Email(emailValue);
 
     User user =
         userRepository
-            .findByUsernameIgnoreCase(username.getValue())
-            .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+            .findByEmail(email.getValue())
+            .orElseThrow(
+                () -> new UnauthorizedException("Invalid credentials"));
 
-    if (!passwordHashPort.matches(password, user.getPasswordHash())) {
+    if (!passwordHashPort.matches(
+        password,
+        user.getPasswordHash())) {
+
       throw new UnauthorizedException("Invalid credentials");
     }
 
     return generateTokens(user);
   }
 
-  public AuthResult register(String usernameValue, String password) {
-    Username username = new Username(usernameValue);
+  public AuthResult register(
+      String usernameValue,
+      String emailValue,
+      String password) {
 
-    if (userRepository.existsByUsernameIgnoreCase(username.getValue())) {
-      throw new ConflictException("User already exists");
+    Username username = new Username(usernameValue);
+    Email email = new Email(emailValue);
+
+    if (userRepository.existsByEmail(email.getValue())) {
+      throw new ConflictException("Email already exists");
     }
 
-    User user = User.create(username, passwordHashPort.hash(password), USER);
+    User user =
+        User.create(
+            username,
+            email,
+            passwordHashPort.hash(password),
+            USER);
 
     userRepository.save(user);
 

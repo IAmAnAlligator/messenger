@@ -1,2 +1,0 @@
-ALTER TABLE chats
-    ALTER COLUMN private_key TYPE VARCHAR(39);

@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login as loginRequest, register } from "../../services/authService";
+
+import {
+    login as loginRequest,
+    register,
+} from "../../services/authService";
+
 import { useAuth } from "../../contexts/AuthContext.tsx";
 import AuthLayout from "../layouts/AuthLayout.tsx";
 import AuthForm from "../components/auth/AuthForm.tsx";
 
 export default function AuthPage() {
     const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const navigate = useNavigate();
@@ -14,7 +20,10 @@ export default function AuthPage() {
 
     async function handleLogin() {
         try {
-            const auth = await loginRequest({ username, password });
+            const auth = await loginRequest({
+                email,
+                password,
+            });
 
             await login(auth.accessToken);
 
@@ -26,7 +35,11 @@ export default function AuthPage() {
 
     async function handleRegister() {
         try {
-            await register({ username, password });
+            await register({
+                username,
+                email,
+                password,
+            });
 
             alert("Register success");
         } catch {
@@ -38,8 +51,10 @@ export default function AuthPage() {
         <AuthLayout>
             <AuthForm
                 username={username}
+                email={email}
                 password={password}
                 onUsernameChange={setUsername}
+                onEmailChange={setEmail}
                 onPasswordChange={setPassword}
                 onLogin={handleLogin}
                 onRegister={handleRegister}

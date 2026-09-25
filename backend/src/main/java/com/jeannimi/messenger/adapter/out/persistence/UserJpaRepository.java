@@ -9,10 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
 
-  Optional<UserJpaEntity> findByUsername_ValueIgnoreCase(String username);
-
-  boolean existsByUsername_ValueIgnoreCase(String username);
-
   @Query(
       """
         SELECT u FROM UserJpaEntity u
@@ -21,4 +17,8 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
       """)
   List<UserJpaEntity> searchByUsername(
       @Param("query") String query, @Param("currentUserId") Long currentUserId);
+
+  Optional<UserJpaEntity> findByEmail_Value(String email);
+
+  boolean existsByEmail_Value(String email);
 }

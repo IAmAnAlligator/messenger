@@ -1,22 +1,21 @@
 package com.jeannimi.messenger.adapter.out.persistence.entity;
 
-import com.jeannimi.messenger.domain.user.Username;
+import com.jeannimi.messenger.domain.user.Email;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter
 @Embeddable
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UsernameJpaEntity {
+public class EmailJpaEntity {
 
-  @Column(name = "username", nullable = false, length = Username.MAX_USERNAME_LENGTH)
+  @Column(name = "email", nullable = false, length = Email.MAX_EMAIL_LENGTH)
   private String value;
 
-  public UsernameJpaEntity(String value) {
-    this.value = Objects.requireNonNull(value, "value");
+  public EmailJpaEntity(String value) {
+    this.value = value;
   }
 }

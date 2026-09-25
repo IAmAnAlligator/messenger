@@ -26,9 +26,14 @@ public class UserJpaEntity {
   @Column(name = "id")
   private Long id;
 
-  @Embedded private UsernameJpaEntity username;
+  @Embedded
+  private UsernameJpaEntity username;
+
+  @Embedded
+  private EmailJpaEntity email;
 
   // name = password_hash при следующей миграции
+  // изменить на embedded
   @Column(name = "password", nullable = false, length = 255)
   private String password;
 
@@ -39,8 +44,15 @@ public class UserJpaEntity {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
-  public UserJpaEntity(UsernameJpaEntity username, String password, Role role, Instant createdAt) {
+  public UserJpaEntity(
+      UsernameJpaEntity username,
+      EmailJpaEntity email,
+      String password,
+      Role role,
+      Instant createdAt) {
+
     this.username = username;
+    this.email = email;
     this.password = password;
     this.role = role;
     this.createdAt = createdAt;

@@ -7,11 +7,13 @@ import java.util.Set;
 
 public interface UserRepositoryPort {
 
-  Optional<User> findByUsernameIgnoreCase(String username);
+  Optional<User> findByEmail(String email);
 
-  boolean existsByUsernameIgnoreCase(String username);
+  boolean existsByEmail(String email);
 
-  List<User> searchByUsername(String query, Long currentUserId);
+  List<User> searchByUsername(
+      String query,
+      Long currentUserId);
 
   User save(User user);
 
