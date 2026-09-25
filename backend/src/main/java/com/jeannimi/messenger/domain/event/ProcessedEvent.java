@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.domain.message;
+package com.jeannimi.messenger.domain.event;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -6,25 +6,25 @@ import java.util.UUID;
 import lombok.Getter;
 
 @Getter
-public final class ProcessedMessage {
+public final class ProcessedEvent {
 
   private final UUID eventId;
   private final Instant processedAt;
 
-  private ProcessedMessage(UUID eventId, Instant processedAt) {
+  private ProcessedEvent(UUID eventId, Instant processedAt) {
 
     this.eventId = Objects.requireNonNull(eventId, "eventId");
     this.processedAt = Objects.requireNonNull(processedAt, "processedAt");
   }
 
-  public static ProcessedMessage create(UUID eventId) {
+  public static ProcessedEvent create(UUID eventId) {
 
-    return new ProcessedMessage(eventId, Instant.now());
+    return new ProcessedEvent(eventId, Instant.now());
   }
 
-  public static ProcessedMessage reconstitute(UUID eventId, Instant processedAt) {
+  public static ProcessedEvent reconstitute(UUID eventId, Instant processedAt) {
 
-    return new ProcessedMessage(eventId, processedAt);
+    return new ProcessedEvent(eventId, processedAt);
   }
 
   @Override
@@ -34,7 +34,7 @@ public final class ProcessedMessage {
       return true;
     }
 
-    if (!(o instanceof ProcessedMessage that)) {
+    if (!(o instanceof ProcessedEvent that)) {
       return false;
     }
 

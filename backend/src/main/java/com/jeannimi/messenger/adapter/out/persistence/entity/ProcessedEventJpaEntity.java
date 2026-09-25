@@ -12,10 +12,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "processed_messages")
+@Table(name = "processed_events")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProcessedMessageJpaEntity {
+public class ProcessedEventJpaEntity {
 
   @Id
   @Column(name = "event_id", nullable = false, updatable = false)
@@ -24,7 +24,7 @@ public class ProcessedMessageJpaEntity {
   @Column(name = "processed_at", nullable = false, updatable = false)
   private Instant processedAt;
 
-  public ProcessedMessageJpaEntity(UUID eventId, Instant processedAt) {
+  public ProcessedEventJpaEntity(UUID eventId, Instant processedAt) {
 
     this.eventId = eventId;
     this.processedAt = processedAt;

@@ -6,8 +6,8 @@ import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
-import com.jeannimi.messenger.application.port.out.ProcessedMessageRepositoryPort;
-import com.jeannimi.messenger.domain.message.ProcessedMessage;
+import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
+import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class FileDeleteConsumer {
 
   private final ObjectMapper objectMapper;
   private final FileStoragePort fileStoragePort;
-  private final ProcessedMessageRepositoryPort processedRepository;
+  private final ProcessedEventRepositoryPort processedRepository;
 
   @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
   public void consume(String payload, Acknowledgment ack) {
@@ -64,7 +64,7 @@ public class FileDeleteConsumer {
        */
       try {
 
-        processedRepository.save(ProcessedMessage.create(eventId));
+        processedRepository.save(ProcessedEvent.create(eventId));
 
       } catch (DataIntegrityViolationException e) {
 
