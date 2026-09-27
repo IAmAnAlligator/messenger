@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.domain.user;
 
-import java.util.Objects;
 import lombok.Getter;
 
 @Getter
@@ -44,12 +43,12 @@ public final class Username {
       return false;
     }
 
-    return Objects.equals(value, that.value);
+    return value.equals(that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return value.hashCode();
   }
 
   @Override

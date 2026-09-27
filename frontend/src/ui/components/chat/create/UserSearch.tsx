@@ -1,99 +1,99 @@
 import type {
- UserDto
+    UserDto
 } from "../../../../hooks/useChatCreate";
 
 
-type Props={
+type Props = {
 
-value:string;
+    value: string;
 
-users:UserDto[];
+    users: UserDto[];
 
-loading:boolean;
+    loading: boolean;
 
-onChange(value:string):void;
+    onChange(value: string): void;
 
-onSelect(user:UserDto):void;
+    onSelect(user: UserDto): void;
 
 };
 
 
 export default function UserSearch({
 
-value,
+    value,
 
-users,
+    users,
 
-loading,
+    loading,
 
-onChange,
+    onChange,
 
-onSelect
+    onSelect
 
-}:Props){
-
-
-return (
-
-<div>
+}: Props) {
 
 
-<input
+    return (
 
-value={value}
+        <div>
 
-placeholder="Search users"
+            <input
 
-onChange={
-e=>onChange(
-    e.target.value
-)
-}
+                value={value}
 
-/>
+                placeholder="Search users"
 
+                onChange={
+                    e => onChange(
+                        e.target.value
+                    )
+                }
 
-{
-loading &&
-<p>
-Searching...
-</p>
-}
+            />
 
 
-
-{
-users.map(user=>(
-
-
-<div
-
-key={user.id}
-
-onClick={()=>
-onSelect(user)
-}
-
-style={{
-cursor:"pointer",
-padding:6
-}}
-
->
-
-{user.username}
+            {
+                loading &&
+                <p>
+                    Searching...
+                </p>
+            }
 
 
-</div>
+            {
+                users.map(user => (
+
+                    <div
+
+                        key={user.id}
+
+                        onClick={() =>
+                            onSelect(user)
+                        }
+
+                        style={{
+                            cursor: "pointer",
+                            padding: 6
+                        }}
+
+                    >
+
+                        <div>
+                            {user.username}
+                        </div>
+
+                        <div>
+                            @{user.handle}
+                        </div>
+
+                    </div>
+
+                ))
+            }
 
 
-))
-}
+        </div>
 
-
-
-</div>
-
-);
+    );
 
 }

@@ -27,6 +27,9 @@ public class UserJpaEntity {
   private Long id;
 
   @Embedded
+  private HandleJpaEntity handle;
+
+  @Embedded
   private UsernameJpaEntity username;
 
   @Embedded
@@ -34,7 +37,7 @@ public class UserJpaEntity {
 
   // name = password_hash при следующей миграции
   // изменить на embedded
-  @Column(name = "password", nullable = false, length = 255)
+  @Column(name = "password_hash", nullable = false, length = 255)
   private String password;
 
   @Enumerated(EnumType.STRING)
@@ -45,12 +48,14 @@ public class UserJpaEntity {
   private Instant createdAt;
 
   public UserJpaEntity(
+      HandleJpaEntity handle,
       UsernameJpaEntity username,
       EmailJpaEntity email,
       String password,
       Role role,
       Instant createdAt) {
 
+    this.handle = handle;
     this.username = username;
     this.email = email;
     this.password = password;

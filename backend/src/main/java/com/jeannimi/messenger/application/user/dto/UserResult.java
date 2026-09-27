@@ -2,4 +2,9 @@ package com.jeannimi.messenger.application.user.dto;
 
 import com.jeannimi.messenger.domain.user.Role;
 
-public record UserResult(Long id, String username, Role role) {}
+public record UserResult(
+    Long id,
+    String handle,
+    String username,
+    Role role) {
+}

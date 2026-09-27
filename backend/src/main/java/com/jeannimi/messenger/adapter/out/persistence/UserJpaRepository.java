@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
+public interface UserJpaRepository
+    extends JpaRepository<UserJpaEntity, Long> {
 
   @Query(
       """
@@ -16,7 +17,18 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
           AND u.id <> :currentUserId
       """)
   List<UserJpaEntity> searchByUsername(
-      @Param("query") String query, @Param("currentUserId") Long currentUserId);
+      @Param("query") String query,
+      @Param("currentUserId") Long currentUserId);
+
+  @Query(
+      """
+        SELECT u FROM UserJpaEntity u
+        WHERE LOWER(u.handle.value) = LOWER(:handle)
+          AND u.id <> :currentUserId
+      """)
+  List<UserJpaEntity> searchByHandle(
+      @Param("handle") String handle,
+      @Param("currentUserId") Long currentUserId);
 
   Optional<UserJpaEntity> findByEmail_Value(String email);
 

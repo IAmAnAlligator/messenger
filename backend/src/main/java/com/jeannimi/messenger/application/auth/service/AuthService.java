@@ -6,10 +6,12 @@ import static com.jeannimi.messenger.domain.user.Role.USER;
 import com.jeannimi.messenger.application.auth.dto.AuthResult;
 import com.jeannimi.messenger.application.exception.ConflictException;
 import com.jeannimi.messenger.application.exception.UnauthorizedException;
+import com.jeannimi.messenger.application.port.out.HandleGeneratorPort;
 import com.jeannimi.messenger.application.port.out.PasswordHashPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.domain.user.Email;
+import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.Username;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class AuthService {
   private final UserRepositoryPort userRepository;
   private final PasswordHashPort passwordHashPort;
   private final TokenServicePort tokenService;
+  private final HandleGeneratorPort handleGenerator;
 
   public AuthResult login(
       String emailValue,
@@ -57,8 +60,11 @@ public class AuthService {
       throw new ConflictException("Email already exists");
     }
 
+    Handle handle = handleGenerator.generate();
+
     User user =
         User.create(
+            handle,
             username,
             email,
             passwordHashPort.hash(password),
@@ -70,32 +76,39 @@ public class AuthService {
   }
 
   public AuthResult refresh(String refreshToken) {
+
     if (refreshToken == null || refreshToken.isBlank()) {
       throw new UnauthorizedException("No refresh token");
     }
 
     if (!tokenService.isTokenValid(refreshToken)) {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw new UnauthorizedException(
+          "Invalid or expired refresh token");
     }
 
-    String tokenType = tokenService.extractTokenType(refreshToken);
+    String tokenType =
+        tokenService.extractTokenType(refreshToken);
 
     if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
       throw new UnauthorizedException("Invalid token type");
     }
 
-    Long userId = tokenService.extractUserId(refreshToken);
+    Long userId =
+        tokenService.extractUserId(refreshToken);
 
     User user =
         userRepository
             .findById(userId)
-            .orElseThrow(() -> new UnauthorizedException("Invalid token"));
+            .orElseThrow(
+                () -> new UnauthorizedException("Invalid token"));
 
     return generateTokens(user);
   }
 
   private AuthResult generateTokens(User user) {
+
     return new AuthResult(
-        tokenService.generateAccessToken(user), tokenService.generateRefreshToken(user));
+        tokenService.generateAccessToken(user),
+        tokenService.generateRefreshToken(user));
   }
 }

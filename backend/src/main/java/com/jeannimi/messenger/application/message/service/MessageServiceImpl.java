@@ -463,7 +463,7 @@ public class MessageServiceImpl implements MessageService {
                 attachment.getSize());
 
     UserResult senderResult =
-        new UserResult(sender.getId(), sender.getUsername().getValue(), sender.getRole());
+        new UserResult(sender.getId(), sender.getHandle().getValue(), sender.getUsername().getValue(), sender.getRole());
 
     return new MessageResult(
         message.getId(),

@@ -383,7 +383,7 @@ public class ChatServiceImpl implements ChatService {
     User user = member.getUser();
 
     UserResult userResult =
-        new UserResult(user.getId(), user.getUsername().getValue(), user.getRole());
+        new UserResult(user.getId(), user.getHandle().getValue(), user.getUsername().getValue(), user.getRole());
 
     return new ChatMemberResult(
         userResult, member.getRole(), member.getJoinedAt(), member.getLastReadMessageId());

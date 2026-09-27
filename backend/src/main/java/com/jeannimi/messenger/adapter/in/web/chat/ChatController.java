@@ -156,7 +156,7 @@ public class ChatController {
   private ChatMemberDto toDto(ChatMemberResult result) {
 
     return new ChatMemberDto(
-        new UserDto(result.user().id(), result.user().username(), result.user().role()),
+        new UserDto(result.user().id(), result.user().handle(), result.user().username(), result.user().role()),
         result.chatRole(),
         result.joinedAt(),
         result.lastReadMessageId());

@@ -1,11 +1,15 @@
 CREATE TABLE users
 (
-    id         BIGSERIAL PRIMARY KEY,
-    username   VARCHAR(100) NOT NULL,
-    email      VARCHAR(255) NOT NULL,
-    password   VARCHAR(255) NOT NULL,
-    role       VARCHAR(50)  NOT NULL,
-    created_at TIMESTAMPTZ  NOT NULL
+    id            BIGSERIAL PRIMARY KEY,
+    handle        VARCHAR(7)   NOT NULL,
+    username      VARCHAR(100) NOT NULL,
+    email         VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role          VARCHAR(50)  NOT NULL,
+    created_at    TIMESTAMPTZ  NOT NULL,
+
+    CONSTRAINT uk_users_handle
+        UNIQUE (handle)
 );
 
 -- Username больше не является уникальным.
@@ -23,7 +27,7 @@ CREATE TABLE chats
     id              BIGSERIAL PRIMARY KEY,
     name            VARCHAR(100) NOT NULL,
     type            VARCHAR(20)  NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ  NOT NULL,
     last_message_at TIMESTAMPTZ,
     private_key     VARCHAR(39) UNIQUE,
     version         BIGINT
@@ -32,11 +36,11 @@ CREATE TABLE chats
 
 CREATE TABLE chat_members
 (
-    id                  BIGSERIAL PRIMARY KEY,
-    chat_id             BIGINT      NOT NULL,
-    user_id             BIGINT      NOT NULL,
-    role                VARCHAR(20) NOT NULL,
-    joined_at           TIMESTAMPTZ NOT NULL,
+    id                   BIGSERIAL PRIMARY KEY,
+    chat_id              BIGINT      NOT NULL,
+    user_id              BIGINT      NOT NULL,
+    role                 VARCHAR(20) NOT NULL,
+    joined_at            TIMESTAMPTZ NOT NULL,
     last_read_message_id BIGINT,
 
     CONSTRAINT fk_chat_members_chat
@@ -61,13 +65,13 @@ CREATE INDEX idx_chat_members_user_id
 
 CREATE TABLE messages
 (
-    id                  BIGSERIAL PRIMARY KEY,
-    chat_id             BIGINT       NOT NULL,
-    sender_id           BIGINT       NOT NULL,
-    content             VARCHAR(2000),
-    created_at          TIMESTAMPTZ  NOT NULL,
-    type                VARCHAR(20)  NOT NULL,
-    file_attachment_id  UUID,
+    id                 BIGSERIAL PRIMARY KEY,
+    chat_id            BIGINT      NOT NULL,
+    sender_id          BIGINT      NOT NULL,
+    content            VARCHAR(2000),
+    created_at         TIMESTAMPTZ NOT NULL,
+    type               VARCHAR(20) NOT NULL,
+    file_attachment_id UUID,
 
     CONSTRAINT fk_messages_chat
         FOREIGN KEY (chat_id)

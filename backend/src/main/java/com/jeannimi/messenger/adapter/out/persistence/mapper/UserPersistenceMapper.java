@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserPersistenceMapper {
 
+  private final HandlePersistenceMapper handlePersistenceMapper;
   private final UsernamePersistenceMapper usernamePersistenceMapper;
   private final EmailPersistenceMapper emailPersistenceMapper;
 
@@ -20,6 +21,7 @@ public class UserPersistenceMapper {
 
     return User.reconstitute(
         entity.getId(),
+        handlePersistenceMapper.toDomain(entity.getHandle()),
         usernamePersistenceMapper.toDomain(entity.getUsername()),
         emailPersistenceMapper.toDomain(entity.getEmail()),
         entity.getPassword(),
@@ -34,6 +36,7 @@ public class UserPersistenceMapper {
     }
 
     return new UserJpaEntity(
+        handlePersistenceMapper.toEntity(user.getHandle()),
         usernamePersistenceMapper.toEntity(user.getUsername()),
         emailPersistenceMapper.toEntity(user.getEmail()),
         user.getPasswordHash(),

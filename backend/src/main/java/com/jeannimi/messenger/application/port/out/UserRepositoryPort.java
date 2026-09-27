@@ -15,6 +15,10 @@ public interface UserRepositoryPort {
       String query,
       Long currentUserId);
 
+  List<User> searchByHandle(
+      String handle,
+      Long currentUserId);
+
   User save(User user);
 
   Optional<User> findById(Long userId);

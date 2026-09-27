@@ -1,7 +1,6 @@
 package com.jeannimi.messenger.domain.user;
 
 import java.util.Locale;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import lombok.Getter;
 
@@ -49,12 +48,12 @@ public final class Email {
       return false;
     }
 
-    return Objects.equals(value, that.value);
+    return value.equals(that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(value);
+    return value.hashCode();
   }
 
   @Override

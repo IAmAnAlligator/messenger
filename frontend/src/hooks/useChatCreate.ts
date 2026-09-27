@@ -12,15 +12,11 @@ export type ChatType =
 
 
 export type UserDto = {
-
-    id:number;
-
-    username:string;
-
-    role:string;
-
+    id: number;
+    handle: string;
+    username: string;
+    role: string;
 };
-
 
 
 export function useChatCreate(){
@@ -86,41 +82,43 @@ export function useChatCreate(){
 
 
 
-    async function searchUsers(
-        query:string
-    ){
+async function searchUsers(
+    query: string
+) {
 
-        try{
+    try {
 
-            setSearchLoading(true);
+        setSearchLoading(true);
 
-
-            const res =
-                await api.get(
-                    "/users/search",
-                    {
-                        params:{
-                            query
-                        }
+        const res =
+            await api.get(
+                "/users/search",
+                {
+                    params: {
+                        query
                     }
-                );
-
-
-            setUsers(
-                Array.isArray(res.data)
-                ? res.data
-                : []
+                }
             );
 
-
-        }
-        finally{
-
-            setSearchLoading(false);
-
-        }
+        setUsers(
+            Array.isArray(res.data)
+                ? res.data
+                : []
+        );
 
     }
+    catch {
+
+        setUsers([]);
+
+    }
+    finally {
+
+        setSearchLoading(false);
+
+    }
+
+}
 
 
 

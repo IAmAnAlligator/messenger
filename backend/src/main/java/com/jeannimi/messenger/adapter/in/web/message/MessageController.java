@@ -135,7 +135,7 @@ public class MessageController {
 
     UserResult sender = result.sender();
 
-    UserDto senderDto = new UserDto(sender.id(), sender.username(), sender.role());
+    UserDto senderDto = new UserDto(sender.id(), sender.handle(), sender.username(), sender.role());
 
     return new MessageDto(
         result.id(),

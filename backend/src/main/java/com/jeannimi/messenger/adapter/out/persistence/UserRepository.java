@@ -45,6 +45,18 @@ public class UserRepository implements UserRepositoryPort {
   }
 
   @Override
+  public List<User> searchByHandle(
+      String handle,
+      Long currentUserId) {
+
+    return userJpaRepository
+        .searchByHandle(handle, currentUserId)
+        .stream()
+        .map(userPersistenceMapper::toDomain)
+        .toList();
+  }
+
+  @Override
   public User save(User user) {
 
     UserJpaEntity entity =
