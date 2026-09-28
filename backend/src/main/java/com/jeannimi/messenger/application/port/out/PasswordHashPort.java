@@ -1,8 +1,13 @@
 package com.jeannimi.messenger.application.port.out;
 
+import com.jeannimi.messenger.domain.user.Password;
+import com.jeannimi.messenger.domain.user.PasswordHash;
+
 public interface PasswordHashPort {
 
-  String hash(String rawPassword);
+  PasswordHash hash(Password password);
 
-  boolean matches(String rawPassword, String passwordHash);
+  boolean matches(
+      Password password,
+      PasswordHash passwordHash);
 }

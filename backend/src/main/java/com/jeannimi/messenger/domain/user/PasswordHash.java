@@ -3,46 +3,31 @@ package com.jeannimi.messenger.domain.user;
 import lombok.Getter;
 
 @Getter
-public final class Password {
-
-  public static final int MIN_PASSWORD_LENGTH = 6;
-  public static final int MAX_PASSWORD_LENGTH = 30;
+public final class PasswordHash {
 
   private final String value;
 
-  public Password(String value) {
+  public PasswordHash(String value) {
 
     if (value == null) {
       throw new IllegalArgumentException(
-          "Password must not be null");
+          "Password hash must not be null");
     }
 
     if (value.isBlank()) {
       throw new IllegalArgumentException(
-          "Password must not be blank");
-    }
-
-    if (value.length() < MIN_PASSWORD_LENGTH) {
-      throw new IllegalArgumentException(
-          "Password too short");
-    }
-
-    if (value.length() > MAX_PASSWORD_LENGTH) {
-      throw new IllegalArgumentException(
-          "Password too long");
+          "Password hash must not be blank");
     }
 
     if (containsControlCharacter(value)) {
       throw new IllegalArgumentException(
-          "Password contains invalid characters");
+          "Password hash contains invalid characters");
     }
 
     this.value = value;
   }
 
-  private static boolean containsControlCharacter(
-      String value) {
-
+  private static boolean containsControlCharacter(String value) {
     return value.codePoints()
         .anyMatch(Character::isISOControl);
   }
@@ -54,7 +39,7 @@ public final class Password {
       return true;
     }
 
-    if (!(o instanceof Password that)) {
+    if (!(o instanceof PasswordHash that)) {
       return false;
     }
 

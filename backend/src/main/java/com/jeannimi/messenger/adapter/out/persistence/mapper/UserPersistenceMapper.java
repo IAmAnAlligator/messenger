@@ -1,6 +1,8 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
+import com.jeannimi.messenger.adapter.out.persistence.entity.PasswordJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
+import com.jeannimi.messenger.domain.user.PasswordHash;
 import com.jeannimi.messenger.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,7 +26,7 @@ public class UserPersistenceMapper {
         handlePersistenceMapper.toDomain(entity.getHandle()),
         usernamePersistenceMapper.toDomain(entity.getUsername()),
         emailPersistenceMapper.toDomain(entity.getEmail()),
-        entity.getPassword(),
+        toPasswordHash(entity.getPassword()),
         entity.getRole(),
         entity.getCreatedAt());
   }
@@ -39,8 +41,28 @@ public class UserPersistenceMapper {
         handlePersistenceMapper.toEntity(user.getHandle()),
         usernamePersistenceMapper.toEntity(user.getUsername()),
         emailPersistenceMapper.toEntity(user.getEmail()),
-        user.getPasswordHash(),
+        toPasswordEntity(user.getPasswordHash()),
         user.getRole(),
         user.getCreatedAt());
+  }
+
+  private PasswordHash toPasswordHash(
+      PasswordJpaEntity entity) {
+
+    if (entity == null) {
+      return null;
+    }
+
+    return new PasswordHash(entity.getValue());
+  }
+
+  private PasswordJpaEntity toPasswordEntity(
+      PasswordHash passwordHash) {
+
+    if (passwordHash == null) {
+      return null;
+    }
+
+    return new PasswordJpaEntity(passwordHash.getValue());
   }
 }

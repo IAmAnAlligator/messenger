@@ -30,7 +30,19 @@ public final class Username {
       throw new IllegalArgumentException("Username too long");
     }
 
+    if (containsControlCharacter(value)) {
+      throw new IllegalArgumentException(
+          "Username contains invalid characters");
+    }
+
     this.value = value;
+  }
+
+  private static boolean containsControlCharacter(
+      String value) {
+
+    return value.codePoints()
+        .anyMatch(Character::isISOControl);
   }
 
   @Override

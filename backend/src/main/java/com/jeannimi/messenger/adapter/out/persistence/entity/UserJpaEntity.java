@@ -35,10 +35,8 @@ public class UserJpaEntity {
   @Embedded
   private EmailJpaEntity email;
 
-  // name = password_hash при следующей миграции
-  // изменить на embedded
-  @Column(name = "password_hash", nullable = false, length = 255)
-  private String password;
+  @Embedded
+  private PasswordJpaEntity password;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 50)
@@ -51,7 +49,7 @@ public class UserJpaEntity {
       HandleJpaEntity handle,
       UsernameJpaEntity username,
       EmailJpaEntity email,
-      String password,
+      PasswordJpaEntity password,
       Role role,
       Instant createdAt) {
 

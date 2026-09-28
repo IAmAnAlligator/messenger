@@ -12,6 +12,7 @@ import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.Handle;
+import com.jeannimi.messenger.domain.user.Password;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.Username;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AuthService {
       String password) {
 
     Email email = new Email(emailValue);
+    Password passwordValue = new Password(password);
 
     User user =
         userRepository
@@ -39,7 +41,7 @@ public class AuthService {
                 () -> new UnauthorizedException("Invalid credentials"));
 
     if (!passwordHashPort.matches(
-        password,
+        passwordValue,
         user.getPasswordHash())) {
 
       throw new UnauthorizedException("Invalid credentials");
@@ -55,6 +57,7 @@ public class AuthService {
 
     Username username = new Username(usernameValue);
     Email email = new Email(emailValue);
+    Password passwordValue = new Password(password);
 
     if (userRepository.existsByEmail(email.getValue())) {
       throw new ConflictException("Email already exists");
@@ -67,7 +70,7 @@ public class AuthService {
             handle,
             username,
             email,
-            passwordHashPort.hash(password),
+            passwordHashPort.hash(passwordValue),
             USER);
 
     userRepository.save(user);

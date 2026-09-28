@@ -11,7 +11,7 @@ public final class User {
   private final Handle handle;
   private final Username username;
   private final Email email;
-  private final String passwordHash;
+  private final PasswordHash passwordHash;
   private final Role role;
   private final Instant createdAt;
 
@@ -20,7 +20,7 @@ public final class User {
       Handle handle,
       Username username,
       Email email,
-      String passwordHash,
+      PasswordHash passwordHash,
       Role role,
       Instant createdAt) {
 
@@ -37,7 +37,7 @@ public final class User {
       Handle handle,
       Username username,
       Email email,
-      String passwordHash,
+      PasswordHash passwordHash,
       Role role) {
 
     return new User(
@@ -55,7 +55,7 @@ public final class User {
       Handle handle,
       Username username,
       Email email,
-      String passwordHash,
+      PasswordHash passwordHash,
       Role role,
       Instant createdAt) {
 
