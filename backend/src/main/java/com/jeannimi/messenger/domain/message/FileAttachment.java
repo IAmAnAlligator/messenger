@@ -4,13 +4,12 @@ import com.jeannimi.messenger.domain.exception.MessageError;
 import com.jeannimi.messenger.domain.exception.MessageException;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.Getter;
 
 @Getter
 public final class FileAttachment {
 
-  private final UUID id;
+  private final FileAttachmentId id;
   private final String originalFileName;
   private final String storageFileName;
   private final String contentType;
@@ -18,7 +17,7 @@ public final class FileAttachment {
   private final Instant createdAt;
 
   private FileAttachment(
-      UUID id,
+      FileAttachmentId id,
       String originalFileName,
       String storageFileName,
       String contentType,
@@ -33,7 +32,7 @@ public final class FileAttachment {
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
   }
 
-  public static FileAttachment create(
+  public static FileAttachment create(FileAttachmentId id,
       String originalFileName, String storageFileName, String contentType, Long size) {
 
     validateOriginalFileName(originalFileName);
@@ -42,11 +41,11 @@ public final class FileAttachment {
     validateSize(size);
 
     return new FileAttachment(
-        UUID.randomUUID(), originalFileName, storageFileName, contentType, size, Instant.now());
+        id, originalFileName, storageFileName, contentType, size, Instant.now());
   }
 
   public static FileAttachment reconstitute(
-      UUID id,
+      FileAttachmentId id,
       String originalFileName,
       String storageFileName,
       String contentType,

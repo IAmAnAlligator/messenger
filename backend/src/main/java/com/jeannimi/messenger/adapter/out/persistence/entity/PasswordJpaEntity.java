@@ -1,7 +1,5 @@
 package com.jeannimi.messenger.adapter.out.persistence.entity;
 
-import com.jeannimi.messenger.domain.user.Password;
-import com.jeannimi.messenger.domain.user.Username;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.util.Objects;
@@ -20,5 +18,4 @@ public class PasswordJpaEntity {
   public PasswordJpaEntity(String value) {
     this.value = Objects.requireNonNull(value, "value");
   }
-
 }

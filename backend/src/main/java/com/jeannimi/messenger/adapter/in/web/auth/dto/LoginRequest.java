@@ -7,13 +7,14 @@ import jakarta.validation.constraints.Size;
 
 public record LoginRequest(
     @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email")
-    @Size(max = com.jeannimi.messenger.domain.user.Email.MAX_EMAIL_LENGTH, message = "Email must not exceed 100 characters")
-    String email,
-
+        @Email(message = "Invalid email")
+        @Size(
+            max = com.jeannimi.messenger.domain.user.Email.MAX_EMAIL_LENGTH,
+            message = "Email must not exceed 100 characters")
+        String email,
     @NotBlank(message = "Password is required")
-    @Size(
-        min = Password.MIN_PASSWORD_LENGTH,
-        max = Password.MAX_PASSWORD_LENGTH,
-        message = "Password must be between {min} and {max} characters")
-    String password) {}
+        @Size(
+            min = Password.MIN_PASSWORD_LENGTH,
+            max = Password.MAX_PASSWORD_LENGTH,
+            message = "Password must be between {min} and {max} characters")
+        String password) {}

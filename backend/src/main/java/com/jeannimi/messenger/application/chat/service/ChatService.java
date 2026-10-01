@@ -6,27 +6,31 @@ import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.domain.chat.ChatId;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
 
 public interface ChatService {
 
-  ChatResult createChat(ChatCreateCommand request, Long currentUserId);
+  ChatResult createChat(ChatCreateCommand request, UserId currentUserId);
 
-  CursorPageResult<ChatResult> getUserChats(Long userId, CursorPageQuery query);
+  CursorPageResult<ChatResult, ChatId> getUserChats(
+      UserId userId,
+      CursorPageQuery<ChatId> query);
 
-  ChatResult getChat(Long chatId, Long userId);
+  ChatResult getChat(ChatId chatId, UserId userId);
 
-  void addMember(Long chatId, Long userId, Long currentUserId);
+  void addMember(ChatId chatId, UserId userId, UserId currentUserId);
 
-  void removeMember(Long chatId, Long userId, Long currentUserId);
+  void removeMember(ChatId chatId, UserId userId, UserId currentUserId);
 
-  boolean isParticipant(Long chatId, Long userId);
+  boolean isParticipant(ChatId chatId, UserId userId);
 
-  void deleteChat(Long chatId, Long currentUserId);
+  void deleteChat(ChatId chatId, UserId currentUserId);
 
-  void leaveChat(Long chatId, Long currentUserId);
+  void leaveChat(ChatId chatId, UserId currentUserId);
 
-  List<ChatMemberResult> getMembers(Long chatId, Long currentUserId);
+  List<ChatMemberResult> getMembers(ChatId chatId, UserId currentUserId);
 
-  void renameChat(Long chatId, RenameChatCommand command, Long currentUserId);
+  void renameChat(ChatId chatId, RenameChatCommand command, UserId currentUserId);
 }

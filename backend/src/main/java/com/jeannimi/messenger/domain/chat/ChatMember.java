@@ -1,6 +1,8 @@
 package com.jeannimi.messenger.domain.chat;
 
+import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.Getter;
@@ -8,34 +10,34 @@ import lombok.Getter;
 @Getter
 public final class ChatMember {
 
-  private final Long id;
+  private final ChatMemberId id;
   private final User user;
   private final ChatRole role;
   private final Instant joinedAt;
-  private Long lastReadMessageId;
+  private MessageId lastReadMessageId;
 
-  private ChatMember(Long id, User user, ChatRole role, Instant joinedAt, Long lastReadMessageId) {
+  private ChatMember(
+      ChatMemberId id, User user, ChatRole role, Instant joinedAt, MessageId lastReadMessageId) {
 
-    this.id = id;
+    this.id = Objects.requireNonNull(id, "id");
     this.user = Objects.requireNonNull(user, "user");
     this.role = Objects.requireNonNull(role, "role");
     this.joinedAt = Objects.requireNonNull(joinedAt, "joinedAt");
     this.lastReadMessageId = lastReadMessageId;
   }
 
-  public static ChatMember create(User user, ChatRole role) {
+  public static ChatMember create(ChatMemberId id, User user, ChatRole role) {
 
-    return new ChatMember(null, user, role, Instant.now(), null);
+    return new ChatMember(id, user, role, Instant.now(), null);
   }
 
   public static ChatMember reconstitute(
-      Long id, User user, ChatRole role, Instant joinedAt, Long lastReadMessageId) {
+      ChatMemberId id, User user, ChatRole role, Instant joinedAt, MessageId lastReadMessageId) {
 
-    return new ChatMember(
-        Objects.requireNonNull(id, "id"), user, role, joinedAt, lastReadMessageId);
+    return new ChatMember(id, user, role, joinedAt, lastReadMessageId);
   }
 
-  public Long getUserId() {
+  public UserId getUserId() {
     return user.getId();
   }
 
@@ -43,7 +45,7 @@ public final class ChatMember {
     return role == ChatRole.ADMIN;
   }
 
-  public void markAsRead(Long messageId) {
+  public void markAsRead(MessageId messageId) {
     this.lastReadMessageId = Objects.requireNonNull(messageId, "messageId");
   }
 
@@ -57,11 +59,11 @@ public final class ChatMember {
       return false;
     }
 
-    return id != null && id.equals(that.id);
+    return id.equals(that.id);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return id.hashCode();
   }
 }

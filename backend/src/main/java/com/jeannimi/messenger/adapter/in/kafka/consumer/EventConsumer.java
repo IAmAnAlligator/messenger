@@ -13,6 +13,7 @@ import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
 import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
+import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -140,16 +141,14 @@ public class EventConsumer {
   */
 
   private void processEnvelope(
-      String payload,
-      Acknowledgment ack,
-      Consumer<KafkaEventEnvelope> consumer) {
+      String payload, Acknowledgment ack, Consumer<KafkaEventEnvelope> consumer) {
 
     try {
 
-      KafkaEventEnvelope envelope =
-          objectMapper.readValue(payload, KafkaEventEnvelope.class);
+      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
-      UUID eventId = envelope.eventId();
+      UUID eventIdValue = envelope.eventId();
+      EventId eventId = new EventId(eventIdValue);
 
       if (eventId == null) {
         throw new IllegalArgumentException("Kafka eventId must not be null");
@@ -159,14 +158,11 @@ public class EventConsumer {
 
       try {
 
-        processedRepository.save(
-            ProcessedEvent.create(eventId));
+        processedRepository.save(ProcessedEvent.create(eventId));
 
       } catch (DataIntegrityViolationException e) {
 
-        log.info(
-            "Event was already processed: eventId={}",
-            eventId);
+        log.info("Event was already processed: eventId={}", eventId);
       }
 
       ack.acknowledge();

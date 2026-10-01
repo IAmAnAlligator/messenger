@@ -3,6 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.FileAttachmentPersistenceMapper;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.domain.message.FileAttachment;
+import com.jeannimi.messenger.domain.message.FileAttachmentId;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,19 +31,24 @@ public class FileAttachmentRepository implements FileAttachmentRepositoryPort {
   }
 
   @Override
-  public int deleteAllByIds(List<UUID> ids) {
+  public int deleteAllByIds(List<FileAttachmentId> ids) {
     if (ids == null || ids.isEmpty()) {
       return 0;
     }
 
-    return fileAttachmentJpaRepository.deleteAllByIds(ids);
+    List<UUID> uuidIds = ids.stream().map(FileAttachmentId::value).toList();
+
+    return fileAttachmentJpaRepository.deleteAllByIds(uuidIds);
   }
 
   @Override
   public void delete(FileAttachment fileAttachment) {
 
-    if (fileAttachment != null) {
-      fileAttachmentJpaRepository.deleteById(fileAttachment.getId());
+    if (fileAttachment == null) {
+      return;
     }
+
+    fileAttachmentJpaRepository.deleteById(fileAttachment.getId().value());
+
   }
 }

@@ -5,6 +5,7 @@ import static com.jeannimi.messenger.application.auth.AuthTokenConstants.REFRESH
 
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -13,6 +14,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +46,7 @@ public class JwtService implements TokenServicePort {
     Instant now = Instant.now();
 
     return Jwts.builder()
-        .subject(String.valueOf(user.getId()))
+        .subject(user.getId().value().toString())
         .claim(CLAIM_ROLE, user.getRole().name())
         .claim(CLAIM_TOKEN_TYPE, ACCESS_TOKEN_TYPE)
         .issuedAt(Date.from(now))
@@ -58,7 +60,7 @@ public class JwtService implements TokenServicePort {
     Instant now = Instant.now();
 
     return Jwts.builder()
-        .subject(String.valueOf(user.getId()))
+        .subject(user.getId().value().toString())
         .claim(CLAIM_TOKEN_TYPE, REFRESH_TOKEN_TYPE)
         .issuedAt(Date.from(now))
         .expiration(Date.from(now.plusMillis(jwtRefreshExpiration)))
@@ -66,9 +68,9 @@ public class JwtService implements TokenServicePort {
         .compact();
   }
 
-  @Override
-  public Long extractUserId(String token) {
-    return Long.valueOf(extractClaims(token).getSubject());
+  @Override public UserId extractUserId(String token) {
+    UUID userId = UUID.fromString(extractClaims(token).getSubject());
+    return new UserId(userId);
   }
 
   @Override
@@ -90,12 +92,15 @@ public class JwtService implements TokenServicePort {
     try {
       extractClaims(token);
       return true;
+
     } catch (ExpiredJwtException e) {
       log.warn("Ошибка JWT, токен истёк: {}", e.getMessage());
       return false;
+
     } catch (JwtException e) {
       log.warn("Ошибка JWT, неверная подпись, повреждённый токен и т.д.: {}", e.getMessage());
       return false;
+
     } catch (IllegalArgumentException e) {
       log.warn("Ошибка JWT, null или пустая строка: {}", e.getMessage());
       return false;

@@ -24,10 +24,7 @@ public class OutboxPublishService {
   public void publishBatch() {
 
     List<OutboxEventData> events =
-        outboxRepository.findBatch(
-            new OutboxBatchRequest(
-                OutboxStatus.NEW,
-                BATCH_SIZE));
+        outboxRepository.findBatch(new OutboxBatchRequest(OutboxStatus.NEW, BATCH_SIZE));
 
     for (OutboxEventData event : events) {
       publish(event);
@@ -39,11 +36,7 @@ public class OutboxPublishService {
     try {
 
       messageBroker.publish(
-          event.topic(),
-          event.eventId(),
-          event.aggregateId(),
-          event.eventType(),
-          event.payload());
+          event.topic(), event.eventId(), event.aggregateId(), event.eventType(), event.payload());
 
       outboxStatusService.markSent(event.id());
 
@@ -57,9 +50,7 @@ public class OutboxPublishService {
 
       int nextAttempt = event.attemptCount() + 1;
 
-      outboxStatusService.handleFailure(
-          event.id(),
-          event.attemptCount());
+      outboxStatusService.handleFailure(event.id(), event.attemptCount());
 
       log.warn(
           "[OUTBOX PUBLISH FAILED] id={}, eventId={}, type={}, attempt={}",

@@ -2,7 +2,7 @@ package com.jeannimi.messenger.domain.chat;
 
 import com.jeannimi.messenger.domain.exception.ChatError;
 import com.jeannimi.messenger.domain.exception.ChatException;
-import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,7 +15,7 @@ import lombok.Getter;
 @Getter
 public final class Chat {
 
-  private final Long id;
+  private final ChatId id;
 
   private String name;
   private final ChatType type;
@@ -26,7 +26,7 @@ public final class Chat {
   private final String privateKey;
 
   private Chat(
-      Long id,
+      ChatId id,
       String name,
       ChatType type,
       Set<ChatMember> members,
@@ -34,7 +34,7 @@ public final class Chat {
       Instant lastMessageAt,
       String privateKey) {
 
-    this.id = id;
+    this.id = Objects.requireNonNull(id, "id");
     this.name = Objects.requireNonNull(name, "name");
     this.type = Objects.requireNonNull(type, "type");
     this.members = new HashSet<>(Objects.requireNonNull(members, "members"));
@@ -44,7 +44,7 @@ public final class Chat {
   }
 
   public static Chat reconstitute(
-      Long id,
+      ChatId id,
       String name,
       ChatType type,
       Set<ChatMember> members,
@@ -54,7 +54,7 @@ public final class Chat {
 
     Chat chat =
         new Chat(
-            Objects.requireNonNull(id, "id"),
+            id,
             name,
             type,
             members,
@@ -99,83 +99,113 @@ public final class Chat {
     }
   }
 
-  public static Chat createGroup(String name, User creator, List<User> additionalMembers) {
+  public static Chat createGroup(
+      ChatId id,
+      String name,
+      List<ChatMember> members) {
 
-    Objects.requireNonNull(creator, "creator");
-    Objects.requireNonNull(additionalMembers, "additionalMembers");
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(members, "members");
 
     String normalizedName = normalizeName(name);
     validateName(normalizedName);
 
-    int requestedMembers = 1 + additionalMembers.size();
+    if (members.isEmpty()) {
+      throw new ChatException(
+          ChatError.GROUP_MUST_HAVE_MEMBERS,
+          "Group must have at least one member");
+    }
 
-    if (requestedMembers > ChatConstants.MAX_GROUP_MEMBERS) {
+    if (members.size() > ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
+          "Group cannot contain more than "
+              + ChatConstants.MAX_GROUP_MEMBERS
+              + " members");
     }
 
     Instant now = Instant.now();
 
-    Chat chat = new Chat(null, normalizedName, ChatType.GROUP, new HashSet<>(), now, null, null);
+    Chat chat =
+        new Chat(
+            id,
+            normalizedName,
+            ChatType.GROUP,
+            new HashSet<>(members),
+            now,
+            null,
+            null);
 
-    chat.addMemberInternal(creator, ChatRole.ADMIN);
-
-    for (User user : additionalMembers) {
-      Objects.requireNonNull(user, "user");
-      chat.addMemberInternal(user, ChatRole.MEMBER);
-    }
+    chat.validateState();
 
     if (chat.members.size() < ChatConstants.MIN_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MUST_HAVE_MINIMUM_MEMBERS,
-          "Group must contain at least " + ChatConstants.MIN_GROUP_MEMBERS + " members");
+          "Group must contain at least "
+              + ChatConstants.MIN_GROUP_MEMBERS
+              + " members");
     }
 
     return chat;
   }
 
-  public static Chat createPrivate(User userA, User userB) {
+  public static Chat createPrivate(
+      ChatId id,
+      ChatMember memberA,
+      ChatMember memberB) {
 
-    Objects.requireNonNull(userA, "userA");
-    Objects.requireNonNull(userB, "userB");
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(memberA, "memberA");
+    Objects.requireNonNull(memberB, "memberB");
 
-    if (userA.getId().equals(userB.getId())) {
+    if (memberA.getUserId().equals(memberB.getUserId())) {
       throw new ChatException(
-          ChatError.CANNOT_CREATE_PRIVATE_WITH_YOURSELF, "Cannot create chat with yourself");
+          ChatError.CANNOT_CREATE_PRIVATE_WITH_YOURSELF,
+          "Cannot create chat with yourself");
     }
 
-    Instant now = Instant.now();
+    String name = memberA.getUser().getUsername().getValue() +
+         ChatConstants.SEPARATOR + memberB.getUser().getUsername().getValue();
 
-    String name =
-        userA.getUsername().getValue() + ChatConstants.SEPARATOR + userB.getUsername().getValue();
-
-    String privateKey = buildPrivateKey(userA.getId(), userB.getId());
+    String privateKey =
+        buildPrivateKey(
+            memberA.getUserId(),
+            memberB.getUserId());
 
     Set<ChatMember> members = new HashSet<>();
 
-    Chat chat = new Chat(null, name, ChatType.PRIVATE, members, now, null, privateKey);
+    members.add(memberA);
+    members.add(memberB);
 
-    chat.addMemberInternal(userA, ChatRole.ADMIN);
-    chat.addMemberInternal(userB, ChatRole.MEMBER);
+    Instant now = Instant.now();
+
+    Chat chat =
+        new Chat(
+            id,
+            name,
+            ChatType.PRIVATE,
+            members,
+            now,
+            null,
+            privateKey);
 
     chat.validateState();
 
     return chat;
   }
 
-  public static String buildPrivateKey(Long u1, Long u2) {
+  public static String buildPrivateKey(UserId u1, UserId u2) {
 
     Objects.requireNonNull(u1, "First user id");
     Objects.requireNonNull(u2, "Second user id");
 
-    long min = Math.min(u1, u2);
-    long max = Math.max(u1, u2);
+    UserId min = u1.compareTo(u2) <= 0 ? u1 : u2;
+    UserId max = u1.compareTo(u2) <= 0 ? u2 : u1;
 
-    return min + ChatConstants.SEPARATOR + max;
+    return min.value() + ChatConstants.SEPARATOR + max.value();
   }
 
-  public boolean hasMember(Long userId) {
+  public boolean hasMember(UserId userId) {
 
     Objects.requireNonNull(userId, "userId");
 
@@ -191,9 +221,9 @@ public final class Chat {
     return type == ChatType.PRIVATE;
   }
 
-  public void addMember(User user, Long currentUserId) {
+  public void addMember(ChatMember member, UserId currentUserId) {
 
-    Objects.requireNonNull(user, "user");
+    Objects.requireNonNull(member, "member");
     Objects.requireNonNull(currentUserId, "currentUserId");
 
     requireGroup();
@@ -205,13 +235,39 @@ public final class Chat {
     if (members.size() >= ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
+          "Group cannot contain more than "
+              + ChatConstants.MAX_GROUP_MEMBERS
+              + " members");
     }
 
-    addMemberInternal(user, ChatRole.MEMBER);
+    if (hasMember(member.getUserId())) {
+      throw new ChatException(
+          ChatError.USER_ALREADY_IN_CHAT,
+          "User already in chat");
+    }
+
+    members.add(member);
   }
 
-  public void removeMember(Long targetUserId, Long currentUserId) {
+//  private void addMemberInternal(ChatMemberId id, User user, ChatRole role) {
+//
+//    Objects.requireNonNull(id, "id");
+//    Objects.requireNonNull(user, "user");
+//    Objects.requireNonNull(role, "role");
+//
+//    if (hasMember(user.getId())) {
+//      throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "User already in chat");
+//    }
+//
+//    ChatMember member = ChatMember.create(id, user, role);
+//
+//    members.add(member);
+//  }
+
+
+  public void removeMember(
+      UserId targetUserId,
+      UserId currentUserId) {
 
     Objects.requireNonNull(targetUserId, "targetUserId");
     Objects.requireNonNull(currentUserId, "currentUserId");
@@ -223,19 +279,23 @@ public final class Chat {
     requireAdmin(currentUser);
 
     if (targetUserId.equals(currentUserId)) {
-      throw new ChatException(ChatError.CANNOT_REMOVE_YOURSELF, "Cannot remove yourself");
+      throw new ChatException(
+          ChatError.CANNOT_REMOVE_YOURSELF,
+          "Cannot remove yourself");
     }
 
     ChatMember target = requireMember(targetUserId);
 
     if (target.isAdmin() && countAdmins() <= 1) {
-      throw new ChatException(ChatError.LAST_ADMIN_CANNOT_BE_REMOVED, "Cannot remove last admin");
+      throw new ChatException(
+          ChatError.LAST_ADMIN_CANNOT_BE_REMOVED,
+          "Cannot remove last admin");
     }
 
     removeMemberInternal(target);
   }
 
-  public void leaveChat(Long currentUserId) {
+  public void leaveChat(UserId currentUserId) {
 
     Objects.requireNonNull(currentUserId, "currentUserId");
 
@@ -250,7 +310,7 @@ public final class Chat {
     removeMemberInternal(currentUser);
   }
 
-  public void renameChat(Long currentUserId, String chatName) {
+  public void renameChat(UserId currentUserId, String chatName) {
 
     Objects.requireNonNull(currentUserId, "currentUserId");
 
@@ -282,7 +342,7 @@ public final class Chat {
     }
   }
 
-  public void ensureCanDelete(Long currentUserId) {
+  public void ensureCanDelete(UserId currentUserId) {
 
     Objects.requireNonNull(currentUserId, "currentUserId");
 
@@ -293,19 +353,6 @@ public final class Chat {
     }
   }
 
-  private void addMemberInternal(User user, ChatRole role) {
-
-    Objects.requireNonNull(user, "user");
-    Objects.requireNonNull(role, "role");
-
-    if (hasMember(user.getId())) {
-      throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "User already in chat");
-    }
-
-    ChatMember member = ChatMember.create(user, role);
-
-    members.add(member);
-  }
 
   private long countAdmins() {
 
@@ -343,8 +390,8 @@ public final class Chat {
 
     Iterator<ChatMember> iterator = members.iterator();
 
-    Long firstUserId = iterator.next().getUserId();
-    Long secondUserId = iterator.next().getUserId();
+    UserId firstUserId = iterator.next().getUserId();
+    UserId secondUserId = iterator.next().getUserId();
 
     String expectedPrivateKey = buildPrivateKey(firstUserId, secondUserId);
 
@@ -354,7 +401,7 @@ public final class Chat {
     }
   }
 
-  private ChatMember requireMember(Long userId) {
+  private ChatMember requireMember(UserId userId) {
 
     return members.stream()
         .filter(member -> member.getUserId().equals(userId))
@@ -394,11 +441,11 @@ public final class Chat {
       return false;
     }
 
-    return id != null && id.equals(that.id);
+    return id.equals(that.id);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return id.hashCode();
   }
 }

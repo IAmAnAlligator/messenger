@@ -26,24 +26,16 @@ public class AuthController {
   private final AuthService authService;
 
   @PostMapping("/login")
-  public ResponseEntity<AuthAccessResponse> login(
-      @RequestBody @Valid LoginRequest request) {
+  public ResponseEntity<AuthAccessResponse> login(@RequestBody @Valid LoginRequest request) {
 
-    return authResponse(
-        authService.login(
-            request.email(),
-            request.password()));
+    return authResponse(authService.login(request.email(), request.password()));
   }
 
   @PostMapping("/register")
-  public ResponseEntity<AuthAccessResponse> register(
-      @RequestBody @Valid RegisterRequest request) {
+  public ResponseEntity<AuthAccessResponse> register(@RequestBody @Valid RegisterRequest request) {
 
     return authResponse(
-        authService.register(
-            request.username(),
-            request.email(),
-            request.password()));
+        authService.register(request.username(), request.email(), request.password()));
   }
 
   @PostMapping("/refresh")

@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.application.port.out;
 
 import com.jeannimi.messenger.domain.message.FileAttachment;
+import com.jeannimi.messenger.domain.message.FileAttachmentId;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,7 +11,7 @@ public interface FileAttachmentRepositoryPort {
 
   List<FileAttachment> findOrphanAttachments();
 
-  int deleteAllByIds(List<UUID> ids);
+  int deleteAllByIds(List<FileAttachmentId> ids);
 
   void delete(FileAttachment fileAttachment);
 }

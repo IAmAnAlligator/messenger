@@ -31,18 +31,15 @@ public final class Username {
     }
 
     if (containsControlCharacter(value)) {
-      throw new IllegalArgumentException(
-          "Username contains invalid characters");
+      throw new IllegalArgumentException("Username contains invalid characters");
     }
 
     this.value = value;
   }
 
-  private static boolean containsControlCharacter(
-      String value) {
+  private static boolean containsControlCharacter(String value) {
 
-    return value.codePoints()
-        .anyMatch(Character::isISOControl);
+    return value.codePoints().anyMatch(Character::isISOControl);
   }
 
   @Override

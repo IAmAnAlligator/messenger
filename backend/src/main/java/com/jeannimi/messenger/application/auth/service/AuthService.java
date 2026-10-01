@@ -7,6 +7,7 @@ import com.jeannimi.messenger.application.auth.dto.AuthResult;
 import com.jeannimi.messenger.application.exception.ConflictException;
 import com.jeannimi.messenger.application.exception.UnauthorizedException;
 import com.jeannimi.messenger.application.port.out.HandleGeneratorPort;
+import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.PasswordHashPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
@@ -14,6 +15,7 @@ import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.Password;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import com.jeannimi.messenger.domain.user.Username;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,9 @@ public class AuthService {
   private final PasswordHashPort passwordHashPort;
   private final TokenServicePort tokenService;
   private final HandleGeneratorPort handleGenerator;
+  private final IdGenerator idGenerator;
 
-  public AuthResult login(
-      String emailValue,
-      String password) {
+  public AuthResult login(String emailValue, String password) {
 
     Email email = new Email(emailValue);
     Password passwordValue = new Password(password);
@@ -37,12 +38,9 @@ public class AuthService {
     User user =
         userRepository
             .findByEmail(email.getValue())
-            .orElseThrow(
-                () -> new UnauthorizedException("Invalid credentials"));
+            .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
-    if (!passwordHashPort.matches(
-        passwordValue,
-        user.getPasswordHash())) {
+    if (!passwordHashPort.matches(passwordValue, user.getPasswordHash())) {
 
       throw new UnauthorizedException("Invalid credentials");
     }
@@ -50,10 +48,7 @@ public class AuthService {
     return generateTokens(user);
   }
 
-  public AuthResult register(
-      String usernameValue,
-      String emailValue,
-      String password) {
+  public AuthResult register(String usernameValue, String emailValue, String password) {
 
     Username username = new Username(usernameValue);
     Email email = new Email(emailValue);
@@ -65,13 +60,10 @@ public class AuthService {
 
     Handle handle = handleGenerator.generate();
 
+    UserId userId = new UserId(idGenerator.generate());
+
     User user =
-        User.create(
-            handle,
-            username,
-            email,
-            passwordHashPort.hash(passwordValue),
-            USER);
+        User.create(userId, handle, username, email, passwordHashPort.hash(passwordValue), USER);
 
     userRepository.save(user);
 
@@ -85,25 +77,21 @@ public class AuthService {
     }
 
     if (!tokenService.isTokenValid(refreshToken)) {
-      throw new UnauthorizedException(
-          "Invalid or expired refresh token");
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
-    String tokenType =
-        tokenService.extractTokenType(refreshToken);
+    String tokenType = tokenService.extractTokenType(refreshToken);
 
     if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
       throw new UnauthorizedException("Invalid token type");
     }
 
-    Long userId =
-        tokenService.extractUserId(refreshToken);
+    UserId userId = tokenService.extractUserId(refreshToken);
 
     User user =
         userRepository
             .findById(userId)
-            .orElseThrow(
-                () -> new UnauthorizedException("Invalid token"));
+            .orElseThrow(() -> new UnauthorizedException("Invalid token"));
 
     return generateTokens(user);
   }
@@ -111,7 +99,6 @@ public class AuthService {
   private AuthResult generateTokens(User user) {
 
     return new AuthResult(
-        tokenService.generateAccessToken(user),
-        tokenService.generateRefreshToken(user));
+        tokenService.generateAccessToken(user), tokenService.generateRefreshToken(user));
   }
 }

@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public final class User {
 
-  private final Long id;
+  private final UserId id;
   private final Handle handle;
   private final Username username;
   private final Email email;
@@ -16,7 +16,7 @@ public final class User {
   private final Instant createdAt;
 
   private User(
-      Long id,
+      UserId id,
       Handle handle,
       Username username,
       Email email,
@@ -24,7 +24,7 @@ public final class User {
       Role role,
       Instant createdAt) {
 
-    this.id = id;
+    this.id = Objects.requireNonNull(id, "id");
     this.handle = Objects.requireNonNull(handle, "handle");
     this.username = Objects.requireNonNull(username, "username");
     this.email = Objects.requireNonNull(email, "email");
@@ -34,24 +34,18 @@ public final class User {
   }
 
   public static User create(
+      UserId id,
       Handle handle,
       Username username,
       Email email,
       PasswordHash passwordHash,
       Role role) {
 
-    return new User(
-        null,
-        handle,
-        username,
-        email,
-        passwordHash,
-        role,
-        Instant.now());
+    return new User(id, handle, username, email, passwordHash, role, Instant.now());
   }
 
   public static User reconstitute(
-      Long id,
+      UserId id,
       Handle handle,
       Username username,
       Email email,
@@ -59,14 +53,7 @@ public final class User {
       Role role,
       Instant createdAt) {
 
-    return new User(
-        Objects.requireNonNull(id, "id"),
-        handle,
-        username,
-        email,
-        passwordHash,
-        role,
-        createdAt);
+    return new User(id, handle, username, email, passwordHash, role, createdAt);
   }
 
   @Override
@@ -79,11 +66,11 @@ public final class User {
       return false;
     }
 
-    return id != null && id.equals(that.id);
+    return id.equals(that.id);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return id.hashCode();
   }
 }

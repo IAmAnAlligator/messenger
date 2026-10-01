@@ -6,6 +6,8 @@ import com.jeannimi.messenger.adapter.in.websocket.dto.ReadMessageCommand;
 import com.jeannimi.messenger.adapter.in.websocket.dto.SendMessageCommand;
 import com.jeannimi.messenger.application.exception.ForbiddenException;
 import com.jeannimi.messenger.application.message.service.MessageService;
+import com.jeannimi.messenger.domain.chat.ChatId;
+import com.jeannimi.messenger.domain.message.MessageId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -16,34 +18,53 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class ChatWebSocketController {
 
-  // 1. Клиент → Сервер (@MessageMapping)
-  //
-  // Это команды пользователя. Именно их обрабатывает ChatWebSocketController.
-
   private final MessageService messageService;
 
   @MessageMapping("/chat.send")
-  public void sendMessage(@Valid SendMessageCommand command, Authentication authentication) {
+  public void sendMessage(
+      @Valid SendMessageCommand command,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.sendMessage(command.chatId(), principal.userId(), command.content());
+    ChatId chatId = new ChatId(command.chatId());
+
+    messageService.sendMessage(
+        chatId,
+        principal.userId(),
+        command.content());
   }
 
   @MessageMapping("/chat.read")
-  public void read(@Valid ReadMessageCommand command, Authentication authentication) {
+  public void read(
+      @Valid ReadMessageCommand command,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.markAsRead(command.chatId(), command.messageId(), principal.userId());
+    ChatId chatId = new ChatId(command.chatId());
+    MessageId messageId = new MessageId(command.messageId());
+
+    messageService.markAsRead(
+        chatId,
+        messageId,
+        principal.userId());
   }
 
   @MessageMapping("/chat.delete")
-  public void delete(@Valid DeleteMessageCommand command, Authentication authentication) {
+  public void delete(
+      @Valid DeleteMessageCommand command,
+      Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
-    messageService.deleteMessage(command.chatId(), command.messageId(), principal.userId());
+    ChatId chatId = new ChatId(command.chatId());
+    MessageId messageId = new MessageId(command.messageId());
+
+    messageService.deleteMessage(
+        chatId,
+        messageId,
+        principal.userId());
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {

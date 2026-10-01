@@ -10,26 +10,22 @@ public final class PasswordHash {
   public PasswordHash(String value) {
 
     if (value == null) {
-      throw new IllegalArgumentException(
-          "Password hash must not be null");
+      throw new IllegalArgumentException("Password hash must not be null");
     }
 
     if (value.isBlank()) {
-      throw new IllegalArgumentException(
-          "Password hash must not be blank");
+      throw new IllegalArgumentException("Password hash must not be blank");
     }
 
     if (containsControlCharacter(value)) {
-      throw new IllegalArgumentException(
-          "Password hash contains invalid characters");
+      throw new IllegalArgumentException("Password hash contains invalid characters");
     }
 
     this.value = value;
   }
 
   private static boolean containsControlCharacter(String value) {
-    return value.codePoints()
-        .anyMatch(Character::isISOControl);
+    return value.codePoints().anyMatch(Character::isISOControl);
   }
 
   @Override

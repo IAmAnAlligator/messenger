@@ -1,21 +1,24 @@
 package com.jeannimi.messenger.application.port.out;
 
+import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatMember;
+import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 public interface ChatMemberRepositoryPort {
 
-  List<ChatMember> findAllByChatId(Long chatId);
+  List<ChatMember> findAllByChatId(ChatId chatId);
 
-  int updateLastReadMessageId(Long chatId, Long userId, Long lastReadMessageId);
+  int updateLastReadMessageId(ChatId chatId, UserId userId, MessageId lastReadMessageId);
 
-  Optional<ChatMember> findByChatIdAndUserId(Long chatId, Long userId);
+  Optional<ChatMember> findByChatIdAndUserId(ChatId chatId, UserId userId);
 
-  boolean existsByChatIdAndUserId(Long chatId, Long userId);
+  boolean existsByChatIdAndUserId(ChatId chatId, UserId userId);
 
-  List<Long> findFirstPageIds(Long userId, int limit);
+  List<ChatId> findFirstPageIds(UserId userId, int limit);
 
-  List<Long> findNextPageIds(Long userId, Instant cursorTime, Long cursorId, int limit);
+  List<ChatId> findNextPageIds(UserId userId, Instant cursorTime, ChatId cursorId, int limit);
 }

@@ -7,8 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -16,6 +14,7 @@ import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,11 +24,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatJpaEntity {
-
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Long id;
+  @Column(name = "id", nullable = false, updatable = false)
+  private UUID id;
 
   @Column(name = "name", nullable = false, length = 100)
   private String name;
@@ -51,7 +48,7 @@ public class ChatJpaEntity {
   @Column(name = "last_message_at")
   private Instant lastMessageAt;
 
-  @Column(name = "private_key", unique = true, length = 39)
+  @Column(name = "private_key", unique = true, length = 73)
   private String privateKey;
 
   @Version
@@ -59,13 +56,12 @@ public class ChatJpaEntity {
   private Long version;
 
   public ChatJpaEntity(
-      Long id,
+      UUID id,
       String name,
       ChatType type,
       Instant createdAt,
       Instant lastMessageAt,
       String privateKey) {
-
     this.id = id;
     this.name = name;
     this.type = type;
@@ -75,19 +71,16 @@ public class ChatJpaEntity {
   }
 
   public void update(String name, Instant lastMessageAt) {
-
     this.name = name;
     this.lastMessageAt = lastMessageAt;
   }
 
   public void addMember(ChatMemberJpaEntity member) {
-
     members.add(member);
     member.setChat(this);
   }
 
   public void removeMember(ChatMemberJpaEntity member) {
-
     members.remove(member);
     member.setChat(null);
   }

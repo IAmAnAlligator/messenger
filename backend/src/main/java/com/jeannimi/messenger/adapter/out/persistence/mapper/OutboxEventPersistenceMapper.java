@@ -1,7 +1,10 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.OutboxEventJpaEntity;
+import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.outbox.AggregateId;
 import com.jeannimi.messenger.domain.outbox.OutboxEvent;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,11 +17,11 @@ public class OutboxEventPersistenceMapper {
     }
 
     return OutboxEvent.reconstitute(
-        entity.getId(),
-        entity.getEventId(),
+        new OutboxEventId(entity.getId()),
+        new EventId(entity.getEventId()),
         entity.getTopic(),
         entity.getEventType(),
-        entity.getAggregateId(),
+        new AggregateId(entity.getAggregateId()),
         entity.getStatus(),
         entity.getPayload(),
         entity.getCreatedAt(),
@@ -33,11 +36,11 @@ public class OutboxEventPersistenceMapper {
     }
 
     return new OutboxEventJpaEntity(
-        event.getId(),
-        event.getEventId(),
+        event.getId().value(),
+        event.getEventId().value(),
         event.getTopic(),
         event.getEventType(),
-        event.getAggregateId(),
+        event.getAggregateId().value(),
         event.getStatus(),
         event.getPayload(),
         event.getCreatedAt(),

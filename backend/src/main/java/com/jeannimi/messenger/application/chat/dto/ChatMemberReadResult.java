@@ -1,3 +1,6 @@
 package com.jeannimi.messenger.application.chat.dto;
 
-public record ChatMemberReadResult(Long userId, Long lastReadMessageId) {}
+import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.user.UserId;
+
+public record ChatMemberReadResult(UserId userId, MessageId lastReadMessageId) {}

@@ -1,3 +1,6 @@
 package com.jeannimi.messenger.application.event;
 
-public record ChatMemberLeftEvent(Long chatId, Long userId) implements ApplicationEvent {}
+import com.jeannimi.messenger.domain.chat.ChatId;
+import com.jeannimi.messenger.domain.user.UserId;
+
+public record ChatMemberLeftEvent(ChatId chatId, UserId userId) implements ApplicationEvent {}

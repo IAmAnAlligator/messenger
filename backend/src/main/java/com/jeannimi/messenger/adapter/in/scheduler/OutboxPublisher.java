@@ -15,5 +15,4 @@ public class OutboxPublisher {
   public void publishOutboxEvents() {
     outboxPublishService.publishBatch();
   }
-
 }

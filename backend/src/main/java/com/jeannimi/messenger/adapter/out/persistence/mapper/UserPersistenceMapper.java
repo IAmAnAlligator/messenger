@@ -4,6 +4,7 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.PasswordJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.domain.user.PasswordHash;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,7 @@ public class UserPersistenceMapper {
     }
 
     return User.reconstitute(
-        entity.getId(),
+        new UserId(entity.getId()),
         handlePersistenceMapper.toDomain(entity.getHandle()),
         usernamePersistenceMapper.toDomain(entity.getUsername()),
         emailPersistenceMapper.toDomain(entity.getEmail()),
@@ -38,6 +39,7 @@ public class UserPersistenceMapper {
     }
 
     return new UserJpaEntity(
+        user.getId().value(),
         handlePersistenceMapper.toEntity(user.getHandle()),
         usernamePersistenceMapper.toEntity(user.getUsername()),
         emailPersistenceMapper.toEntity(user.getEmail()),
@@ -46,8 +48,7 @@ public class UserPersistenceMapper {
         user.getCreatedAt());
   }
 
-  private PasswordHash toPasswordHash(
-      PasswordJpaEntity entity) {
+  private PasswordHash toPasswordHash(PasswordJpaEntity entity) {
 
     if (entity == null) {
       return null;
@@ -56,8 +57,7 @@ public class UserPersistenceMapper {
     return new PasswordHash(entity.getValue());
   }
 
-  private PasswordJpaEntity toPasswordEntity(
-      PasswordHash passwordHash) {
+  private PasswordJpaEntity toPasswordEntity(PasswordHash passwordHash) {
 
     if (passwordHash == null) {
       return null;

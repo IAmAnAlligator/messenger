@@ -1,10 +1,13 @@
 package com.jeannimi.messenger.application.outbox;
 
-import java.util.UUID;
+import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.outbox.AggregateId;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 
 public record OutboxCreateData(
-    UUID eventId,
+    OutboxEventId id,
+    EventId eventId,
     String topic,
     String eventType,
-    String aggregateId,
+    AggregateId aggregateId,
     String payload) {}

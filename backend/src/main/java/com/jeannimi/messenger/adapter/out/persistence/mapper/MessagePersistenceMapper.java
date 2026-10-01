@@ -5,31 +5,30 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.FileAttachmentJpaEn
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.application.message.dto.MessageWithSender;
+import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;
+import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class MessagePersistenceMapper {
-
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;
   private final UserPersistenceMapper userPersistenceMapper;
 
   public Message toDomain(MessageJpaEntity entity) {
-
     if (entity == null) {
       return null;
     }
-
     FileAttachment attachment = fileAttachmentPersistenceMapper.toDomain(entity.getAttachment());
-
     return Message.reconstitute(
-        entity.getId(),
-        entity.getChat().getId(),
-        entity.getSender().getId(),
+        new MessageId(entity.getId()),
+        new ChatId(entity.getChat().getId()),
+        new UserId(entity.getSender().getId()),
         entity.getContent(),
         entity.getCreatedAt(),
         entity.getType(),
@@ -37,16 +36,13 @@ public class MessagePersistenceMapper {
   }
 
   public MessageJpaEntity toEntity(Message message, ChatJpaEntity chat, UserJpaEntity sender) {
-
     if (message == null) {
       return null;
     }
-
     FileAttachmentJpaEntity attachment =
         fileAttachmentPersistenceMapper.toEntity(message.getAttachment());
-
     return new MessageJpaEntity(
-        message.getId(),
+        message.getId().value(),
         chat,
         sender,
         message.getContent(),
@@ -56,15 +52,11 @@ public class MessagePersistenceMapper {
   }
 
   public MessageWithSender toMessageWithSender(MessageJpaEntity entity) {
-
     if (entity == null) {
       return null;
     }
-
     Message message = toDomain(entity);
-
     User sender = userPersistenceMapper.toDomain(entity.getSender());
-
     return new MessageWithSender(message, sender);
   }
 }

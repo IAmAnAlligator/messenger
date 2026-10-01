@@ -6,11 +6,10 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,21 +21,16 @@ import lombok.NoArgsConstructor;
 public class UserJpaEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id")
-  private Long id;
+  @Column(name = "id", nullable = false, updatable = false)
+  private UUID id;
 
-  @Embedded
-  private HandleJpaEntity handle;
+  @Embedded private HandleJpaEntity handle;
 
-  @Embedded
-  private UsernameJpaEntity username;
+  @Embedded private UsernameJpaEntity username;
 
-  @Embedded
-  private EmailJpaEntity email;
+  @Embedded private EmailJpaEntity email;
 
-  @Embedded
-  private PasswordJpaEntity password;
+  @Embedded private PasswordJpaEntity password;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 50)
@@ -46,6 +40,7 @@ public class UserJpaEntity {
   private Instant createdAt;
 
   public UserJpaEntity(
+      UUID id,
       HandleJpaEntity handle,
       UsernameJpaEntity username,
       EmailJpaEntity email,
@@ -53,6 +48,7 @@ public class UserJpaEntity {
       Role role,
       Instant createdAt) {
 
+    this.id = id;
     this.handle = handle;
     this.username = username;
     this.email = email;

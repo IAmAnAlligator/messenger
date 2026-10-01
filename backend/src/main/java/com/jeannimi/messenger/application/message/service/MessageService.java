@@ -6,22 +6,26 @@ import com.jeannimi.messenger.application.message.command.FileUploadCommand;
 import com.jeannimi.messenger.application.message.dto.FileDownloadResult;
 import com.jeannimi.messenger.application.message.dto.MessageResult;
 import com.jeannimi.messenger.application.message.dto.ReadResult;
+import com.jeannimi.messenger.domain.chat.ChatId;
+import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.user.UserId;
+import java.util.UUID;
 
 public interface MessageService {
 
-  FileDownloadResult getFile(Long chatId, Long messageId, Long userId);
+  FileDownloadResult getFile(ChatId chatId, MessageId messageId, UserId userId);
 
-  MessageResult sendFile(Long chatId, Long senderId, FileUploadCommand file);
+  MessageResult sendFile(ChatId chatId, UserId senderId, FileUploadCommand file);
 
-  MessageResult sendMessage(Long chatId, Long senderId, String content);
+  MessageResult sendMessage(ChatId chatId, UserId senderId, String content);
 
-  CursorPageResult<MessageResult> getMessages(Long chatId, Long userId, CursorPageQuery query);
+  CursorPageResult<MessageResult, MessageId> getMessages(ChatId chatId, UserId userId, CursorPageQuery<MessageId> query);
 
-  MessageResult getMessage(Long chatId, Long messageId, Long userId);
+  MessageResult getMessage(ChatId chatId, MessageId messageId, UserId userId);
 
-  ReadResult markAsRead(Long chatId, Long messageId, Long userId);
+  ReadResult markAsRead(ChatId chatId, MessageId messageId, UserId userId);
 
-  void deleteMessage(Long chatId, Long messageId, Long userId);
+  void deleteMessage(ChatId chatId, MessageId messageId, UserId userId);
 
-  void deleteAllByChat(Long chatId);
+  void deleteAllByChat(ChatId chatId);
 }

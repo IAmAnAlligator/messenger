@@ -4,8 +4,7 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.ProcessedEventJpaEn
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ProcessedEventJpaRepository
-    extends JpaRepository<ProcessedEventJpaEntity, UUID> {
+public interface ProcessedEventJpaRepository extends JpaRepository<ProcessedEventJpaEntity, UUID> {
 
   boolean existsByEventId(UUID eventId);
 }

@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.FileAttachmentJpaEntity;
 import com.jeannimi.messenger.domain.message.FileAttachment;
+import com.jeannimi.messenger.domain.message.FileAttachmentId;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +15,7 @@ public class FileAttachmentPersistenceMapper {
     }
 
     return FileAttachment.reconstitute(
-        entity.getId(),
+        new FileAttachmentId(entity.getId()),
         entity.getOriginalFileName(),
         entity.getStorageFileName(),
         entity.getContentType(),
@@ -29,7 +30,7 @@ public class FileAttachmentPersistenceMapper {
     }
 
     return new FileAttachmentJpaEntity(
-        attachment.getId(),
+        attachment.getId().value(),
         attachment.getOriginalFileName(),
         attachment.getStorageFileName(),
         attachment.getContentType(),

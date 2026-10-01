@@ -9,8 +9,7 @@ public final class Handle {
 
   public static final int HANDLE_LENGTH = 7;
 
-  private static final Pattern HANDLE_PATTERN =
-      Pattern.compile("[a-z0-9]{" + HANDLE_LENGTH + "}");
+  private static final Pattern HANDLE_PATTERN = Pattern.compile("[a-z0-9]{" + HANDLE_LENGTH + "}");
 
   private final String value;
 
@@ -24,9 +23,7 @@ public final class Handle {
 
     if (!HANDLE_PATTERN.matcher(value).matches()) {
       throw new IllegalArgumentException(
-          "Handle must contain exactly "
-              + HANDLE_LENGTH
-              + " lowercase letters or digits");
+          "Handle must contain exactly " + HANDLE_LENGTH + " lowercase letters or digits");
     }
 
     this.value = value;

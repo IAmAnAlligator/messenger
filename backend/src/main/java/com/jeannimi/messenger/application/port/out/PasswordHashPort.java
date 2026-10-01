@@ -7,7 +7,5 @@ public interface PasswordHashPort {
 
   PasswordHash hash(Password password);
 
-  boolean matches(
-      Password password,
-      PasswordHash passwordHash);
+  boolean matches(Password password, PasswordHash passwordHash);
 }

@@ -1,11 +1,11 @@
 package com.jeannimi.messenger.application.port.out;
 
+import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
-import java.util.UUID;
 
 public interface ProcessedEventRepositoryPort {
 
-  boolean existsByEventId(UUID eventId);
+  boolean existsByEventId(EventId eventId);
 
   ProcessedEvent save(ProcessedEvent processedEvent);
 }

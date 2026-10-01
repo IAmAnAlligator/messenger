@@ -1,3 +1,5 @@
 package com.jeannimi.messenger.adapter.in.security;
 
-public record CustomUserDetails(Long id, String role) {}
+import com.jeannimi.messenger.domain.user.UserId;
+
+public record CustomUserDetails(UserId id, String role) {}

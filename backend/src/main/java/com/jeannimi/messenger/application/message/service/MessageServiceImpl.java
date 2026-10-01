@@ -23,18 +23,24 @@ import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.chat.Chat;
+import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatMember;
 import com.jeannimi.messenger.domain.exception.MessageError;
 import com.jeannimi.messenger.domain.exception.MessageException;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.FileAttachmentConstants;
+import com.jeannimi.messenger.domain.message.FileAttachmentId;
 import com.jeannimi.messenger.domain.message.Message;
+import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.outbox.AggregateId;
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -57,10 +63,11 @@ public class MessageServiceImpl implements MessageService {
   private final EventPublisherPort eventPublisher;
   private final FileStoragePort fileStoragePort;
   private final FileAttachmentRepositoryPort fileAttachmentRepository;
+  private final IdGenerator idGenerator;
 
   @Override
   @Transactional(readOnly = true)
-  public FileDownloadResult getFile(Long chatId, Long messageId, Long userId) {
+  public FileDownloadResult getFile(ChatId chatId, MessageId messageId, UserId userId) {
 
     checkMembership(chatId, userId);
 
@@ -88,7 +95,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public MessageResult sendFile(Long chatId, Long senderId, FileUploadCommand file) {
+  public MessageResult sendFile(ChatId chatId, UserId senderId, FileUploadCommand file) {
 
     if (file == null) {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
@@ -122,11 +129,15 @@ public class MessageServiceImpl implements MessageService {
 
     try {
 
+      FileAttachmentId fileAttachmentId = new FileAttachmentId(idGenerator.generate());
+
       FileAttachment attachment =
           FileAttachment.create(
-              originalFileName, storedFile.storageFileName(), contentType, file.size());
+              fileAttachmentId, originalFileName, storedFile.storageFileName(), contentType, file.size());
 
-      Message message = Message.ofFile(chat.getId(), sender.getId(), attachment);
+      MessageId messageId = new MessageId(idGenerator.generate());
+
+      Message message = Message.ofFile(messageId, chat.getId(), sender.getId(), attachment);
 
       Message savedMessage = messageRepository.save(message);
 
@@ -140,7 +151,7 @@ public class MessageServiceImpl implements MessageService {
        */
       MessageResult result = toResult(savedMessage, sender);
 
-      List<Long> recipientUserIds =
+      List<UserId> recipientUserIds =
           chatMemberRepository.findAllByChatId(chat.getId()).stream()
               .map(ChatMember::getUserId)
               .toList();
@@ -203,7 +214,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public MessageResult sendMessage(Long chatId, Long senderId, String content) {
+  public MessageResult sendMessage(ChatId chatId, UserId senderId, String content) {
 
     Chat chat = getChatForSending(chatId, senderId);
 
@@ -211,7 +222,9 @@ public class MessageServiceImpl implements MessageService {
 
     User sender = getUser(senderId);
 
-    Message message = Message.ofText(chat.getId(), sender.getId(), content);
+    MessageId messageId = new MessageId(idGenerator.generate());
+
+    Message message = Message.ofText(messageId, chat.getId(), sender.getId(), content);
 
     Message saved = messageRepository.save(message);
 
@@ -225,7 +238,7 @@ public class MessageServiceImpl implements MessageService {
      */
     MessageResult result = toResult(saved, sender);
 
-    List<Long> recipientUserIds =
+    List<UserId> recipientUserIds =
         chatMemberRepository.findAllByChatId(chat.getId()).stream()
             .map(ChatMember::getUserId)
             .toList();
@@ -237,8 +250,8 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResult<MessageResult> getMessages(
-      Long chatId, Long userId, CursorPageQuery query) {
+  public CursorPageResult<MessageResult, MessageId> getMessages(
+      ChatId chatId, UserId userId, CursorPageQuery<MessageId> query) {
 
     checkMembership(chatId, userId);
 
@@ -259,13 +272,13 @@ public class MessageServiceImpl implements MessageService {
       messages = messages.subList(0, pageSize);
     }
 
-    Cursor nextCursor = createNextCursor(messages, hasMore);
+    Cursor<MessageId> nextCursor = createNextCursor(messages, hasMore);
 
     return new CursorPageResult<>(
         messages.stream().map(this::toResult).toList(), nextCursor, hasMore);
   }
 
-  private Cursor createNextCursor(List<MessageWithSender> messages, boolean hasMore) {
+  private Cursor<MessageId> createNextCursor(List<MessageWithSender> messages, boolean hasMore) {
 
     if (!hasMore || messages.isEmpty()) {
 
@@ -274,12 +287,12 @@ public class MessageServiceImpl implements MessageService {
 
     Message last = messages.get(messages.size() - 1).message();
 
-    return new Cursor(last.getCreatedAt(), last.getId());
+    return new Cursor<>(last.getCreatedAt(), last.getId());
   }
 
   @Override
   @Transactional(readOnly = true)
-  public MessageResult getMessage(Long chatId, Long messageId, Long userId) {
+  public MessageResult getMessage(ChatId chatId, MessageId messageId, UserId userId) {
 
     checkMembership(chatId, userId);
 
@@ -293,7 +306,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional
-  public ReadResult markAsRead(Long chatId, Long messageId, Long userId) {
+  public ReadResult markAsRead(ChatId chatId, MessageId messageId, UserId userId) {
     ChatMember chatMember =
         chatMemberRepository
             .findByChatIdAndUserId(chatId, userId)
@@ -310,11 +323,12 @@ public class MessageServiceImpl implements MessageService {
       return new ReadResult(
           new ChatMemberReadResult(userId, chatMember.getLastReadMessageId()), false);
     }
-    Long previousLastReadMessageId = chatMember.getLastReadMessageId();
+
+    MessageId previousLastReadMessageId = chatMember.getLastReadMessageId();
 
     chatMember.markAsRead(messageId);
 
-    Long lastReadMessageId = chatMember.getLastReadMessageId();
+    MessageId lastReadMessageId = chatMember.getLastReadMessageId();
 
     int updated = chatMemberRepository.updateLastReadMessageId(chatId, userId, lastReadMessageId);
 
@@ -325,14 +339,14 @@ public class MessageServiceImpl implements MessageService {
     MessageReadEvent event =
         new MessageReadEvent(message.getId(), chatId, userId, Instant.now(), lastReadMessageId);
 
-    eventPublisher.publish(EventType.MESSAGE_READ, String.valueOf(chatId), event);
+    eventPublisher.publish(EventType.MESSAGE_READ, new AggregateId(chatId.value()), event);
 
     return new ReadResult(new ChatMemberReadResult(userId, lastReadMessageId), true);
   }
 
   @Override
   @Transactional
-  public void deleteMessage(Long chatId, Long messageId, Long userId) {
+  public void deleteMessage(ChatId chatId, MessageId messageId, UserId userId) {
 
     checkMembership(chatId, userId);
 
@@ -357,14 +371,14 @@ public class MessageServiceImpl implements MessageService {
 
     messageRepository.delete(message);
 
-    eventPublisher.publish(EventType.MESSAGE_DELETED, String.valueOf(chatId), messageDeletedEvent);
+    eventPublisher.publish(EventType.MESSAGE_DELETED, new AggregateId(chatId.value()), messageDeletedEvent);
 
     publishFileDeletion(attachment);
   }
 
   @Override
   @Transactional
-  public void deleteAllByChat(Long chatId) {
+  public void deleteAllByChat(ChatId chatId) {
 
     List<FileAttachment> attachments = messageRepository.findAttachmentsByChatId(chatId);
 
@@ -374,7 +388,7 @@ public class MessageServiceImpl implements MessageService {
 
     if (!attachments.isEmpty()) {
 
-      List<UUID> attachmentIds = attachments.stream().map(FileAttachment::getId).toList();
+      List<FileAttachmentId> attachmentIds = attachments.stream().map(FileAttachment::getId).toList();
 
       deletedAttachments = fileAttachmentRepository.deleteAllByIds(attachmentIds);
 
@@ -401,10 +415,10 @@ public class MessageServiceImpl implements MessageService {
         new FileDeletionRequestedEvent(attachment.getStorageFileName());
 
     eventPublisher.publish(
-        EventType.FILE_DELETION_REQUESTED, attachment.getStorageFileName(), event);
+        EventType.FILE_DELETION_REQUESTED, new AggregateId(attachment.getId().value()), event);
   }
 
-  private void checkMembership(Long chatId, Long userId) {
+  private void checkMembership(ChatId chatId, UserId userId) {
 
     if (!chatMemberRepository.existsByChatIdAndUserId(chatId, userId)) {
 
@@ -412,7 +426,7 @@ public class MessageServiceImpl implements MessageService {
     }
   }
 
-  private Chat getChatForSending(Long chatId, Long userId) {
+  private Chat getChatForSending(ChatId chatId, UserId userId) {
 
     Chat chat =
         chatRepository.findById(chatId).orElseThrow(() -> new NotFoundException("Chat not found"));
@@ -422,18 +436,18 @@ public class MessageServiceImpl implements MessageService {
     return chat;
   }
 
-  private User getUser(Long userId) {
+  private User getUser(UserId userId) {
 
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
-  private void publishMessageCreated(MessageResult result, List<Long> recipientUserIds) {
+  private void publishMessageCreated(MessageResult result, List<UserId> recipientUserIds) {
 
     MessageCreatedEvent event = new MessageCreatedEvent(result, recipientUserIds);
 
-    eventPublisher.publish(EventType.MESSAGE_CREATED, String.valueOf(result.chatId()), event);
+    eventPublisher.publish(EventType.MESSAGE_CREATED, new AggregateId(result.chatId().value()), event);
   }
 
   /** Используется для сообщений, которые уже были загружены вместе с sender через JOIN FETCH. */
@@ -463,7 +477,11 @@ public class MessageServiceImpl implements MessageService {
                 attachment.getSize());
 
     UserResult senderResult =
-        new UserResult(sender.getId(), sender.getHandle().getValue(), sender.getUsername().getValue(), sender.getRole());
+        new UserResult(
+            sender.getId(),
+            sender.getHandle().getValue(),
+            sender.getUsername().getValue(),
+            sender.getRole());
 
     return new MessageResult(
         message.getId(),

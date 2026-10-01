@@ -7,6 +7,7 @@ import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
+import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class FileDeleteConsumer {
 
   private final ObjectMapper objectMapper;
   private final FileStoragePort fileStoragePort;
-  private final ProcessedEventRepositoryPort processedRepository;
+  private final ProcessedEventRepositoryPort processedEventRepository;
 
   @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
   public void consume(String payload, Acknowledgment ack) {
@@ -32,7 +33,8 @@ public class FileDeleteConsumer {
 
       KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
-      UUID eventId = envelope.eventId();
+      UUID eventUuid = envelope.eventId();
+      EventId eventId = new EventId(eventUuid);
 
       FileDeletionRequestedEvent event =
           objectMapper.treeToValue(envelope.payload(), FileDeletionRequestedEvent.class);
@@ -42,7 +44,7 @@ public class FileDeleteConsumer {
        *
        * Но ProcessedMessage создаём ПОСЛЕ успешного удаления.
        */
-      if (processedRepository.existsByEventId(eventId)) {
+      if (processedEventRepository.existsByEventId(eventId)) {
         log.info("Duplicate file deletion event skipped: {}", eventId);
 
         ack.acknowledge();
@@ -64,7 +66,7 @@ public class FileDeleteConsumer {
        */
       try {
 
-        processedRepository.save(ProcessedEvent.create(eventId));
+        processedEventRepository.save(ProcessedEvent.create(eventId));
 
       } catch (DataIntegrityViolationException e) {
 

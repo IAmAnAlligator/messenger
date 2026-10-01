@@ -4,15 +4,16 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.ChatMemberJpaEntity
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEntity, Long> {
+public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEntity, UUID> {
 
-  List<ChatMemberJpaEntity> findAllByChat_Id(Long chatId);
+  List<ChatMemberJpaEntity> findAllByChat_Id(UUID chatId);
 
   @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query(
@@ -50,13 +51,13 @@ public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEnti
           """,
       nativeQuery = true)
   int updateLastReadMessageId(
-      @Param("chatId") Long chatId,
-      @Param("userId") Long userId,
-      @Param("lastReadMessageId") Long lastReadMessageId);
+      @Param("chatId") UUID chatId,
+      @Param("userId") UUID userId,
+      @Param("lastReadMessageId") UUID lastReadMessageId);
 
-  Optional<ChatMemberJpaEntity> findByChat_IdAndUser_Id(Long chatId, Long userId);
+  Optional<ChatMemberJpaEntity> findByChat_IdAndUser_Id(UUID chatId, UUID userId);
 
-  boolean existsByChat_IdAndUser_Id(Long chatId, Long userId);
+  boolean existsByChat_IdAndUser_Id(UUID chatId, UUID userId);
 
   @Query(
       """
@@ -67,7 +68,7 @@ public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEnti
       ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC,
       c.id DESC
       """)
-  List<Long> findFirstPageIds(@Param("userId") Long userId, Pageable pageable);
+  List<UUID> findFirstPageIds(@Param("userId") UUID userId, Pageable pageable);
 
   @Query(
       """
@@ -85,9 +86,9 @@ public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEnti
       ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC,
       c.id DESC
       """)
-  List<Long> findNextPageIds(
-      @Param("userId") Long userId,
+  List<UUID> findNextPageIds(
+      @Param("userId") UUID userId,
       @Param("cursorTime") Instant cursorTime,
-      @Param("cursorId") Long cursorId,
+      @Param("cursorId") UUID cursorId,
       Pageable pageable);
 }

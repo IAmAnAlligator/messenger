@@ -1,10 +1,11 @@
 package com.jeannimi.messenger.application.chat.dto;
 
+import com.jeannimi.messenger.domain.chat.ChatId;
 import java.time.Instant;
 import java.util.List;
 
 public record ChatResult(
-    Long id,
+    ChatId id,
     String name,
     String type,
     List<ChatMemberResult> members,

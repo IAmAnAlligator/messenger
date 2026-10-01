@@ -9,8 +9,7 @@ public final class Email {
 
   public static final int MAX_EMAIL_LENGTH = 255;
 
-  private static final Pattern EMAIL_PATTERN =
-      Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+  private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
   private final String value;
 

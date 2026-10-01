@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.ProcessedEventJpaEntity;
+import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ public class ProcessedEventPersistenceMapper {
       return null;
     }
 
-    return ProcessedEvent.reconstitute(entity.getEventId(), entity.getProcessedAt());
+    return ProcessedEvent.reconstitute(new EventId(entity.getEventId()), entity.getProcessedAt());
   }
 
   public ProcessedEventJpaEntity toEntity(ProcessedEvent processedEvent) {
@@ -23,6 +24,6 @@ public class ProcessedEventPersistenceMapper {
     }
 
     return new ProcessedEventJpaEntity(
-        processedEvent.getEventId(), processedEvent.getProcessedAt());
+        processedEvent.getId().value(), processedEvent.getProcessedAt());
   }
 }

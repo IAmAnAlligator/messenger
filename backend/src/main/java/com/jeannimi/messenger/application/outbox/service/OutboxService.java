@@ -1,8 +1,12 @@
 package com.jeannimi.messenger.application.outbox.service;
 
 import com.jeannimi.messenger.application.outbox.OutboxCreateData;
+import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
-import java.util.UUID;
+import com.jeannimi.messenger.domain.common.DomainId;
+import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.outbox.AggregateId;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,24 +16,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class OutboxService {
 
   private final OutboxRepositoryPort outboxRepository;
+  private final IdGenerator idGenerator;
 
   @Transactional
   public void saveEvent(
       String topic,
       String eventType,
-      String aggregateId,
+      AggregateId aggregateId,
       String payload) {
 
-    validate(
-        topic,
-        eventType,
-        aggregateId,
-        payload);
+    validate(topic, eventType, aggregateId, payload);
 
-    UUID eventId = UUID.randomUUID();
+    OutboxEventId outboxEventId = new OutboxEventId(idGenerator.generate());
+    EventId eventId = new EventId(idGenerator.generate());
 
     outboxRepository.save(
         new OutboxCreateData(
+            outboxEventId,
             eventId,
             topic,
             eventType,
@@ -40,7 +43,7 @@ public class OutboxService {
   private void validate(
       String topic,
       String eventType,
-      String aggregateId,
+      DomainId aggregateId,
       String payload) {
 
     if (topic == null || topic.isBlank()) {
@@ -51,7 +54,7 @@ public class OutboxService {
       throw new IllegalArgumentException("Event type is empty");
     }
 
-    if (aggregateId == null || aggregateId.isBlank()) {
+    if (aggregateId == null || aggregateId.value().toString().isBlank()) {
       throw new IllegalArgumentException("Aggregate id is empty");
     }
 

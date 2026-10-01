@@ -3,6 +3,8 @@ package com.jeannimi.messenger.adapter.out.persistence.mapper;
 import com.jeannimi.messenger.adapter.out.persistence.entity.ChatMemberJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.domain.chat.ChatMember;
+import com.jeannimi.messenger.domain.chat.ChatMemberId;
+import com.jeannimi.messenger.domain.message.MessageId;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,11 +22,13 @@ public class ChatMemberPersistenceMapper {
     }
 
     return ChatMember.reconstitute(
-        entity.getId(),
+        new ChatMemberId(entity.getId()),
         userPersistenceMapper.toDomain(entity.getUser()),
         entity.getRole(),
         entity.getJoinedAt(),
-        entity.getLastReadMessageId());
+        entity.getLastReadMessageId() != null
+            ? new MessageId(entity.getLastReadMessageId())
+            : null);
   }
 
   public ChatMemberJpaEntity toEntity(ChatMember member, UserJpaEntity user) {
@@ -36,11 +40,11 @@ public class ChatMemberPersistenceMapper {
     Objects.requireNonNull(user, "user");
 
     return new ChatMemberJpaEntity(
-        member.getId(),
+        member.getId().value(),
         user,
         member.getRole(),
         member.getJoinedAt(),
-        member.getLastReadMessageId());
+        member.getLastReadMessageId() != null ? member.getLastReadMessageId().value() : null);
   }
 
   public void updateEntity(ChatMember member, ChatMemberJpaEntity entity) {
@@ -48,6 +52,7 @@ public class ChatMemberPersistenceMapper {
     Objects.requireNonNull(member, "member");
     Objects.requireNonNull(entity, "entity");
 
-    entity.updateLastReadMessageId(member.getLastReadMessageId());
+    entity.updateLastReadMessageId(
+        member.getLastReadMessageId() != null ? member.getLastReadMessageId().value() : null);
   }
 }

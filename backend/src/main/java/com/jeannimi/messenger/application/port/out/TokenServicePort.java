@@ -1,6 +1,8 @@
 package com.jeannimi.messenger.application.port.out;
 
 import com.jeannimi.messenger.domain.user.User;
+import com.jeannimi.messenger.domain.user.UserId;
+import java.util.UUID;
 
 public interface TokenServicePort {
 
@@ -10,7 +12,7 @@ public interface TokenServicePort {
 
   boolean isTokenValid(String token);
 
-  Long extractUserId(String token);
+  UserId extractUserId(String token);
 
   String extractTokenType(String token);
 

@@ -1,6 +1,6 @@
 CREATE TABLE users
 (
-    id            BIGSERIAL PRIMARY KEY,
+    id            UUID         PRIMARY KEY,
     handle        VARCHAR(7)   NOT NULL,
     username      VARCHAR(100) NOT NULL,
     email         VARCHAR(255) NOT NULL,
@@ -14,8 +14,8 @@ CREATE TABLE users
 
 -- Username больше не является уникальным.
 -- Пользователи могут иметь одинаковые username.
-CREATE INDEX idx_username
-    ON users(username);
+CREATE INDEX idx_users_username
+    ON users (username);
 
 -- Email является уникальным без учёта регистра.
 CREATE UNIQUE INDEX uk_users_email_lower
@@ -24,24 +24,24 @@ CREATE UNIQUE INDEX uk_users_email_lower
 
 CREATE TABLE chats
 (
-    id              BIGSERIAL PRIMARY KEY,
+    id              UUID         PRIMARY KEY,
     name            VARCHAR(100) NOT NULL,
     type            VARCHAR(20)  NOT NULL,
     created_at      TIMESTAMPTZ  NOT NULL,
     last_message_at TIMESTAMPTZ,
-    private_key     VARCHAR(39) UNIQUE,
+    private_key     VARCHAR(73) UNIQUE,
     version         BIGINT
 );
 
 
 CREATE TABLE chat_members
 (
-    id                   BIGSERIAL PRIMARY KEY,
-    chat_id              BIGINT      NOT NULL,
-    user_id              BIGINT      NOT NULL,
-    role                 VARCHAR(20) NOT NULL,
-    joined_at            TIMESTAMPTZ NOT NULL,
-    last_read_message_id BIGINT,
+    id                   UUID         PRIMARY KEY,
+    chat_id              UUID         NOT NULL,
+    user_id              UUID         NOT NULL,
+    role                 VARCHAR(20)  NOT NULL,
+    joined_at             TIMESTAMPTZ NOT NULL,
+    last_read_message_id UUID,
 
     CONSTRAINT fk_chat_members_chat
         FOREIGN KEY (chat_id)
@@ -63,15 +63,26 @@ CREATE INDEX idx_chat_members_user_id
     ON chat_members(user_id);
 
 
+CREATE TABLE file_attachments
+(
+    id                 UUID         PRIMARY KEY,
+    original_file_name VARCHAR(255) NOT NULL,
+    storage_file_name  VARCHAR(255) NOT NULL UNIQUE,
+    content_type       VARCHAR(100) NOT NULL,
+    size               BIGINT       NOT NULL,
+    created_at         TIMESTAMPTZ  NOT NULL
+);
+
+
 CREATE TABLE messages
 (
-    id                 BIGSERIAL PRIMARY KEY,
-    chat_id            BIGINT      NOT NULL,
-    sender_id          BIGINT      NOT NULL,
+    id                 UUID         PRIMARY KEY,
+    chat_id            UUID         NOT NULL,
+    sender_id          UUID         NOT NULL,
     content            VARCHAR(2000),
-    created_at         TIMESTAMPTZ NOT NULL,
-    type               VARCHAR(20) NOT NULL,
-    file_attachment_id UUID,
+    created_at          TIMESTAMPTZ NOT NULL,
+    type               VARCHAR(20)  NOT NULL,
+    file_attachment_id  UUID,
 
     CONSTRAINT fk_messages_chat
         FOREIGN KEY (chat_id)
@@ -81,6 +92,10 @@ CREATE TABLE messages
     CONSTRAINT fk_messages_sender
         FOREIGN KEY (sender_id)
             REFERENCES users (id),
+
+    CONSTRAINT fk_messages_file_attachment
+        FOREIGN KEY (file_attachment_id)
+            REFERENCES file_attachments (id),
 
     CONSTRAINT chk_messages_type
         CHECK (type IN ('TEXT', 'FILE')),
@@ -100,24 +115,6 @@ CREATE TABLE messages
             )
         )
 );
-
-
-CREATE TABLE file_attachments
-(
-    id                 UUID PRIMARY KEY,
-    original_file_name VARCHAR(255) NOT NULL,
-    storage_file_name  VARCHAR(255) NOT NULL UNIQUE,
-    content_type       VARCHAR(100) NOT NULL,
-    size               BIGINT       NOT NULL,
-    created_at         TIMESTAMPTZ  NOT NULL
-);
-
-
-ALTER TABLE messages
-    ADD CONSTRAINT fk_messages_file_attachment
-        FOREIGN KEY (file_attachment_id)
-        REFERENCES file_attachments (id);
-
 
 CREATE UNIQUE INDEX uk_messages_file_attachment
     ON messages(file_attachment_id)
@@ -146,16 +143,16 @@ CREATE TABLE processed_events
 
 CREATE TABLE outbox_events
 (
-    id             BIGSERIAL PRIMARY KEY,
-    event_id       UUID         NOT NULL UNIQUE,
-    topic          VARCHAR(255) NOT NULL,
-    event_type     VARCHAR(100) NOT NULL,
-    aggregate_id   VARCHAR(255) NOT NULL,
-    status         VARCHAR(20)  NOT NULL,
-    payload        TEXT         NOT NULL,
-    created_at     TIMESTAMPTZ  NOT NULL,
-    attempt_count  INTEGER      NOT NULL DEFAULT 0,
-    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id               UUID         PRIMARY KEY,
+    event_id         UUID         NOT NULL UNIQUE,
+    topic            VARCHAR(255) NOT NULL,
+    event_type       VARCHAR(100) NOT NULL,
+    aggregate_id     UUID         NOT NULL,
+    status           VARCHAR(20)  NOT NULL,
+    payload          TEXT         NOT NULL,
+    created_at       TIMESTAMPTZ  NOT NULL,
+    attempt_count    INTEGER      NOT NULL DEFAULT 0,
+    next_attempt_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_outbox_events_attempt_count
         CHECK (attempt_count >= 0)

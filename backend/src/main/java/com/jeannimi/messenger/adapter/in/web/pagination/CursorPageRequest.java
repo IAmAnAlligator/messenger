@@ -3,10 +3,11 @@ package com.jeannimi.messenger.adapter.in.web.pagination;
 import com.jeannimi.messenger.adapter.in.web.pagination.validation.ValidCursorPageRequest;
 import jakarta.validation.constraints.Positive;
 import java.time.Instant;
+import java.util.UUID;
 
 @ValidCursorPageRequest
 public record CursorPageRequest(
-    @Positive(message = "cursorId must be positive") Long cursorId,
+    UUID cursorId,
     Instant cursorTime,
     @Positive(message = "limit must be positive") Integer limit) {
 

@@ -19,5 +19,4 @@ public class HandleJpaEntity {
   public HandleJpaEntity(String value) {
     this.value = Objects.requireNonNull(value, "value");
   }
-
 }

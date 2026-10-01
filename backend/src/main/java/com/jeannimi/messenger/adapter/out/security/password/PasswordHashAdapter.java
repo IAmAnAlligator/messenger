@@ -15,17 +15,12 @@ public class PasswordHashAdapter implements PasswordHashPort {
 
   @Override
   public PasswordHash hash(Password password) {
-    return new PasswordHash(
-        passwordEncoder.encode(password.getValue()));
+    return new PasswordHash(passwordEncoder.encode(password.getValue()));
   }
 
   @Override
-  public boolean matches(
-      Password password,
-      PasswordHash passwordHash) {
+  public boolean matches(Password password, PasswordHash passwordHash) {
 
-    return passwordEncoder.matches(
-        password.getValue(),
-        passwordHash.getValue());
+    return passwordEncoder.matches(password.getValue(), passwordHash.getValue());
   }
 }

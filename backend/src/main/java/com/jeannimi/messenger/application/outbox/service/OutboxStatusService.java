@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.application.outbox.service;
 
 import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +17,12 @@ public class OutboxStatusService {
   private final OutboxRepositoryPort outboxRepository;
 
   @Transactional
-  public void markSent(Long id) {
+  public void markSent(OutboxEventId id) {
     outboxRepository.markSent(id);
   }
 
   @Transactional
-  public void handleFailure(
-      Long id,
-      int currentAttemptCount) {
+  public void handleFailure(OutboxEventId id, int currentAttemptCount) {
 
     int nextAttemptCount = currentAttemptCount + 1;
 
@@ -32,12 +31,9 @@ public class OutboxStatusService {
       return;
     }
 
-    Instant nextAttemptAt =
-        Instant.now().plus(retryDelay(nextAttemptCount));
+    Instant nextAttemptAt = Instant.now().plus(retryDelay(nextAttemptCount));
 
-    outboxRepository.scheduleRetry(
-        id,
-        nextAttemptAt);
+    outboxRepository.scheduleRetry(id, nextAttemptAt);
   }
 
   private Duration retryDelay(int attempt) {

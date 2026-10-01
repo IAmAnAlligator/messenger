@@ -38,6 +38,6 @@ public class UserController {
   }
 
   private UserDto toDto(UserResult result) {
-    return new UserDto(result.id(), result.handle(), result.username(), result.role());
+    return new UserDto(result.id().value(), result.handle(), result.username(), result.role());
   }
 }

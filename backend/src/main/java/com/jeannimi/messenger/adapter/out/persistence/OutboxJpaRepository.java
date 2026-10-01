@@ -4,28 +4,28 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.OutboxEventJpaEntit
 import com.jeannimi.messenger.domain.outbox.OutboxStatus;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface OutboxJpaRepository
-    extends JpaRepository<OutboxEventJpaEntity, Long> {
+public interface OutboxJpaRepository extends JpaRepository<OutboxEventJpaEntity, UUID> {
 
-  @Query("""
+  @Query(
+      """
     select e
     from OutboxEventJpaEntity e
     where e.status = :status
       and e.nextAttemptAt <= CURRENT_TIMESTAMP
     order by e.id
   """)
-  List<OutboxEventJpaEntity> findBatch(
-      @Param("status") OutboxStatus status,
-      Pageable pageable);
+  List<OutboxEventJpaEntity> findBatch(@Param("status") OutboxStatus status, Pageable pageable);
 
   @Modifying
-  @Query("""
+  @Query(
+      """
     update OutboxEventJpaEntity e
     set e.status =
       com.jeannimi.messenger.domain.outbox.OutboxStatus.SENT
@@ -33,10 +33,11 @@ public interface OutboxJpaRepository
       and e.status =
         com.jeannimi.messenger.domain.outbox.OutboxStatus.NEW
   """)
-  int markSent(@Param("id") Long id);
+  int markSent(@Param("id") UUID id);
 
   @Modifying
-  @Query("""
+  @Query(
+      """
     update OutboxEventJpaEntity e
     set e.attemptCount = e.attemptCount + 1,
         e.nextAttemptAt = :nextAttemptAt
@@ -44,12 +45,11 @@ public interface OutboxJpaRepository
       and e.status =
         com.jeannimi.messenger.domain.outbox.OutboxStatus.NEW
   """)
-  int scheduleRetry(
-      @Param("id") Long id,
-      @Param("nextAttemptAt") Instant nextAttemptAt);
+  int scheduleRetry(@Param("id") UUID id, @Param("nextAttemptAt") Instant nextAttemptAt);
 
   @Modifying
-  @Query("""
+  @Query(
+      """
     update OutboxEventJpaEntity e
     set e.attemptCount = e.attemptCount + 1,
         e.status =
@@ -58,5 +58,5 @@ public interface OutboxJpaRepository
       and e.status =
         com.jeannimi.messenger.domain.outbox.OutboxStatus.NEW
   """)
-  int registerFinalFailure(@Param("id") Long id);
+  int registerFinalFailure(@Param("id") UUID id);
 }

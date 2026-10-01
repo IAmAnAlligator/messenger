@@ -1,18 +1,18 @@
 package com.jeannimi.messenger.domain.outbox;
 
+import com.jeannimi.messenger.domain.event.EventId;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.Getter;
 
 @Getter
 public final class OutboxEvent {
 
-  private final Long id;
-  private final UUID eventId;
+  private final OutboxEventId id;
+  private final EventId eventId;
   private final String topic;
   private final String eventType;
-  private final String aggregateId;
+  private final AggregateId aggregateId;
   private final OutboxStatus status;
   private final String payload;
   private final Instant createdAt;
@@ -20,18 +20,18 @@ public final class OutboxEvent {
   private final Instant nextAttemptAt;
 
   private OutboxEvent(
-      Long id,
-      UUID eventId,
+      OutboxEventId id,
+      EventId eventId,
       String topic,
       String eventType,
-      String aggregateId,
+      AggregateId aggregateId,
       OutboxStatus status,
       String payload,
       Instant createdAt,
       int attemptCount,
       Instant nextAttemptAt) {
 
-    this.id = id;
+    this.id = Objects.requireNonNull(id, "outboxEventId");
     this.eventId = Objects.requireNonNull(eventId, "eventId");
     this.topic = Objects.requireNonNull(topic, "topic");
     this.eventType = Objects.requireNonNull(eventType, "eventType");
@@ -49,33 +49,20 @@ public final class OutboxEvent {
   }
 
   public static OutboxEvent create(
-      UUID eventId,
-      String topic,
-      String eventType,
-      String aggregateId,
-      String payload) {
+      OutboxEventId id, EventId eventId, String topic, String eventType, AggregateId aggregateId, String payload) {
 
     Instant now = Instant.now();
 
     return new OutboxEvent(
-        null,
-        eventId,
-        topic,
-        eventType,
-        aggregateId,
-        OutboxStatus.NEW,
-        payload,
-        now,
-        0,
-        now);
+        id, eventId, topic, eventType, aggregateId, OutboxStatus.NEW, payload, now, 0, now);
   }
 
   public static OutboxEvent reconstitute(
-      Long id,
-      UUID eventId,
+      OutboxEventId id,
+      EventId eventId,
       String topic,
       String eventType,
-      String aggregateId,
+      AggregateId aggregateId,
       OutboxStatus status,
       String payload,
       Instant createdAt,
@@ -83,7 +70,7 @@ public final class OutboxEvent {
       Instant nextAttemptAt) {
 
     return new OutboxEvent(
-        Objects.requireNonNull(id, "id"),
+        id,
         eventId,
         topic,
         eventType,
@@ -97,7 +84,6 @@ public final class OutboxEvent {
 
   @Override
   public boolean equals(Object o) {
-
     if (this == o) {
       return true;
     }
@@ -106,11 +92,11 @@ public final class OutboxEvent {
       return false;
     }
 
-    return id != null && id.equals(that.id);
+    return id.equals(that.id);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return id.hashCode();
   }
 }

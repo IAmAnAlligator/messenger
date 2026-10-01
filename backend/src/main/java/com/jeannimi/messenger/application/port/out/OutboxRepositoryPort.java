@@ -3,6 +3,7 @@ package com.jeannimi.messenger.application.port.out;
 import com.jeannimi.messenger.application.outbox.OutboxBatchRequest;
 import com.jeannimi.messenger.application.outbox.OutboxCreateData;
 import com.jeannimi.messenger.application.outbox.OutboxEventData;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import java.time.Instant;
 import java.util.List;
 
@@ -12,9 +13,9 @@ public interface OutboxRepositoryPort {
 
   OutboxEventData save(OutboxCreateData event);
 
-  void markSent(Long id);
+  void markSent(OutboxEventId id);
 
-  void scheduleRetry(Long id, Instant nextAttemptAt);
+  void scheduleRetry(OutboxEventId id, Instant nextAttemptAt);
 
-  void registerFinalFailure(Long id);
+  void registerFinalFailure(OutboxEventId id);
 }

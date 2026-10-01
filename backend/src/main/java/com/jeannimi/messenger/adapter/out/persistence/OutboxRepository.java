@@ -8,6 +8,7 @@ import com.jeannimi.messenger.application.outbox.OutboxEventData;
 import com.jeannimi.messenger.application.outbox.OutboxStatus;
 import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
 import com.jeannimi.messenger.domain.outbox.OutboxEvent;
+import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,7 @@ public class OutboxRepository implements OutboxRepositoryPort {
   private final OutboxEventPersistenceMapper outboxEventPersistenceMapper;
 
   @Override
-  public List<OutboxEventData> findBatch(
-      OutboxBatchRequest request) {
+  public List<OutboxEventData> findBatch(OutboxBatchRequest request) {
 
     return outboxJpaRepository
         .findBatch(
@@ -40,6 +40,7 @@ public class OutboxRepository implements OutboxRepositoryPort {
 
     OutboxEvent domainEvent =
         OutboxEvent.create(
+            event.id(),
             event.eventId(),
             event.topic(),
             event.eventType(),
@@ -57,27 +58,26 @@ public class OutboxRepository implements OutboxRepositoryPort {
   }
 
   @Override
-  public void markSent(Long id) {
-    outboxJpaRepository.markSent(id);
+  public void markSent(OutboxEventId id) {
+    outboxJpaRepository.markSent(id.value());
   }
 
   @Override
   public void scheduleRetry(
-      Long id,
+      OutboxEventId id,
       Instant nextAttemptAt) {
 
     outboxJpaRepository.scheduleRetry(
-        id,
+        id.value(),
         nextAttemptAt);
   }
 
   @Override
-  public void registerFinalFailure(Long id) {
-    outboxJpaRepository.registerFinalFailure(id);
+  public void registerFinalFailure(OutboxEventId id) {
+    outboxJpaRepository.registerFinalFailure(id.value());
   }
 
-  private OutboxEventData toData(
-      OutboxEvent event) {
+  private OutboxEventData toData(OutboxEvent event) {
 
     return new OutboxEventData(
         event.getId(),
@@ -90,8 +90,8 @@ public class OutboxRepository implements OutboxRepositoryPort {
         event.getNextAttemptAt());
   }
 
-  private com.jeannimi.messenger.domain.outbox.OutboxStatus
-  toDomainStatus(OutboxStatus status) {
+  private com.jeannimi.messenger.domain.outbox.OutboxStatus toDomainStatus(
+      OutboxStatus status) {
 
     return com.jeannimi.messenger.domain.outbox.OutboxStatus
         .valueOf(status.name());
