@@ -31,11 +31,11 @@ type Props = {
 
     hasMore: boolean;
 
-    currentUserId: number;
+    currentUserId: string;
 
-isMessageReadByOtherUser(
-    messageId: number
-): boolean;
+    isMessageReadByOtherUser(
+        messageId: string
+    ): boolean;
 
     text: string;
 
@@ -49,7 +49,7 @@ isMessageReadByOtherUser(
         void | Promise<void>;
 
     onReadUpTo(
-        messageId: number
+        messageId: string
     ): void;
 
     onTextChange(
@@ -59,7 +59,7 @@ isMessageReadByOtherUser(
     onSend(): void;
 
     onDelete(
-        id: number
+        id: string
     ): void;
 
     onBack(): void;
@@ -125,9 +125,9 @@ export default function ChatContent(
                     props.currentUserId
                 }
 
-    isMessageReadByOtherUser={
-        props.isMessageReadByOtherUser
-    }
+                isMessageReadByOtherUser={
+                    props.isMessageReadByOtherUser
+                }
 
                 onLoadMore={
                     props.onLoadMore

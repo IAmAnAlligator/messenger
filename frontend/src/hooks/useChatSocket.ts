@@ -1,4 +1,3 @@
-
 import type {
     IMessage
 } from "@stomp/stompjs";
@@ -42,14 +41,14 @@ import type {
 
 interface Props {
 
-    chatId?: number;
+    chatId?: string;
 
     onMessage(
         message: MessageDto
     ): void;
 
     onDelete(
-        messageId: number
+        messageId: string
     ): void;
 
     onRead(
@@ -58,6 +57,7 @@ interface Props {
 
     reloadMessages?():
         void | Promise<void>;
+
 }
 
 
@@ -71,6 +71,7 @@ export function useChatSocket({
 
     const navigate =
         useNavigate();
+
 
     const { user } =
         useAuth();
@@ -88,67 +89,100 @@ export function useChatSocket({
     const onMessageRef =
         useRef(onMessage);
 
+
     const onDeleteRef =
         useRef(onDelete);
+
 
     const onReadRef =
         useRef(onRead);
 
+
     const reloadMessagesRef =
         useRef(reloadMessages);
 
+
     const userIdRef =
-        useRef(user?.id);
+        useRef<string | undefined>(
+            user?.id
+        );
+
 
     const pendingReadRef =
-        useRef<number | null>(
+        useRef<string | null>(
             null
         );
 
 
     useEffect(() => {
-        onMessageRef.current = onMessage;
-    }, [onMessage]);
+
+        onMessageRef.current =
+            onMessage;
+
+    }, [
+        onMessage
+    ]);
 
 
     useEffect(() => {
-        onDeleteRef.current = onDelete;
-    }, [onDelete]);
+
+        onDeleteRef.current =
+            onDelete;
+
+    }, [
+        onDelete
+    ]);
 
 
     useEffect(() => {
-        onReadRef.current = onRead;
-    }, [onRead]);
+
+        onReadRef.current =
+            onRead;
+
+    }, [
+        onRead
+    ]);
 
 
     useEffect(() => {
+
         reloadMessagesRef.current =
             reloadMessages;
-    }, [reloadMessages]);
+
+    }, [
+        reloadMessages
+    ]);
 
 
     useEffect(() => {
+
         userIdRef.current =
             user?.id;
-    }, [user?.id]);
+
+    }, [
+        user?.id
+    ]);
 
 
     const publishRead =
         useCallback(
             (
-                messageId: number
+                messageId: string
             ) => {
 
                 if (!chatId) {
                     return;
                 }
 
+
                 const socket =
                     getSocket();
+
 
                 if (!socket?.connected) {
                     return;
                 }
+
 
                 console.log(
                     "[READ] sending",
@@ -157,6 +191,7 @@ export function useChatSocket({
                         messageId
                     }
                 );
+
 
                 socket.publish({
 
@@ -184,30 +219,34 @@ export function useChatSocket({
     const sendReadUpTo =
         useCallback(
             (
-                messageId: number
+                messageId: string
             ) => {
 
                 if (!chatId) {
                     return;
                 }
 
+
                 const socket =
                     getSocket();
 
+
                 if (!socket?.connected) {
 
-                    const pending =
-                        pendingReadRef.current;
+                    /*
+                     * Для UUID нельзя использовать
+                     * числовое сравнение:
+                     *
+                     * messageId > pending
+                     *
+                     * UUID v7 является строкой.
+                     *
+                     * Поэтому здесь просто сохраняем
+                     * последний полученный ID.
+                     */
+                    pendingReadRef.current =
+                        messageId;
 
-                    if (
-                        pending === null ||
-                        messageId > pending
-                    ) {
-
-                        pendingReadRef.current =
-                            messageId;
-
-                    }
 
                     console.log(
                         "[READ] queued",
@@ -217,8 +256,10 @@ export function useChatSocket({
                         }
                     );
 
+
                     return;
                 }
+
 
                 publishRead(
                     messageId
@@ -242,17 +283,21 @@ export function useChatSocket({
             return;
         }
 
+
         const token =
             localStorage.getItem(
                 "accessToken"
             );
 
+
         if (!token) {
             return;
         }
 
+
         const chatTopic =
             `/topic/chat/${chatId}`;
+
 
         const errorQueue =
             "/user/queue/errors";
@@ -263,6 +308,7 @@ export function useChatSocket({
 
                 let event:
                     ChatSocketEvent;
+
 
                 try {
 
@@ -309,10 +355,12 @@ export function useChatSocket({
                         const readEvent =
                             event.payload;
 
+
                         console.log(
                             "[MESSAGE_READ]",
                             readEvent
                         );
+
 
                         if (
                             readEvent.readerId ===
@@ -325,6 +373,7 @@ export function useChatSocket({
 
                             break;
                         }
+
 
                         onReadRef.current(
                             readEvent
@@ -363,6 +412,7 @@ export function useChatSocket({
                             break;
                         }
 
+
                         if (
                             event.payload.userId ===
                             userIdRef.current
@@ -378,18 +428,24 @@ export function useChatSocket({
                             return;
                         }
 
+
                         reloadMessagesRef
                             .current
                             ?.();
+
 
                         break;
                     }
 
 
                     case "CHAT_CREATED":
+
                     case "CHAT_RENAMED":
+
                     case "CHAT_MEMBER_ADDED":
+
                     case "CHAT_MEMBER_LEFT":
+
                         break;
 
                 }
@@ -407,9 +463,11 @@ export function useChatSocket({
                             frame.body
                         ) as WebSocketErrorResponse;
 
+
                     setError(
                         response.message
                     );
+
 
                     setTimeout(() => {
 
@@ -418,6 +476,7 @@ export function useChatSocket({
                         );
 
                     }, 4000);
+
 
                 } catch (error) {
 
@@ -438,6 +497,7 @@ export function useChatSocket({
                     "[WS] chat socket connected",
                     chatId
                 );
+
 
                 reloadMessagesRef
                     .current
@@ -461,8 +521,10 @@ export function useChatSocket({
                         }
                     );
 
+
                     pendingReadRef.current =
                         null;
+
 
                     publishRead(
                         pendingRead
@@ -525,6 +587,7 @@ export function useChatSocket({
                 const socket =
                     getSocket();
 
+
                 if (
                     !socket?.connected ||
                     !chatId
@@ -536,6 +599,7 @@ export function useChatSocket({
 
                     return;
                 }
+
 
                 socket.publish({
 
@@ -563,11 +627,12 @@ export function useChatSocket({
     const deleteMessage =
         useCallback(
             (
-                messageId: number
+                messageId: string
             ) => {
 
                 const socket =
                     getSocket();
+
 
                 if (
                     !socket?.connected ||
@@ -575,6 +640,7 @@ export function useChatSocket({
                 ) {
                     return;
                 }
+
 
                 socket.publish({
 

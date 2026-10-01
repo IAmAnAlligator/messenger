@@ -1,8 +1,11 @@
+import type { MessageId } from "./ids";
+
+
 export type CursorDto = {
 
     cursorTime: string;
 
-    cursorId: number;
+    cursorId: MessageId;
 
 };
 

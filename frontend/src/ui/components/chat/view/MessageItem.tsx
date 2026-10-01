@@ -24,7 +24,7 @@ type Props = {
     message: MessageDto;
 
     onDelete(
-        id: number
+        id: string
     ): void;
 
     isRead: boolean;
@@ -61,7 +61,6 @@ export default function MessageItem({
 
     const mine =
         user?.id === message.sender.id;
-
 
 
     /*
@@ -146,7 +145,7 @@ export default function MessageItem({
         }
 
 
-        loadFile();
+        void loadFile();
 
 
         return () => {
@@ -171,7 +170,6 @@ export default function MessageItem({
     ]);
 
 
-
     const messageDate =
         new Date(
             message.createdAt
@@ -192,11 +190,9 @@ export default function MessageItem({
         ).format(messageDate);
 
 
-
     const isImage =
         message.attachment?.contentType
             .startsWith("image/") ?? false;
-
 
 
     return (
@@ -210,7 +206,6 @@ export default function MessageItem({
         >
 
             <div className="message-bubble">
-
 
                 <div className="message-header">
 
@@ -244,7 +239,6 @@ export default function MessageItem({
                 </div>
 
 
-
                 {
                     message.content && (
 
@@ -258,39 +252,31 @@ export default function MessageItem({
                 }
 
 
-
                 {
                     message.attachment && (
 
                         <div className="message-attachment">
 
-
                             {
                                 fileLoading && (
 
                                     <div className="message-file-loading">
-
                                         Loading file...
-
                                     </div>
 
                                 )
                             }
-
 
 
                             {
                                 fileError && (
 
                                     <div className="message-file-error">
-
                                         Failed to load file
-
                                     </div>
 
                                 )
                             }
-
 
 
                             {
@@ -378,43 +364,40 @@ export default function MessageItem({
                                 )
                             }
 
-
                         </div>
 
                     )
                 }
 
 
+                <div className="message-footer">
 
-<div className="message-footer">
+                    <span className="message-time">
+                        {formattedDate}
+                    </span>
 
-    <span className="message-time">
-        {formattedDate}
-    </span>
+                    {
+                        mine && (
 
-    {
-        mine && (
+                            <span
+                                className={
+                                    isRead
+                                        ? "message-read read"
+                                        : "message-read"
+                                }
+                                title={
+                                    isRead
+                                        ? "Прочитано"
+                                        : "Отправлено"
+                                }
+                            >
+                                {isRead ? "✓✓" : "✓"}
+                            </span>
 
-            <span
-                className={
-                    isRead
-                        ? "message-read read"
-                        : "message-read"
-                }
-                title={
-                    isRead
-                        ? "Прочитано"
-                        : "Отправлено"
-                }
-            >
-                {isRead ? "✓✓" : "✓"}
-            </span>
+                        )
+                    }
 
-        )
-    }
-
-</div>
-
+                </div>
 
             </div>
 
@@ -423,7 +406,6 @@ export default function MessageItem({
     );
 
 }
-
 
 
 function getFileIcon(
@@ -497,7 +479,6 @@ function getFileIcon(
     return "📎";
 
 }
-
 
 
 function formatFileSize(

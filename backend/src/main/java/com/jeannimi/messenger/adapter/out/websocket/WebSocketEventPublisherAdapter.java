@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.out.websocket;
 
 import com.jeannimi.messenger.adapter.in.web.message.dto.MessageDto;
 import com.jeannimi.messenger.adapter.in.websocket.WebSocketEvent;
+import com.jeannimi.messenger.adapter.in.websocket.dto.MessageReadWebSocketDto;
 import com.jeannimi.messenger.application.event.ApplicationEvent;
 import com.jeannimi.messenger.application.event.ChatCreatedEvent;
 import com.jeannimi.messenger.application.event.ChatDeletedEvent;
@@ -81,10 +82,12 @@ public class WebSocketEventPublisherAdapter implements RealtimeEventPublisherPor
 
   private void publishMessageRead(MessageReadEvent event) {
 
-    WebSocketEvent<MessageReadEvent> webSocketEvent =
+    MessageReadWebSocketDto payload = MessageReadWebSocketDto.from(event);
+
+    WebSocketEvent<MessageReadWebSocketDto> webSocketEvent =
         WebSocketEvent.of(
             EventType.MESSAGE_READ,
-            event);
+            payload);
 
     sendToChat(
         event.chatId(),

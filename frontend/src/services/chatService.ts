@@ -3,7 +3,7 @@ import type { ChatDto } from "../types/chat";
 
 
 export async function getChat(
-    chatId: number
+    chatId: string
 ): Promise<ChatDto> {
 
     const response =

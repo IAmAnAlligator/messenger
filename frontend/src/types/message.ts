@@ -1,22 +1,43 @@
+import type {
+    ChatId,
+    FileAttachmentId,
+    MessageId
+} from "./ids";
+
 import type { UserDto } from "./user";
+
 import type { CursorPageResponse } from "./pagination";
 
 
 export interface FileAttachmentDto {
-    id: string;
+
+    id: FileAttachmentId;
+
     originalFileName: string;
+
     contentType: string;
+
     size: number;
+
     url: string;
+
 }
 
+
 export interface MessageDto {
-    id: number;
-    chatId: number;
+
+    id: MessageId;
+
+    chatId: ChatId;
+
     sender: UserDto;
+
     content: string | null;
+
     createdAt: string;
+
     attachment: FileAttachmentDto | null;
+
 }
 
 

@@ -1,3 +1,9 @@
+import type {
+    ChatId,
+    MessageId,
+    UserId
+} from "./ids";
+
 import type { UserDto } from "./user";
 
 
@@ -11,7 +17,6 @@ export type ChatRole =
     | "MEMBER";
 
 
-
 export interface ChatMemberDto {
 
     user: UserDto;
@@ -20,15 +25,14 @@ export interface ChatMemberDto {
 
     joinedAt: string;
 
-    lastReadMessageId: number | null;
+    lastReadMessageId: MessageId | null;
 
 }
 
 
-
 export interface ChatDto {
 
-    id: number;
+    id: ChatId;
 
     name: string | null;
 
@@ -42,21 +46,26 @@ export interface ChatDto {
 
 }
 
+
 export interface ChatMemberReadDto {
-    userId: number;
-    lastReadMessageId: number | null;
+
+    userId: UserId;
+
+    lastReadMessageId: MessageId | null;
+
 }
+
 
 export interface MessageReadEvent {
 
-    messageId: number;
+    messageId: MessageId;
 
-    chatId: number;
+    chatId: ChatId;
 
-    readerId: number;
+    readerId: UserId;
 
     readAt: string;
 
-    lastReadMessageId: number;
+    lastReadMessageId: MessageId;
 
 }

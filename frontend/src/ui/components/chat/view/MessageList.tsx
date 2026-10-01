@@ -24,21 +24,21 @@ type Props = {
 
     messages: MessageDto[];
 
-    currentUserId: number;
+    currentUserId: string;
 
     isMessageReadByOtherUser(
-        messageId: number
+        messageId: string
     ): boolean;
 
     onDelete(
-        id: number
+        id: string
     ): void;
 
     onLoadMore():
         void | Promise<void>;
 
     onReadUpTo(
-        messageId: number
+        messageId: string
     ): void;
 
 };
@@ -76,7 +76,7 @@ export default function MessageList({
         useRef(false);
 
     const previousLastMessageId =
-        useRef<number | null>(null);
+        useRef<string | null>(null);
 
     const previousScrollHeight =
         useRef(0);
@@ -88,7 +88,7 @@ export default function MessageList({
         useRef(false);
 
     const lastSentReadMessageId =
-        useRef<number | null>(null);
+        useRef<string | null>(null);
 
 
     function markVisibleMessagesAsRead() {
@@ -115,8 +115,8 @@ export default function MessageList({
             );
 
 
-        let lastVisibleIncomingId:
-            number | null = null;
+        let lastVisibleIncomingIndex =
+            -1;
 
 
         elements.forEach(element => {
@@ -138,26 +138,28 @@ export default function MessageList({
 
 
             const id =
-                Number(
-                    element.dataset.messageId
-                );
+                element.dataset.messageId;
 
 
-            if (Number.isNaN(id)) {
+            if (!id) {
                 return;
             }
 
 
-            const message =
-                messages.find(
+            const messageIndex =
+                messages.findIndex(
                     item =>
                         item.id === id
                 );
 
 
-            if (!message) {
+            if (messageIndex === -1) {
                 return;
             }
+
+
+            const message =
+                messages[messageIndex];
 
 
             if (
@@ -168,17 +170,35 @@ export default function MessageList({
             }
 
 
+            /*
+             * Не сравниваем UUID как числа.
+             *
+             * messages уже находятся в порядке,
+             * заданном backend.
+             *
+             * Поэтому выбираем сообщение
+             * с максимальным индексом.
+             */
+
             if (
-                lastVisibleIncomingId === null ||
-                id > lastVisibleIncomingId
+                messageIndex >
+                lastVisibleIncomingIndex
             ) {
 
-                lastVisibleIncomingId =
-                    id;
+                lastVisibleIncomingIndex =
+                    messageIndex;
 
             }
 
         });
+
+
+        const lastVisibleIncomingId =
+            lastVisibleIncomingIndex >= 0
+                ? messages[
+                    lastVisibleIncomingIndex
+                ].id
+                : null;
 
 
         console.log(
@@ -204,10 +224,30 @@ export default function MessageList({
         }
 
 
+        /*
+         * Повторно отправлять тот же read
+         * не нужно.
+         *
+         * Если старый messageId всё ещё
+         * присутствует в текущем массиве,
+         * сравниваем позиции сообщений,
+         * а не UUID.
+         */
+
+        const lastSentIndex =
+            lastSentReadMessageId.current === null
+                ? -1
+                : messages.findIndex(
+                    message =>
+                        message.id ===
+                        lastSentReadMessageId.current
+                );
+
+
         if (
-            lastSentReadMessageId.current !== null &&
-            lastVisibleIncomingId <=
-                lastSentReadMessageId.current
+            lastSentIndex !== -1 &&
+            lastVisibleIncomingIndex <=
+                lastSentIndex
         ) {
             return;
         }

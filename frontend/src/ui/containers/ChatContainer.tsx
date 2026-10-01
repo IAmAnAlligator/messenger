@@ -23,7 +23,7 @@ import ChatContent
 
 
 type Props = {
-    chatId?: number;
+    chatId?: string;
 };
 
 
@@ -48,21 +48,21 @@ export default function ChatContainer(
         useState("");
 
 
-const {
-    chat,
-    messages,
-    loading,
-    loadingMore,
-    hasMore,
-    isMessageReadByOtherUser,
-    addMessage,
-    removeMessage,
-    updateMessageStatus,
-    markCurrentUserRead,
-    reloadMessages,
-    loadMoreMessages,
-    sendFile
-} = useChat(chatId);
+    const {
+        chat,
+        messages,
+        loading,
+        loadingMore,
+        hasMore,
+        isMessageReadByOtherUser,
+        addMessage,
+        removeMessage,
+        updateMessageStatus,
+        markCurrentUserRead,
+        reloadMessages,
+        loadMoreMessages,
+        sendFile
+    } = useChat(chatId);
 
 
     const {
@@ -81,7 +81,7 @@ const {
 
 
     function handleReadUpTo(
-        messageId: number
+        messageId: string
     ) {
 
         sendReadUpTo(
@@ -172,9 +172,9 @@ const {
                 user.id
             }
 
-isMessageReadByOtherUser={
-    isMessageReadByOtherUser
-}
+            isMessageReadByOtherUser={
+                isMessageReadByOtherUser
+            }
 
             onLoadMore={
                 loadMoreMessages

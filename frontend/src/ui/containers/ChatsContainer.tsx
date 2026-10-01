@@ -10,16 +10,20 @@ import {
     useChats
 } from "../../hooks/useChats";
 
+import type {
+    ChatDto
+} from "../../hooks/useChats";
+
 import ChatsHeader
-from "../components/chat/view/ChatsHeader";
+    from "../components/chat/view/ChatsHeader";
 
 import ChatList
-from "../components/chat/list/ChatList";
+    from "../components/chat/list/ChatList";
 
 import "../styles/chatsPage.css";
 
 
-export default function ChatsPage(){
+export default function ChatsPage() {
 
     const navigate =
         useNavigate();
@@ -31,45 +35,41 @@ export default function ChatsPage(){
     } = useAuth();
 
 
-
     const {
         chats,
         loading,
         loadingMore,
         hasNext,
         loadMore
-
     } = useChats();
 
 
-
-
-    async function handleLogout(){
+    async function handleLogout() {
 
         await logout();
 
         navigate(
             "/",
             {
-                replace:true
+                replace: true
             }
         );
     }
 
 
+    function getChatName(
+        chat: ChatDto
+    ): string {
 
-
-    function getChatName(chat:any){
-
-        if(chat.type === "GROUP") {
+        if (chat.type === "GROUP") {
             return chat.name;
         }
 
 
         const other =
             chat.members.find(
-                (m:any) =>
-                    m.user.id !== user?.id
+                member =>
+                    member.user.id !== user?.id
             );
 
 
@@ -81,12 +81,9 @@ export default function ChatsPage(){
     }
 
 
-
-
     return (
 
         <div className="chats-page">
-
 
             <ChatsHeader
                 onLogout={
@@ -95,41 +92,29 @@ export default function ChatsPage(){
             />
 
 
-
             <button
-
                 className="create-chat-btn"
-
                 onClick={() =>
                     navigate(
                         "/chats/create"
                     )
                 }
-
             >
-
                 Create chat
-
             </button>
 
 
-
-
             <div className="chat-content">
-
 
                 {
                     loading && (
 
                         <div className="chat-loading">
-
                             Loading...
-
                         </div>
 
                     )
                 }
-
 
 
                 {
@@ -137,15 +122,11 @@ export default function ChatsPage(){
                     chats.length === 0 && (
 
                         <div className="empty-chats">
-
                             No chats
-
                         </div>
 
                     )
                 }
-
-
 
 
                 {
@@ -154,9 +135,13 @@ export default function ChatsPage(){
 
                         <ChatList
 
-                            chats={chats}
+                            chats={
+                                chats
+                            }
 
-                            getName={getChatName}
+                            getName={
+                                getChatName
+                            }
 
                             onOpen={
                                 id =>
@@ -165,24 +150,26 @@ export default function ChatsPage(){
                                     )
                             }
 
-                            hasNext={hasNext}
+                            hasNext={
+                                hasNext
+                            }
 
-                            loadingMore={loadingMore}
+                            loadingMore={
+                                loadingMore
+                            }
 
-                            loadMore={loadMore}
+                            loadMore={
+                                loadMore
+                            }
 
                         />
 
                     )
                 }
-                
-
 
             </div>
-
 
         </div>
 
     );
-
 }

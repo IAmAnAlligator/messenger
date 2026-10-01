@@ -1,9 +1,19 @@
 import type { MessageDto } from "./message";
-import type { MessageReadEvent } from "./chat";
+
+import type {
+    ChatId,
+    MessageId,
+    UserId
+} from "./ids";
+
+import type {
+    ChatType,
+    MessageReadEvent
+} from "./chat";
 
 
 /**
- * Ошибки WebSocket validation
+ * Ошибка WebSocket validation.
  *
  * Backend:
  * @SendToUser("/queue/errors")
@@ -24,13 +34,13 @@ export interface ChatCreatedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
         name: string;
 
-        type: "PRIVATE" | "GROUP";
+        type: ChatType;
 
-        memberIds: number[];
+        memberIds: UserId[];
 
     };
 
@@ -46,7 +56,7 @@ export interface ChatDeletedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
     };
 
@@ -62,7 +72,7 @@ export interface ChatRenamedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
         name: string;
 
@@ -80,9 +90,9 @@ export interface ChatMemberAddedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
-        userId: number;
+        userId: UserId;
 
     };
 
@@ -98,9 +108,9 @@ export interface ChatMemberRemovedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
-        userId: number;
+        userId: UserId;
 
     };
 
@@ -116,9 +126,9 @@ export interface ChatMemberLeftSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
-        userId: number;
+        userId: UserId;
 
     };
 
@@ -127,12 +137,6 @@ export interface ChatMemberLeftSocketEvent {
 
 /**
  * MESSAGE CREATED
- *
- * Backend:
- * WebSocketEvent.of(
- *     EventType.MESSAGE_SENT,
- *     dto
- * )
  */
 export interface MessageSentSocketEvent {
 
@@ -145,16 +149,6 @@ export interface MessageSentSocketEvent {
 
 /**
  * MESSAGE READ
- *
- * Backend:
- *
- * public record MessageReadEvent(
- *     Long messageId,
- *     Long chatId,
- *     Long readerId,
- *     Instant readAt,
- *     Long lastReadMessageId
- * ) {}
  */
 export interface MessageReadSocketEvent {
 
@@ -174,9 +168,9 @@ export interface MessageDeletedSocketEvent {
 
     payload: {
 
-        chatId: number;
+        chatId: ChatId;
 
-        messageId: number;
+        messageId: MessageId;
 
     };
 
@@ -184,7 +178,7 @@ export interface MessageDeletedSocketEvent {
 
 
 /**
- * Все WebSocket события
+ * Все WebSocket события.
  */
 export type ChatSocketEvent =
     | ChatCreatedSocketEvent

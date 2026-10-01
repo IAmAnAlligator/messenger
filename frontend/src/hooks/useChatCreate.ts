@@ -5,132 +5,115 @@ import {
 
 import { api } from "../api/client";
 
+import type {
+    UserDto
+} from "../types/user";
+
 
 export type ChatType =
     | "PRIVATE"
     | "GROUP";
 
 
-export type UserDto = {
-    id: number;
-    handle: string;
-    username: string;
-    role: string;
-};
+export function useChatCreate() {
+
+    const [type, setType] =
+        useState<ChatType>("GROUP");
 
 
-export function useChatCreate(){
+    const [name, setName] =
+        useState("");
 
 
-    const [type,setType]
-        = useState<ChatType>("GROUP");
+    const [search, setSearch] =
+        useState("");
 
 
-    const [name,setName]
-        = useState("");
+    const [users, setUsers] =
+        useState<UserDto[]>([]);
 
 
-    const [search,setSearch]
-        = useState("");
+    const [selectedUsers, setSelectedUsers] =
+        useState<UserDto[]>([]);
 
 
-    const [users,setUsers]
-        = useState<UserDto[]>([]);
+    const [searchLoading, setSearchLoading] =
+        useState(false);
 
 
-    const [selectedUsers,setSelectedUsers]
-        = useState<UserDto[]>([]);
-
-
-    const [searchLoading,setSearchLoading]
-        = useState(false);
-
-
-
-    useEffect(()=>{
-
+    useEffect(() => {
 
         const timer =
-            setTimeout(()=>{
-
+            setTimeout(() => {
 
                 const q =
                     search.trim();
 
 
-                if(q){
+                if (q) {
 
                     searchUsers(q);
 
-                }
-                else{
+                } else {
 
                     setUsers([]);
 
                 }
 
-
-            },300);
-
+            }, 300);
 
 
-        return ()=>clearTimeout(timer);
+        return () =>
+            clearTimeout(timer);
+
+    }, [search]);
 
 
-    },[search]);
+    async function searchUsers(
+        query: string
+    ) {
 
+        try {
 
+            setSearchLoading(true);
 
-
-async function searchUsers(
-    query: string
-) {
-
-    try {
-
-        setSearchLoading(true);
-
-        const res =
-            await api.get(
-                "/users/search",
-                {
-                    params: {
-                        query
+            const res =
+                await api.get(
+                    "/users/search",
+                    {
+                        params: {
+                            query
+                        }
                     }
-                }
+                );
+
+
+            setUsers(
+                Array.isArray(res.data)
+                    ? res.data
+                    : []
             );
 
-        setUsers(
-            Array.isArray(res.data)
-                ? res.data
-                : []
-        );
+        } catch {
+
+            setUsers([]);
+
+        } finally {
+
+            setSearchLoading(false);
+
+        }
 
     }
-    catch {
-
-        setUsers([]);
-
-    }
-    finally {
-
-        setSearchLoading(false);
-
-    }
-
-}
-
-
 
 
     function addUser(
-        user:UserDto
-    ){
+        user: UserDto
+    ) {
 
-        setSelectedUsers(prev=>{
+        setSelectedUsers(prev => {
 
-
-            if(type==="PRIVATE"){
+            if (type === "PRIVATE") {
 
                 return [
                     user
@@ -139,11 +122,11 @@ async function searchUsers(
             }
 
 
-            if(
+            if (
                 prev.some(
-                    u=>u.id===user.id
+                    u => u.id === user.id
                 )
-            ){
+            ) {
 
                 return prev;
 
@@ -165,25 +148,20 @@ async function searchUsers(
     }
 
 
-
-
     function removeUser(
-        id:number
-    ){
+        id: string
+    ) {
 
-        setSelectedUsers(prev=>
+        setSelectedUsers(prev =>
             prev.filter(
-                u=>u.id!==id
+                u => u.id !== id
             )
         );
 
     }
 
 
-
-
-    async function createChat(){
-
+    async function createChat() {
 
         await api.post(
             "/chats",
@@ -192,22 +170,19 @@ async function searchUsers(
                 type,
 
                 name:
-                    type==="GROUP"
-                    ? name
-                    : null,
-
+                    type === "GROUP"
+                        ? name
+                        : null,
 
                 memberIds:
                     selectedUsers.map(
-                        u=>u.id
+                        u => u.id
                     )
 
             }
         );
 
     }
-
-
 
 
     return {

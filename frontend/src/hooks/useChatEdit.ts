@@ -15,36 +15,33 @@ import {
     unsubscribe
 } from "../services/chatSocket";
 
-
-export type UserDto = {
-
-    id:number;
-
-    username:string;
-
-    role:string;
-
-};
+import type {
+    UserDto
+} from "../types/user";
 
 
 export type ChatMemberDto = {
 
-    user:UserDto;
+    user: UserDto;
 
-    chatRole:"ADMIN"|"MEMBER";
+    chatRole:
+        | "ADMIN"
+        | "MEMBER";
 
-    joinedAt:string;
+    joinedAt: string;
 
 };
 
 
 export type ChatDto = {
 
-    id:number;
+    id: string;
 
-    name?:string;
+    name?: string;
 
-    type:"PRIVATE"|"GROUP";
+    type:
+        | "PRIVATE"
+        | "GROUP";
 
 };
 
@@ -52,160 +49,129 @@ export type ChatDto = {
 
 
 export function useChatEdit(
-    chatId?:string
-){
-
+    chatId?: string
+) {
 
     const navigate =
         useNavigate();
 
 
-
-    const [chat,setChat] =
-        useState<ChatDto|null>(null);
-
+    const [chat, setChat] =
+        useState<ChatDto | null>(null);
 
 
-    const [members,setMembers] =
+    const [members, setMembers] =
         useState<ChatMemberDto[]>([]);
 
 
-
-    const [chatName,setChatName] =
+    const [chatName, setChatName] =
         useState("");
 
 
-
-    const [users,setUsers] =
+    const [users, setUsers] =
         useState<UserDto[]>([]);
 
 
-
-    const [searchUsername,setSearchUsername] =
+    const [searchUsername, setSearchUsername] =
         useState("");
 
 
-
-    const [searchLoading,setSearchLoading] =
+    const [searchLoading, setSearchLoading] =
         useState(false);
 
 
-
-    const [loading,setLoading] =
+    const [loading, setLoading] =
         useState(true);
 
 
-
-    const [currentUserId,setCurrentUserId] =
-        useState<number|null>(null);
-
+    const [currentUserId, setCurrentUserId] =
+        useState<string | null>(null);
 
 
-       const load = useCallback(async () => {
 
 
-        if(!chatId)
+    const load =
+        useCallback(async () => {
+
+            if (!chatId) {
+                return;
+            }
+
+
+            try {
+
+                setLoading(true);
+
+
+                const [
+                    chatResponse,
+                    membersResponse,
+                    meResponse
+                ] =
+                    await Promise.all([
+
+                        api.get(
+                            `/chats/${chatId}`
+                        ),
+
+                        api.get(
+                            `/chats/${chatId}/members`
+                        ),
+
+                        api.get(
+                            "/users/me"
+                        )
+
+                    ]);
+
+
+                setChat(
+                    chatResponse.data
+                );
+
+
+                setChatName(
+                    chatResponse.data.name ?? ""
+                );
+
+
+                setMembers(
+                    Array.isArray(
+                        membersResponse.data
+                    )
+                        ? membersResponse.data
+                        : []
+                );
+
+
+                setCurrentUserId(
+                    meResponse.data.id
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "LOAD CHAT ERROR",
+                    error
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        }, [chatId]);
+
+
+
+
+    useEffect(() => {
+
+        if (!chatId) {
             return;
-
-
-
-        try{
-
-
-            setLoading(true);
-
-
-
-            const [
-
-                chatResponse,
-
-                membersResponse,
-
-                meResponse
-
-
-            ] =
-            await Promise.all([
-
-
-                api.get(
-                    `/chats/${chatId}`
-                ),
-
-
-                api.get(
-                    `/chats/${chatId}/members`
-                ),
-
-
-                api.get(
-                    "/users/me"
-                )
-
-
-            ]);
-
-
-
-
-            setChat(
-                chatResponse.data
-            );
-
-
-
-            setChatName(
-                chatResponse.data.name ?? ""
-            );
-
-
-
-            setMembers(
-                Array.isArray(
-                    membersResponse.data
-                )
-                    ? membersResponse.data
-                    : []
-            );
-
-
-
-            setCurrentUserId(
-                meResponse.data.id
-            );
-
-
-
         }
-        catch(error){
-
-            console.error(
-                "LOAD CHAT ERROR",
-                error
-            );
-
-        }
-        finally{
-
-            setLoading(false);
-
-        }
-
-
-    }, [chatId]);
-
-
-
-
-
-
-    useEffect(()=>{
-
-
-        if(!chatId)
-            return;
-
 
 
         const token =
@@ -214,91 +180,94 @@ export function useChatEdit(
             );
 
 
-        if(token)
+        if (token) {
             connectSocket(token);
-
+        }
 
 
         load();
-
 
 
         const topic =
             `/topic/chat/${chatId}`;
 
 
+        subscribe(
+            topic,
+            async frame => {
 
-subscribe(
-    topic,
-    async frame => {
+                const event =
+                    JSON.parse(
+                        frame.body
+                    );
 
-        const event =
-            JSON.parse(
-                frame.body
-            );
 
-        switch (event.type) {
+                switch (event.type) {
 
-            case "CHAT_DELETED":
+                    case "CHAT_DELETED":
 
-                navigate(
-                    "/chats",
-                    {
-                        replace: true
+                        navigate(
+                            "/chats",
+                            {
+                                replace: true
+                            }
+                        );
+
+                        break;
+
+
+                    case "CHAT_MEMBER_REMOVED": {
+
+                        if (
+                            event.payload.chatId !== chatId
+                        ) {
+                            break;
+                        }
+
+
+                        if (
+                            currentUserId !== null &&
+                            event.payload.userId === currentUserId
+                        ) {
+
+                            navigate(
+                                "/chats",
+                                {
+                                    replace: true
+                                }
+                            );
+
+                            return;
+                        }
+
+
+                        await load();
+
+                        break;
                     }
-                );
-
-                break;
 
 
-case "CHAT_MEMBER_REMOVED": {
+                    case "CHAT_MEMBER_ADDED":
 
-    if (
-        event.payload.chatId !== Number(chatId)
-    ) {
-        break;
-    }
+                    case "CHAT_MEMBER_LEFT":
 
-    if (
-        currentUserId !== null &&
-        event.payload.userId === currentUserId
-    ) {
+                    case "CHAT_RENAMED":
 
-        navigate(
-            "/chats",
-            {
-                replace: true
+                        await load();
+
+                        break;
+
+
+                    default:
+
+                        break;
+                }
+
             }
         );
 
-        return;
-    }
 
-    await load();
-
-    break;
-}
-
-case "CHAT_MEMBER_ADDED":
-case "CHAT_MEMBER_LEFT":
-case "CHAT_RENAMED":
-
-    await load();
-
-    break;
-
-            
-
-            default:
-                break;
-        }
-
-    }
-);
-
-
-
-        return ()=>{
+        return () => {
 
             unsubscribe(topic);
 
@@ -306,14 +275,11 @@ case "CHAT_RENAMED":
 
 
     }, [
-    load,
-    navigate,
-    currentUserId
-]);
-
-
-
-
+        chatId,
+        load,
+        navigate,
+        currentUserId
+    ]);
 
 
 
@@ -321,62 +287,51 @@ case "CHAT_RENAMED":
     /*
         Автоматический поиск пользователей
     */
-    useEffect(()=>{
-
+    useEffect(() => {
 
         const timer =
-            setTimeout(()=>{
-
+            setTimeout(() => {
 
                 const query =
                     searchUsername.trim();
 
 
-
-                if(
-                    query.length > 0
-                ){
+                if (query.length > 0) {
 
                     searchUsers();
 
-
                 } else {
-
 
                     setUsers([]);
 
                 }
 
+            }, 300);
 
 
-            },300);
-
-
-
-        return ()=>{
+        return () => {
 
             clearTimeout(timer);
 
         };
 
-
-    },[
+    }, [
         searchUsername,
         members
     ]);
 
 
 
+
     const currentMember =
         useMemo(
-            ()=>
 
+            () =>
 
                 members.find(
                     member =>
                         member.user.id === currentUserId
                 ),
-
 
             [
                 members,
@@ -388,53 +343,35 @@ case "CHAT_RENAMED":
 
 
 
-
     const isAdmin =
         currentMember?.chatRole === "ADMIN";
 
 
 
 
-
     const permissions = {
 
-
         canRename:
-
             chat?.type === "GROUP"
-
             &&
-
             isAdmin,
-
 
 
         canAdd:
-
             chat?.type === "GROUP"
-
             &&
-
             isAdmin,
-
 
 
         canRemove:
-
             chat?.type === "GROUP"
-
             &&
-
             isAdmin,
 
 
-
         canDelete:
-
             chat?.type === "PRIVATE"
-
             ||
-
             (
                 chat?.type === "GROUP"
                 &&
@@ -442,58 +379,40 @@ case "CHAT_RENAMED":
             ),
 
 
-
         canLeave:
-
             chat?.type === "GROUP"
-
             &&
-
             currentMember?.chatRole === "MEMBER"
-
 
     };
 
 
 
 
-
-
-
-
-
-    async function renameChat(){
-
+    async function renameChat() {
 
         const name =
             chatName.trim();
 
 
-
-        if(!name)
+        if (!name) {
             return;
+        }
 
 
-
-        try{
-
+        try {
 
             await api.patch(
-
                 `/chats/${chatId}/name`,
-
                 {
                     name
                 }
-
             );
 
 
             await load();
 
-
-        }
-        catch(error){
+        } catch (error) {
 
             console.error(
                 "RENAME ERROR",
@@ -502,38 +421,28 @@ case "CHAT_RENAMED":
 
         }
 
-
     }
 
 
 
 
+    async function searchUsers() {
 
-
-
-
-
-    async function searchUsers(){
-
-
-        try{
-
+        try {
 
             setSearchLoading(true);
-
 
 
             const response =
                 await api.get(
                     "/users/search",
                     {
-                        params:{
+                        params: {
                             query:
                                 searchUsername.trim()
                         }
                     }
                 );
-
 
 
             const result =
@@ -544,12 +453,10 @@ case "CHAT_RENAMED":
                     : [];
 
 
-
-
             setUsers(
 
                 result.filter(
-                    (user:UserDto)=>
+                    (user: UserDto) =>
 
                         !members.some(
                             member =>
@@ -560,8 +467,7 @@ case "CHAT_RENAMED":
             );
 
 
-        }
-        catch(error){
+        } catch (error) {
 
             console.error(
                 "SEARCH USERS ERROR",
@@ -571,31 +477,22 @@ case "CHAT_RENAMED":
 
             setUsers([]);
 
-        }
-        finally{
+        } finally {
 
             setSearchLoading(false);
 
         }
-
 
     }
 
 
 
 
-
-
-
-
-
     async function addMember(
-        user:UserDto
-    ){
+        user: UserDto
+    ) {
 
-
-        try{
-
+        try {
 
             await api.post(
 
@@ -604,27 +501,22 @@ case "CHAT_RENAMED":
                 null,
 
                 {
-                    params:{
-                        userId:user.id
+                    params: {
+                        userId: user.id
                     }
                 }
 
             );
 
 
-
             await load();
-
 
 
             setSearchUsername("");
 
             setUsers([]);
 
-
-
-        }
-        catch(error){
+        } catch (error) {
 
             console.error(
                 "ADD MEMBER ERROR",
@@ -633,24 +525,16 @@ case "CHAT_RENAMED":
 
         }
 
-
     }
 
 
 
 
-
-
-
-
-
     async function removeMember(
-        userId:number
-    ){
+        userId: string
+    ) {
 
-
-        try{
-
+        try {
 
             await api.delete(
 
@@ -661,29 +545,21 @@ case "CHAT_RENAMED":
 
             await load();
 
-
-        }
-        catch(error){
+        } catch (error) {
 
             console.error(
+                "REMOVE MEMBER ERROR",
                 error
             );
 
         }
-
 
     }
 
 
 
 
-
-
-
-
-
-    async function leaveChat(){
-
+    async function leaveChat() {
 
         await api.delete(
 
@@ -692,24 +568,16 @@ case "CHAT_RENAMED":
         );
 
 
-
         navigate(
             "/chats"
         );
-
 
     }
 
 
 
 
-
-
-
-
-
-    async function deleteChat(){
-
+    async function deleteChat() {
 
         await api.delete(
 
@@ -718,33 +586,22 @@ case "CHAT_RENAMED":
         );
 
 
-
         navigate(
             "/chats"
         );
-
 
     }
 
 
 
 
-
-
-
-
-
     return {
-
 
         chat,
 
-
         members,
 
-
         loading,
-
 
 
         chatName,
@@ -752,52 +609,39 @@ case "CHAT_RENAMED":
         setChatName,
 
 
-
         searchUsername,
 
         setSearchUsername,
 
 
-
         users,
 
-
         searchLoading,
-
 
 
         currentUserId,
 
 
-
         permissions,
-
 
 
         searchUsers,
 
 
-
         renameChat,
-
 
 
         addMember,
 
 
-
         removeMember,
-
 
 
         leaveChat,
 
 
-
         deleteChat
 
-
     };
-
 
 }

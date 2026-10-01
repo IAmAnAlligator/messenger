@@ -12,7 +12,7 @@ export default function ChatPage() {
 
     return (
         <ChatContainer
-            chatId={Number(chatId)}
+            chatId={chatId}
         />
     );
 }

@@ -2,91 +2,49 @@ import type {
     ChatMemberDto
 } from "../../../../hooks/useChatEdit";
 
-
-
 type Props = {
+    member: ChatMemberDto;
 
-
-    member:ChatMemberDto;
-
-
-    canRemove:boolean;
-
+    canRemove: boolean;
 
     onRemove(
-        userId:number
-    ):void;
-
-
+        userId: string
+    ): void;
 };
 
-
-
 export default function MemberItem({
-
     member,
-
     canRemove,
-
     onRemove
+}: Props) {
+    return (
+        <div className="member-item">
 
-}:Props){
+            <div>
 
+                <b>
+                    {member.user.username}
+                </b>
 
+                <div>
+                    Role:
+                    {member.chatRole}
+                </div>
 
-return (
+            </div>
 
-<div className="member-item">
+            {canRemove && (
+                <button
+                    onClick={() =>
+                        onRemove(
+                            member.user.id
+                        )
+                    }
+                >
+                    Remove
+                </button>
+            )}
 
-
-<div>
-
-
-<b>
-{
-member.user.username
-}
-</b>
-
-
-<div>
-
-Role:
-{
-member.chatRole
-}
-
-</div>
-
-
-</div>
-
-
-
-{
-canRemove &&
-
-<button
-
-onClick={() =>
-    onRemove(
-        member.user.id
-    )
-}
-
->
-
-Remove
-
-</button>
-
-}
-
-
-
-</div>
-
-);
-
-
+        </div>
+    );
 }

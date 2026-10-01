@@ -8,17 +8,14 @@ import type {
     MessagePageDto
 } from "../types/message";
 
-
 import type {
     CursorDto
 } from "../types/pagination";
 
 
-
-
 export async function getMessages(
 
-    chatId: number,
+    chatId: string,
 
     cursor?: CursorDto,
 
@@ -36,10 +33,8 @@ export async function getMessages(
                     cursorTime:
                         cursor?.cursorTime,
 
-
                     cursorId:
                         cursor?.cursorId,
-
 
                     limit
 
@@ -52,18 +47,24 @@ export async function getMessages(
 
 }
 
+
 export async function sendFile(
-    chatId: number,
+
+    chatId: string,
+
     file: File
+
 ): Promise<MessageDto> {
 
     const formData =
         new FormData();
 
+
     formData.append(
         "file",
         file
     );
+
 
     const response =
         await api.post<MessageDto>(
@@ -71,12 +72,18 @@ export async function sendFile(
             formData
         );
 
+
     return response.data;
+
 }
 
+
 export async function getMessageFile(
-    chatId: number,
-    messageId: number
+
+    chatId: string,
+
+    messageId: string
+
 ): Promise<Blob> {
 
     const response =
@@ -87,5 +94,7 @@ export async function getMessageFile(
             }
         );
 
+
     return response.data;
+
 }
