@@ -10,7 +10,6 @@ import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.outbox.service.OutboxService;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
-import com.jeannimi.messenger.domain.common.DomainId;
 import com.jeannimi.messenger.domain.outbox.AggregateId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

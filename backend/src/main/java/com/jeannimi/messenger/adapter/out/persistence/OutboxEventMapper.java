@@ -10,7 +10,12 @@ public final class OutboxEventMapper {
 
   public static OutboxEvent toDomain(OutboxCreateData data) {
     return OutboxEvent.create(
-        data.id(), data.eventId(), data.topic(), data.eventType(), data.aggregateId(), data.payload());
+        data.id(),
+        data.eventId(),
+        data.topic(),
+        data.eventType(),
+        data.aggregateId(),
+        data.payload());
   }
 
   public static OutboxEventData toData(OutboxEvent event) {

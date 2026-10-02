@@ -9,5 +9,4 @@ public record OutboxEventId(UUID value) implements DomainId {
   public OutboxEventId {
     Objects.requireNonNull(value, "OutboxEvent id must not be null");
   }
-
 }

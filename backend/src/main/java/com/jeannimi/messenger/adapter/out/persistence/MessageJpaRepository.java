@@ -14,11 +14,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface MessageJpaRepository extends JpaRepository<MessageJpaEntity, UUID> {
 
-  @Query(
-      """
-FROM MessageJpaEntity m WHERE m.chat.id = :chatId AND m.attachment IS NOT NULL
-      """)
-  List<FileAttachmentJpaEntity> findAttachmentsByChatId(@Param("chatId") UUID chatId);
+  @Query("""
+    SELECT m.attachment
+    FROM MessageJpaEntity m
+    WHERE m.chat.id = :chatId
+      AND m.attachment IS NOT NULL
+    """)
+  List<FileAttachmentJpaEntity> findAttachmentsByChatId(
+      @Param("chatId") UUID chatId);
 
   List<MessageJpaEntity> findAllByChat_Id(UUID chatId, Pageable pageable);
 

@@ -54,10 +54,7 @@ public class MessageController {
       @AuthenticationPrincipal CustomUserDetails user) {
 
     FileDownloadResult file =
-        messageService.getFile(
-            new ChatId(chatId),
-            new MessageId(messageId),
-            user.id());
+        messageService.getFile(new ChatId(chatId), new MessageId(messageId), user.id());
 
     return fileDownloadMapper.toResponse(file);
   }
@@ -70,9 +67,7 @@ public class MessageController {
 
     MessageResult result =
         messageService.sendFile(
-            new ChatId(chatId),
-            user.id(),
-            fileUploadMapper.toFileUploadCommand(file));
+            new ChatId(chatId), user.id(), fileUploadMapper.toFileUploadCommand(file));
 
     return MessageDto.fromResult(result);
   }
@@ -84,10 +79,7 @@ public class MessageController {
       @AuthenticationPrincipal CustomUserDetails user) {
 
     MessageResult result =
-        messageService.sendMessage(
-            new ChatId(chatId),
-            user.id(),
-            request.content());
+        messageService.sendMessage(new ChatId(chatId), user.id(), request.content());
 
     return MessageDto.fromResult(result);
   }
@@ -98,21 +90,13 @@ public class MessageController {
       @Valid @ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    CursorPageQuery<MessageId> query =
-        cursorMapper.toQuery(
-            request,
-            MessageId::new);
+    CursorPageQuery<MessageId> query = cursorMapper.toQuery(request, MessageId::new);
 
     CursorPageResult<MessageResult, MessageId> result =
-        messageService.getMessages(
-            new ChatId(chatId),
-            user.id(),
-            query);
+        messageService.getMessages(new ChatId(chatId), user.id(), query);
 
     return new CursorPageResponse<>(
-        result.content().stream()
-            .map(MessageDto::fromResult)
-            .toList(),
+        result.content().stream().map(MessageDto::fromResult).toList(),
         cursorMapper.toDto(result.nextCursor()),
         result.hasNext());
   }
@@ -124,10 +108,7 @@ public class MessageController {
       @AuthenticationPrincipal CustomUserDetails user) {
 
     MessageResult result =
-        messageService.getMessage(
-            new ChatId(chatId),
-            new MessageId(messageId),
-            user.id());
+        messageService.getMessage(new ChatId(chatId), new MessageId(messageId), user.id());
 
     return MessageDto.fromResult(result);
   }
@@ -139,9 +120,6 @@ public class MessageController {
       @PathVariable UUID messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    messageService.deleteMessage(
-        new ChatId(chatId),
-        new MessageId(messageId),
-        user.id());
+    messageService.deleteMessage(new ChatId(chatId), new MessageId(messageId), user.id());
   }
 }

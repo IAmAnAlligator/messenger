@@ -19,11 +19,7 @@ public class OutboxService {
   private final IdGenerator idGenerator;
 
   @Transactional
-  public void saveEvent(
-      String topic,
-      String eventType,
-      AggregateId aggregateId,
-      String payload) {
+  public void saveEvent(String topic, String eventType, AggregateId aggregateId, String payload) {
 
     validate(topic, eventType, aggregateId, payload);
 
@@ -31,20 +27,10 @@ public class OutboxService {
     EventId eventId = new EventId(idGenerator.generate());
 
     outboxRepository.save(
-        new OutboxCreateData(
-            outboxEventId,
-            eventId,
-            topic,
-            eventType,
-            aggregateId,
-            payload));
+        new OutboxCreateData(outboxEventId, eventId, topic, eventType, aggregateId, payload));
   }
 
-  private void validate(
-      String topic,
-      String eventType,
-      DomainId aggregateId,
-      String payload) {
+  private void validate(String topic, String eventType, DomainId aggregateId, String payload) {
 
     if (topic == null || topic.isBlank()) {
       throw new IllegalArgumentException("Topic is empty");

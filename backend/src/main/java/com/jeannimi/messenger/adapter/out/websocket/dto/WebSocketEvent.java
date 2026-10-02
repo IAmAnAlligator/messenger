@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.adapter.in.websocket;
+package com.jeannimi.messenger.adapter.out.websocket.dto;
 
 import com.jeannimi.messenger.application.event.EventType;
 

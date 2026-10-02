@@ -26,9 +26,7 @@ public class OutboxRepository implements OutboxRepositoryPort {
   public List<OutboxEventData> findBatch(OutboxBatchRequest request) {
 
     return outboxJpaRepository
-        .findBatch(
-            toDomainStatus(request.status()),
-            PageRequest.of(0, request.limit()))
+        .findBatch(toDomainStatus(request.status()), PageRequest.of(0, request.limit()))
         .stream()
         .map(outboxEventPersistenceMapper::toDomain)
         .map(this::toData)
@@ -47,14 +45,11 @@ public class OutboxRepository implements OutboxRepositoryPort {
             event.aggregateId(),
             event.payload());
 
-    OutboxEventJpaEntity entity =
-        outboxEventPersistenceMapper.toEntity(domainEvent);
+    OutboxEventJpaEntity entity = outboxEventPersistenceMapper.toEntity(domainEvent);
 
-    OutboxEventJpaEntity saved =
-        outboxJpaRepository.save(entity);
+    OutboxEventJpaEntity saved = outboxJpaRepository.save(entity);
 
-    return toData(
-        outboxEventPersistenceMapper.toDomain(saved));
+    return toData(outboxEventPersistenceMapper.toDomain(saved));
   }
 
   @Override
@@ -63,13 +58,9 @@ public class OutboxRepository implements OutboxRepositoryPort {
   }
 
   @Override
-  public void scheduleRetry(
-      OutboxEventId id,
-      Instant nextAttemptAt) {
+  public void scheduleRetry(OutboxEventId id, Instant nextAttemptAt) {
 
-    outboxJpaRepository.scheduleRetry(
-        id.value(),
-        nextAttemptAt);
+    outboxJpaRepository.scheduleRetry(id.value(), nextAttemptAt);
   }
 
   @Override
@@ -90,10 +81,8 @@ public class OutboxRepository implements OutboxRepositoryPort {
         event.getNextAttemptAt());
   }
 
-  private com.jeannimi.messenger.domain.outbox.OutboxStatus toDomainStatus(
-      OutboxStatus status) {
+  private com.jeannimi.messenger.domain.outbox.OutboxStatus toDomainStatus(OutboxStatus status) {
 
-    return com.jeannimi.messenger.domain.outbox.OutboxStatus
-        .valueOf(status.name());
+    return com.jeannimi.messenger.domain.outbox.OutboxStatus.valueOf(status.name());
   }
 }

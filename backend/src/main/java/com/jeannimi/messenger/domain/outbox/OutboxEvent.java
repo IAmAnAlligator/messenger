@@ -49,7 +49,12 @@ public final class OutboxEvent {
   }
 
   public static OutboxEvent create(
-      OutboxEventId id, EventId eventId, String topic, String eventType, AggregateId aggregateId, String payload) {
+      OutboxEventId id,
+      EventId eventId,
+      String topic,
+      String eventType,
+      AggregateId aggregateId,
+      String payload) {
 
     Instant now = Instant.now();
 

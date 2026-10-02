@@ -49,6 +49,5 @@ public class FileAttachmentRepository implements FileAttachmentRepositoryPort {
     }
 
     fileAttachmentJpaRepository.deleteById(fileAttachment.getId().value());
-
   }
 }

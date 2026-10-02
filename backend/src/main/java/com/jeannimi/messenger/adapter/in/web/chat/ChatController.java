@@ -54,8 +54,7 @@ public class ChatController {
     ChatCreateCommand command =
         new ChatCreateCommand(request.name(), request.memberIds(), request.type());
 
-    ChatResult result =
-        chatService.createChat(command, user.id());
+    ChatResult result = chatService.createChat(command, user.id());
 
     return toDto(result);
   }
@@ -65,26 +64,18 @@ public class ChatController {
       @Valid @ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
 
-    CursorPageQuery<ChatId> query =
-        cursorMapper.toQuery(
-            request,
-            ChatId::new);
+    CursorPageQuery<ChatId> query = cursorMapper.toQuery(request, ChatId::new);
 
-    CursorPageResult<ChatResult, ChatId> result =
-        chatService.getUserChats(user.id(), query);
+    CursorPageResult<ChatResult, ChatId> result = chatService.getUserChats(user.id(), query);
 
     return toDto(result);
   }
 
   @GetMapping("/{chatId}")
   public ChatDto getChat(
-      @PathVariable UUID chatId,
-      @AuthenticationPrincipal CustomUserDetails user) {
+      @PathVariable UUID chatId, @AuthenticationPrincipal CustomUserDetails user) {
 
-    ChatResult result =
-        chatService.getChat(
-            new ChatId(chatId),
-            user.id());
+    ChatResult result = chatService.getChat(new ChatId(chatId), user.id());
 
     return toDto(result);
   }
@@ -95,10 +86,7 @@ public class ChatController {
       @RequestParam UUID userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    chatService.addMember(
-        new ChatId(chatId),
-        new UserId(userId),
-        currentUser.id());
+    chatService.addMember(new ChatId(chatId), new UserId(userId), currentUser.id());
 
     return ResponseEntity.ok().build();
   }
@@ -109,49 +97,34 @@ public class ChatController {
       @PathVariable UUID userId,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    chatService.removeMember(
-        new ChatId(chatId),
-        new UserId(userId),
-        currentUser.id());
+    chatService.removeMember(new ChatId(chatId), new UserId(userId), currentUser.id());
 
     return ResponseEntity.ok().build();
   }
 
   @DeleteMapping("/{chatId}")
   public ResponseEntity<Void> deleteChat(
-      @PathVariable UUID chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable UUID chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    chatService.deleteChat(
-        new ChatId(chatId),
-        currentUser.id());
+    chatService.deleteChat(new ChatId(chatId), currentUser.id());
 
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/{chatId}/members")
   public List<ChatMemberDto> getMembers(
-      @PathVariable UUID chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable UUID chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    List<ChatMemberResult> results =
-        chatService.getMembers(
-            new ChatId(chatId),
-            currentUser.id());
+    List<ChatMemberResult> results = chatService.getMembers(new ChatId(chatId), currentUser.id());
 
-    return results.stream()
-        .map(this::toDto)
-        .toList();
+    return results.stream().map(this::toDto).toList();
   }
 
   @DeleteMapping("/{chatId}/leave")
   public ResponseEntity<Void> leaveChat(
-      @PathVariable UUID chatId,
-      @AuthenticationPrincipal CustomUserDetails currentUser) {
+      @PathVariable UUID chatId, @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    chatService.leaveChat(
-        new ChatId(chatId),
-        currentUser.id());
+    chatService.leaveChat(new ChatId(chatId), currentUser.id());
 
     return ResponseEntity.noContent().build();
   }
@@ -162,13 +135,9 @@ public class ChatController {
       @RequestBody @Valid RenameChatRequest request,
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-    RenameChatCommand command =
-        new RenameChatCommand(request.name());
+    RenameChatCommand command = new RenameChatCommand(request.name());
 
-    chatService.renameChat(
-        new ChatId(chatId),
-        command,
-        currentUser.id());
+    chatService.renameChat(new ChatId(chatId), command, currentUser.id());
 
     return ResponseEntity.noContent().build();
   }
@@ -176,11 +145,7 @@ public class ChatController {
   private ChatDto toDto(ChatResult result) {
 
     List<ChatMemberDto> members =
-        result.members() == null
-            ? List.of()
-            : result.members().stream()
-                .map(this::toDto)
-                .toList();
+        result.members() == null ? List.of() : result.members().stream().map(this::toDto).toList();
 
     return new ChatDto(
         result.id().value(),
@@ -194,8 +159,7 @@ public class ChatController {
   private ChatMemberDto toDto(ChatMemberResult result) {
 
     UUID lastReadMessageId =
-        result.lastReadMessageId()
-            == null ? null : result.lastReadMessageId().value();
+        result.lastReadMessageId() == null ? null : result.lastReadMessageId().value();
 
     return new ChatMemberDto(
         new UserDto(
@@ -211,21 +175,13 @@ public class ChatController {
   private CursorPageResponse<ChatDto, CursorDto> toDto(
       CursorPageResult<ChatResult, ChatId> result) {
 
-    List<ChatDto> content =
-        result.content().stream()
-            .map(this::toDto)
-            .toList();
+    List<ChatDto> content = result.content().stream().map(this::toDto).toList();
 
     CursorDto nextCursor =
         result.nextCursor() == null
             ? null
-            : new CursorDto(
-                result.nextCursor().time(),
-                result.nextCursor().id().value());
+            : new CursorDto(result.nextCursor().time(), result.nextCursor().id().value());
 
-    return new CursorPageResponse<>(
-        content,
-        nextCursor,
-        result.hasNext());
+    return new CursorPageResponse<>(content, nextCursor, result.hasNext());
   }
 }

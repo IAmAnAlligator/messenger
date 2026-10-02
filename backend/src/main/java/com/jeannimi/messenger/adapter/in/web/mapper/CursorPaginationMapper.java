@@ -13,18 +13,11 @@ import org.springframework.stereotype.Component;
 public class CursorPaginationMapper {
 
   public <ID extends DomainId> CursorPageQuery<ID> toQuery(
-      CursorPageRequest request,
-      Function<UUID, ID> idFactory) {
+      CursorPageRequest request, Function<UUID, ID> idFactory) {
 
-    ID cursorId =
-        request.cursorId() == null
-            ? null
-            : idFactory.apply(request.cursorId());
+    ID cursorId = request.cursorId() == null ? null : idFactory.apply(request.cursorId());
 
-    return new CursorPageQuery<>(
-        cursorId,
-        request.cursorTime(),
-        request.limit());
+    return new CursorPageQuery<>(cursorId, request.cursorTime(), request.limit());
   }
 
   public CursorDto toDto(Cursor<? extends DomainId> cursor) {
@@ -33,8 +26,6 @@ public class CursorPaginationMapper {
       return null;
     }
 
-    return new CursorDto(
-        cursor.time(),
-        cursor.id().value());
+    return new CursorDto(cursor.time(), cursor.id().value());
   }
 }

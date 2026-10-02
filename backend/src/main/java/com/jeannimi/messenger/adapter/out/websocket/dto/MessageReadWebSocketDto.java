@@ -1,17 +1,12 @@
-package com.jeannimi.messenger.adapter.in.websocket.dto;
+package com.jeannimi.messenger.adapter.out.websocket.dto;
 
 import com.jeannimi.messenger.application.event.MessageReadEvent;
 import java.time.Instant;
 
 public record MessageReadWebSocketDto(
-    String messageId,
-    String chatId,
-    String readerId,
-    Instant readAt,
-    String lastReadMessageId) {
+    String messageId, String chatId, String readerId, Instant readAt, String lastReadMessageId) {
 
-  public static MessageReadWebSocketDto from(
-      MessageReadEvent event) {
+  public static MessageReadWebSocketDto from(MessageReadEvent event) {
 
     return new MessageReadWebSocketDto(
         event.messageId().value().toString(),

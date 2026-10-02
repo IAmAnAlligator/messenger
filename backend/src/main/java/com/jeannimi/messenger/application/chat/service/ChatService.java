@@ -14,9 +14,7 @@ public interface ChatService {
 
   ChatResult createChat(ChatCreateCommand request, UserId currentUserId);
 
-  CursorPageResult<ChatResult, ChatId> getUserChats(
-      UserId userId,
-      CursorPageQuery<ChatId> query);
+  CursorPageResult<ChatResult, ChatId> getUserChats(UserId userId, CursorPageQuery<ChatId> query);
 
   ChatResult getChat(ChatId chatId, UserId userId);
 

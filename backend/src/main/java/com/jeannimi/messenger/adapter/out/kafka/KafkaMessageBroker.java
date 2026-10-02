@@ -19,14 +19,16 @@ public class KafkaMessageBroker implements MessageBrokerPort {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void publish(String topic, EventId eventId, AggregateId aggregateId, String eventType, String payload) {
+  public void publish(
+      String topic, EventId eventId, AggregateId aggregateId, String eventType, String payload) {
 
     try {
 
       UUID aggregateIdValue = aggregateId.value();
 
       KafkaEventEnvelope envelope =
-          new KafkaEventEnvelope(eventId.value(), eventType, aggregateIdValue, objectMapper.readTree(payload));
+          new KafkaEventEnvelope(
+              eventId.value(), eventType, aggregateIdValue, objectMapper.readTree(payload));
 
       String message = objectMapper.writeValueAsString(envelope);
 

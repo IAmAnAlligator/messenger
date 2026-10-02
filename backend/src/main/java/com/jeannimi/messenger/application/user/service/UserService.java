@@ -61,9 +61,6 @@ public class UserService {
   private UserResult toResult(User user) {
 
     return new UserResult(
-        user.getId(),
-        user.getHandle().getValue(),
-        user.getUsername().getValue(),
-        user.getRole());
+        user.getId(), user.getHandle().getValue(), user.getUsername().getValue(), user.getRole());
   }
 }

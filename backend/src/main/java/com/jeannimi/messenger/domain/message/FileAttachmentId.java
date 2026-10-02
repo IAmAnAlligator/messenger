@@ -9,5 +9,4 @@ public record FileAttachmentId(UUID value) implements DomainId {
   public FileAttachmentId {
     Objects.requireNonNull(value, "FileAttachment id must not be null");
   }
-
 }

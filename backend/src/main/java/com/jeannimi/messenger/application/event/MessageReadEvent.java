@@ -6,5 +6,9 @@ import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 
 public record MessageReadEvent(
-    MessageId messageId, ChatId chatId, UserId readerId, Instant readAt, MessageId lastReadMessageId)
+    MessageId messageId,
+    ChatId chatId,
+    UserId readerId,
+    Instant readAt,
+    MessageId lastReadMessageId)
     implements ApplicationEvent {}

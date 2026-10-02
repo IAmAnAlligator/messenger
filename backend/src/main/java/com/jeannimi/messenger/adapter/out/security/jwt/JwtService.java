@@ -68,7 +68,8 @@ public class JwtService implements TokenServicePort {
         .compact();
   }
 
-  @Override public UserId extractUserId(String token) {
+  @Override
+  public UserId extractUserId(String token) {
     UUID userId = UUID.fromString(extractClaims(token).getSubject());
     return new UserId(userId);
   }

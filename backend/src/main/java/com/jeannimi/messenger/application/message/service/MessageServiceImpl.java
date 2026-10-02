@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -133,7 +132,11 @@ public class MessageServiceImpl implements MessageService {
 
       FileAttachment attachment =
           FileAttachment.create(
-              fileAttachmentId, originalFileName, storedFile.storageFileName(), contentType, file.size());
+              fileAttachmentId,
+              originalFileName,
+              storedFile.storageFileName(),
+              contentType,
+              file.size());
 
       MessageId messageId = new MessageId(idGenerator.generate());
 
@@ -371,7 +374,8 @@ public class MessageServiceImpl implements MessageService {
 
     messageRepository.delete(message);
 
-    eventPublisher.publish(EventType.MESSAGE_DELETED, new AggregateId(chatId.value()), messageDeletedEvent);
+    eventPublisher.publish(
+        EventType.MESSAGE_DELETED, new AggregateId(chatId.value()), messageDeletedEvent);
 
     publishFileDeletion(attachment);
   }
@@ -388,7 +392,8 @@ public class MessageServiceImpl implements MessageService {
 
     if (!attachments.isEmpty()) {
 
-      List<FileAttachmentId> attachmentIds = attachments.stream().map(FileAttachment::getId).toList();
+      List<FileAttachmentId> attachmentIds =
+          attachments.stream().map(FileAttachment::getId).toList();
 
       deletedAttachments = fileAttachmentRepository.deleteAllByIds(attachmentIds);
 
@@ -447,7 +452,8 @@ public class MessageServiceImpl implements MessageService {
 
     MessageCreatedEvent event = new MessageCreatedEvent(result, recipientUserIds);
 
-    eventPublisher.publish(EventType.MESSAGE_CREATED, new AggregateId(result.chatId().value()), event);
+    eventPublisher.publish(
+        EventType.MESSAGE_CREATED, new AggregateId(result.chatId().value()), event);
   }
 
   /** Используется для сообщений, которые уже были загружены вместе с sender через JOIN FETCH. */

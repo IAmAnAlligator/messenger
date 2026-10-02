@@ -32,8 +32,12 @@ public final class FileAttachment {
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
   }
 
-  public static FileAttachment create(FileAttachmentId id,
-      String originalFileName, String storageFileName, String contentType, Long size) {
+  public static FileAttachment create(
+      FileAttachmentId id,
+      String originalFileName,
+      String storageFileName,
+      String contentType,
+      Long size) {
 
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);

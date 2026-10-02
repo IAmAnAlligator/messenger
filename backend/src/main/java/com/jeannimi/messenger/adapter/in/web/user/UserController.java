@@ -31,7 +31,7 @@ public class UserController {
 
   @GetMapping("/search")
   public List<UserDto> searchUsers(
-      @RequestParam @NotBlank @Size(min = 3, max = 25) String query,
+      @RequestParam @NotBlank @Size(min = 2, max = 25) String query,
       @AuthenticationPrincipal CustomUserDetails user) {
 
     return userService.searchUsers(query.trim(), user.id()).stream().map(this::toDto).toList();

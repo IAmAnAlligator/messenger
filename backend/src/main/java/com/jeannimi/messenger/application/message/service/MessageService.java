@@ -9,7 +9,6 @@ import com.jeannimi.messenger.application.message.dto.ReadResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.UserId;
-import java.util.UUID;
 
 public interface MessageService {
 
@@ -19,7 +18,8 @@ public interface MessageService {
 
   MessageResult sendMessage(ChatId chatId, UserId senderId, String content);
 
-  CursorPageResult<MessageResult, MessageId> getMessages(ChatId chatId, UserId userId, CursorPageQuery<MessageId> query);
+  CursorPageResult<MessageResult, MessageId> getMessages(
+      ChatId chatId, UserId userId, CursorPageQuery<MessageId> query);
 
   MessageResult getMessage(ChatId chatId, MessageId messageId, UserId userId);
 

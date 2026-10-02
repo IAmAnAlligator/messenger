@@ -9,5 +9,4 @@ public record AggregateId(UUID value) implements DomainId {
   public AggregateId {
     Objects.requireNonNull(value, "AggregateId id must not be null");
   }
-
 }

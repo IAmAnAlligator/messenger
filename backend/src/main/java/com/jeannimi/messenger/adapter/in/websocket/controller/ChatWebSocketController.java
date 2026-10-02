@@ -21,50 +21,35 @@ public class ChatWebSocketController {
   private final MessageService messageService;
 
   @MessageMapping("/chat.send")
-  public void sendMessage(
-      @Valid SendMessageCommand command,
-      Authentication authentication) {
+  public void sendMessage(@Valid SendMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
     ChatId chatId = new ChatId(command.chatId());
 
-    messageService.sendMessage(
-        chatId,
-        principal.userId(),
-        command.content());
+    messageService.sendMessage(chatId, principal.userId(), command.content());
   }
 
   @MessageMapping("/chat.read")
-  public void read(
-      @Valid ReadMessageCommand command,
-      Authentication authentication) {
+  public void read(@Valid ReadMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
     ChatId chatId = new ChatId(command.chatId());
     MessageId messageId = new MessageId(command.messageId());
 
-    messageService.markAsRead(
-        chatId,
-        messageId,
-        principal.userId());
+    messageService.markAsRead(chatId, messageId, principal.userId());
   }
 
   @MessageMapping("/chat.delete")
-  public void delete(
-      @Valid DeleteMessageCommand command,
-      Authentication authentication) {
+  public void delete(@Valid DeleteMessageCommand command, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
     ChatId chatId = new ChatId(command.chatId());
     MessageId messageId = new MessageId(command.messageId());
 
-    messageService.deleteMessage(
-        chatId,
-        messageId,
-        principal.userId());
+    messageService.deleteMessage(chatId, messageId, principal.userId());
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {

@@ -32,11 +32,9 @@ public class ProcessedEventRepository implements ProcessedEventRepositoryPort {
 
     Objects.requireNonNull(processedEvent, "processedEvent");
 
-    ProcessedEventJpaEntity entity =
-        processedEventPersistenceMapper.toEntity(processedEvent);
+    ProcessedEventJpaEntity entity = processedEventPersistenceMapper.toEntity(processedEvent);
 
-    ProcessedEventJpaEntity saved =
-        processedEventJpaRepository.save(entity);
+    ProcessedEventJpaEntity saved = processedEventJpaRepository.save(entity);
 
     return processedEventPersistenceMapper.toDomain(saved);
   }
