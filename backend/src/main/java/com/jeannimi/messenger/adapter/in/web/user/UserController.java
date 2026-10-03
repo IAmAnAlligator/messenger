@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.in.web.user;
 
 import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
+import com.jeannimi.messenger.adapter.in.web.user.dto.UserProfileResponse;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.application.user.service.UserService;
 import jakarta.validation.constraints.NotBlank;
@@ -24,9 +25,9 @@ public class UserController {
   private final UserService userService;
 
   @GetMapping("/me")
-  public UserDto me(@AuthenticationPrincipal CustomUserDetails user) {
+  public UserProfileResponse me(@AuthenticationPrincipal CustomUserDetails user) {
     UserResult result = userService.getCurrentUser(user.id());
-    return toDto(result);
+    return toProfileResponse(result);
   }
 
   @GetMapping("/search")
@@ -35,6 +36,13 @@ public class UserController {
       @AuthenticationPrincipal CustomUserDetails user) {
 
     return userService.searchUsers(query.trim(), user.id()).stream().map(this::toDto).toList();
+  }
+
+  private UserProfileResponse toProfileResponse(UserResult result) {
+    return new UserProfileResponse(
+        result.id().value(),
+        result.username(),
+        result.handle());
   }
 
   private UserDto toDto(UserResult result) {

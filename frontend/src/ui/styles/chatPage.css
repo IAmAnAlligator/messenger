@@ -100,15 +100,8 @@
 */
 
 .message-header {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-    font-size: 13px;
-
+    position: relative;
+    min-height: 20px;
 }
 
 
@@ -177,13 +170,19 @@
 */
 
 .delete-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    padding: 0;
 
     border: none;
-
     background: none;
 
-    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
 
+    cursor: pointer;
 }
 
 
@@ -254,4 +253,26 @@
     max-width: 500px;
     max-height: 500px;
     object-fit: contain;
+}
+
+.message-sender {
+
+    padding: 0;
+
+    border: none;
+
+    background: none;
+
+    font: inherit;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+.message-sender:hover {
+
+    text-decoration: underline;
+
 }

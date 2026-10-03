@@ -25,6 +25,7 @@ import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.chat.Chat;
 import com.jeannimi.messenger.domain.chat.ChatId;
@@ -62,6 +63,27 @@ public class ChatServiceImpl implements ChatService {
   // =========================
   // CREATE CHAT
   // =========================
+
+  @Override
+  @Transactional(readOnly = true)
+  public UserProfileResult getMemberProfile(
+      ChatId chatId, UserId currentUserId, UserId memberUserId) {
+
+    if (!chatMemberRepository.existsByChatIdAndUserId(chatId, currentUserId)) {
+      throw new ForbiddenException("Access denied");
+    }
+
+    if (!chatMemberRepository.existsByChatIdAndUserId(chatId, memberUserId)) {
+      throw new NotFoundException("User is not a member of this chat");
+    }
+
+    User user = loadUser(memberUserId);
+
+    return new UserProfileResult(
+        user.getId(),
+        user.getUsername().getValue(),
+        user.getHandle().getValue());
+  }
 
   @Override
   @Transactional

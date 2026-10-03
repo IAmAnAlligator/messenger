@@ -12,6 +12,16 @@
 
 }
 
+.chats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.chats-header-actions {
+    display: flex;
+    gap: 8px;
+}
 
 
 /*

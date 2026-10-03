@@ -57,6 +57,14 @@ export default function ChatsPage() {
     }
 
 
+    function handleProfile() {
+
+        navigate(
+            "/profile"
+        );
+    }
+
+
     function getChatName(
         chat: ChatDto
     ): string {
@@ -86,9 +94,15 @@ export default function ChatsPage() {
         <div className="chats-page">
 
             <ChatsHeader
+
+                onProfile={
+                    handleProfile
+                }
+
                 onLogout={
                     handleLogout
                 }
+
             />
 
 
@@ -172,4 +186,5 @@ export default function ChatsPage() {
         </div>
 
     );
+
 }

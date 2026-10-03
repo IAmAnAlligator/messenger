@@ -6,6 +6,7 @@ import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
@@ -31,4 +32,9 @@ public interface ChatService {
   List<ChatMemberResult> getMembers(ChatId chatId, UserId currentUserId);
 
   void renameChat(ChatId chatId, RenameChatCommand command, UserId currentUserId);
+
+  UserProfileResult getMemberProfile(
+      ChatId chatId,
+      UserId currentUserId,
+      UserId memberUserId);
 }

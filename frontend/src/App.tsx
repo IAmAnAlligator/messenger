@@ -14,7 +14,12 @@ import ChatEditPage from "./ui/pages/ChatEditPage";
 
 import ChatCreatePage from "./ui/pages/ChatCreatePage";
 
+import ProfilePage from "./ui/pages/ProfilePage";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+
+import MemberProfilePage from "./ui/pages/MemberProfilePage";
+
 
 /**
  * Главный компонент приложения
@@ -44,6 +49,25 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+
+
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+    path="/chats/:chatId/members/:userId/profile"
+    element={
+        <ProtectedRoute>
+            <MemberProfilePage />
+        </ProtectedRoute>
+    }
+/>
 
 
                     <Route

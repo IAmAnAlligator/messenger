@@ -34,6 +34,10 @@ type Props = {
         id: string
     ): void;
 
+    onUserProfile(
+         userId: string
+    ): void;
+
     onLoadMore():
         void | Promise<void>;
 
@@ -59,6 +63,8 @@ export default function MessageList({
     isMessageReadByOtherUser,
 
     onDelete,
+
+    onUserProfile,
 
     onLoadMore,
 
@@ -571,6 +577,10 @@ export default function MessageList({
                                     onDelete={
                                         onDelete
                                     }
+
+                                        onUserProfile={
+        onUserProfile
+    }
 
                                     isRead={
                                         isRead

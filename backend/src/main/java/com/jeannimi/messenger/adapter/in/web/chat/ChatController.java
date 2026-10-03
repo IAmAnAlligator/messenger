@@ -10,6 +10,7 @@ import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageRequest;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorPageResponse;
 import com.jeannimi.messenger.adapter.in.web.user.dto.UserDto;
+import com.jeannimi.messenger.adapter.in.web.user.dto.UserProfileResponse;
 import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
 import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
 import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
@@ -17,6 +18,7 @@ import com.jeannimi.messenger.application.chat.dto.ChatResult;
 import com.jeannimi.messenger.application.chat.service.ChatService;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
 import jakarta.validation.Valid;
@@ -140,6 +142,29 @@ public class ChatController {
     chatService.renameChat(new ChatId(chatId), command, currentUser.id());
 
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/{chatId}/members/{userId}/profile")
+  public UserProfileResponse getMemberProfile(
+      @PathVariable UUID chatId,
+      @PathVariable UUID userId,
+      @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+    UserProfileResult result =
+        chatService.getMemberProfile(
+            new ChatId(chatId),
+            currentUser.id(),
+            new UserId(userId));
+
+    return toProfileResponse(result);
+  }
+
+  private UserProfileResponse toProfileResponse(UserProfileResult result) {
+
+    return new UserProfileResponse(
+        result.id().value(),
+        result.username(),
+        result.handle());
   }
 
   private ChatDto toDto(ChatResult result) {

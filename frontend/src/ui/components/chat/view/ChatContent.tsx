@@ -62,6 +62,10 @@ type Props = {
         id: string
     ): void;
 
+    onUserProfile(
+    userId: string
+    ): void;
+
     onBack(): void;
 
     onEdit(): void;
@@ -140,6 +144,10 @@ export default function ChatContent(
                 onDelete={
                     props.onDelete
                 }
+
+                    onUserProfile={
+                     props.onUserProfile
+                 }
 
             />
 

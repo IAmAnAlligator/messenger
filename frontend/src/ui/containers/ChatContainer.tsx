@@ -117,6 +117,16 @@ export default function ChatContainer(
 
     }
 
+    function handleUserProfile(
+    userId: string
+) {
+
+    navigate(
+        `/chats/${chatId}/members/${userId}/profile`
+    );
+
+}
+
 
     function handleSend() {
 
@@ -186,6 +196,10 @@ export default function ChatContainer(
 
             onReadUpTo={
                 handleReadUpTo
+            }
+
+            onUserProfile={
+                handleUserProfile
             }
 
             text={

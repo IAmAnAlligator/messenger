@@ -1,34 +1,46 @@
 type Props = {
 
-    onLogout():void;
+    onProfile(): void;
+
+    onLogout(): void;
 
 };
 
 
 export default function ChatsHeader({
+    onProfile,
     onLogout
-}:Props){
+}: Props) {
 
 
-return (
+    return (
 
-<header className="chats-header">
+        <header className="chats-header">
 
-
-    <h2>
-        Chats
-    </h2>
-
-
-    <button
-        onClick={onLogout}
-    >
-        Logout
-    </button>
+            <h2>
+                Chats
+            </h2>
 
 
-</header>
+            <div className="chats-header-actions">
 
-);
+                <button
+                    onClick={onProfile}
+                >
+                    Profile
+                </button>
+
+
+                <button
+                    onClick={onLogout}
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </header>
+
+    );
 
 }

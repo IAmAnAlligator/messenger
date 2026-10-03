@@ -27,6 +27,10 @@ type Props = {
         id: string
     ): void;
 
+    onUserProfile(
+        userId: string
+    ): void;
+
     isRead: boolean;
 
 };
@@ -37,6 +41,8 @@ export default function MessageItem({
     message,
 
     onDelete,
+
+    onUserProfile,
 
     isRead
 
@@ -209,13 +215,23 @@ export default function MessageItem({
 
                 <div className="message-header">
 
-                    <b>
-                        {
-                            mine
-                                ? "You"
-                                : message.sender.username
-                        }
-                    </b>
+                    {
+                        !mine && (
+
+                            <button
+                                type="button"
+                                className="message-sender"
+                                onClick={() =>
+                                    onUserProfile(
+                                        message.sender.id
+                                    )
+                                }
+                            >
+                                {message.sender.username}
+                            </button>
+
+                        )
+                    }
 
 
                     {
@@ -375,6 +391,7 @@ export default function MessageItem({
                     <span className="message-time">
                         {formattedDate}
                     </span>
+
 
                     {
                         mine && (
