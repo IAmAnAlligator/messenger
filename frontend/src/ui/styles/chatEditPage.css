@@ -288,3 +288,18 @@
     color:white;
 
 }
+
+.member-name-button {
+    padding: 0;
+    border: none;
+    background: none;
+
+    font: inherit;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.member-name-button:hover {
+    text-decoration: underline;
+}

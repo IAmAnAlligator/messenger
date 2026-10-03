@@ -5,7 +5,8 @@ import {
 
 import {
     useNavigate,
-    useParams
+    useParams,
+    useSearchParams
 } from "react-router-dom";
 
 import {
@@ -53,6 +54,10 @@ export default function MemberProfilePage() {
         setLoading
     ] =
         useState(true);
+
+    const [
+    searchParams
+] = useSearchParams();
 
 
     const [
@@ -124,24 +129,39 @@ export default function MemberProfilePage() {
     ]);
 
 
-    function handleBack() {
+function handleBack() {
 
-        if (chatId) {
-
-            navigate(
-                `/chats/${chatId}`
-            );
-
-            return;
-
-        }
-
+    if (!chatId) {
 
         navigate(
             "/chats"
         );
 
+        return;
+
     }
+
+
+    const from =
+        searchParams.get("from");
+
+
+    if (from === "edit") {
+
+        navigate(
+            `/chats/${chatId}/edit`
+        );
+
+        return;
+
+    }
+
+
+    navigate(
+        `/chats/${chatId}`
+    );
+
+}
 
 
     if (loading) {
