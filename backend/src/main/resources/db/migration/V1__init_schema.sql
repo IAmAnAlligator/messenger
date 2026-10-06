@@ -30,7 +30,7 @@ CREATE TABLE chats
     created_at      TIMESTAMPTZ  NOT NULL,
     last_message_at TIMESTAMPTZ,
     private_key     VARCHAR(73) UNIQUE,
-    version         BIGINT
+    version         BIGINT       NOT NULL DEFAULT 0
 );
 
 
@@ -76,12 +76,12 @@ CREATE TABLE file_attachments
 
 CREATE TABLE messages
 (
-    id                 UUID         PRIMARY KEY,
-    chat_id            UUID         NOT NULL,
-    sender_id          UUID         NOT NULL,
-    content            VARCHAR(2000),
-    created_at          TIMESTAMPTZ NOT NULL,
-    type               VARCHAR(20)  NOT NULL,
+    id                  UUID         PRIMARY KEY,
+    chat_id             UUID         NOT NULL,
+    sender_id           UUID         NOT NULL,
+    encrypted_content   TEXT,
+    created_at          TIMESTAMPTZ  NOT NULL,
+    type                VARCHAR(20)  NOT NULL,
     file_attachment_id  UUID,
 
     CONSTRAINT fk_messages_chat
@@ -104,13 +104,13 @@ CREATE TABLE messages
         CHECK (
             (
                 type = 'TEXT'
-                AND content IS NOT NULL
+                AND encrypted_content IS NOT NULL
                 AND file_attachment_id IS NULL
             )
             OR
             (
                 type = 'FILE'
-                AND content IS NULL
+                AND encrypted_content IS NULL
                 AND file_attachment_id IS NOT NULL
             )
         )

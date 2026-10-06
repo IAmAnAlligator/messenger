@@ -67,6 +67,9 @@ security:
   access-expiration: ${ACCESS_EXPIRATION}
   refresh-expiration: ${REFRESH_EXPIRATION}
 
+encryption:
+  key: ${MESSAGE_ENCRYPTION_KEY}
+
 file:
   storage:
     location: ./storage/files

@@ -23,10 +23,10 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "messages",
     indexes = {
-      @Index(
-          name = "idx_messages_chat_created_id",
-          columnList = "chat_id, created_at DESC, id DESC"),
-      @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
+        @Index(
+            name = "idx_messages_chat_created_id",
+            columnList = "chat_id, created_at DESC, id DESC"),
+        @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,8 +44,8 @@ public class MessageJpaEntity {
   @JoinColumn(name = "sender_id", nullable = false)
   private UserJpaEntity sender;
 
-  @Column(name = "content", length = 2000)
-  private String content;
+  @Column(name = "encrypted_content", columnDefinition = "TEXT")
+  private String encryptedContent;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
@@ -62,7 +62,7 @@ public class MessageJpaEntity {
       UUID id,
       ChatJpaEntity chat,
       UserJpaEntity sender,
-      String content,
+      String encryptedContent,
       Instant createdAt,
       MessageType type,
       FileAttachmentJpaEntity attachment) {
@@ -70,7 +70,7 @@ public class MessageJpaEntity {
     this.id = id;
     this.chat = chat;
     this.sender = sender;
-    this.content = content;
+    this.encryptedContent = encryptedContent;
     this.createdAt = createdAt;
     this.type = type;
     this.attachment = attachment;
