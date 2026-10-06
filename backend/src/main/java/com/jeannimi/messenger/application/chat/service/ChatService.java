@@ -10,10 +10,13 @@ import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatService {
 
   ChatResult createChat(ChatCreateCommand request, UserId currentUserId);
+
+  ChatResult getOrCreatePrivateChat(UserId currentUserId, UserId otherUserId);
 
   CursorPageResult<ChatResult, ChatId> getUserChats(UserId userId, CursorPageQuery<ChatId> query);
 
@@ -33,8 +36,7 @@ public interface ChatService {
 
   void renameChat(ChatId chatId, RenameChatCommand command, UserId currentUserId);
 
-  UserProfileResult getMemberProfile(
-      ChatId chatId,
-      UserId currentUserId,
-      UserId memberUserId);
+  UserProfileResult getMemberProfile(ChatId chatId, UserId currentUserId, UserId memberUserId);
+
+  Optional<ChatResult> findPrivateChat(UserId currentUserId, UserId otherUserId);
 }

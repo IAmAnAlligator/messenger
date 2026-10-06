@@ -24,6 +24,7 @@ import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
+import com.jeannimi.messenger.application.port.out.PrivateChatCreateResult;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.application.user.dto.UserResult;
@@ -41,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -66,6 +68,15 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   @Transactional(readOnly = true)
+  public Optional<ChatResult> findPrivateChat(UserId currentUserId, UserId otherUserId) {
+
+    String privateKey = Chat.buildPrivateKey(currentUserId, otherUserId);
+
+    return chatRepository.findByPrivateKey(privateKey).map(this::toResult);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public UserProfileResult getMemberProfile(
       ChatId chatId, UserId currentUserId, UserId memberUserId) {
 
@@ -80,9 +91,7 @@ public class ChatServiceImpl implements ChatService {
     User user = loadUser(memberUserId);
 
     return new UserProfileResult(
-        user.getId(),
-        user.getUsername().getValue(),
-        user.getHandle().getValue());
+        user.getId(), user.getUsername().getValue(), user.getHandle().getValue());
   }
 
   @Override
@@ -95,6 +104,39 @@ public class ChatServiceImpl implements ChatService {
       case PRIVATE -> createPrivateChat(command, creator);
       case GROUP -> createGroupChat(command, creator);
     };
+  }
+
+  @Override
+  @Transactional
+  public ChatResult getOrCreatePrivateChat(UserId currentUserId, UserId otherUserId) {
+
+    User currentUser = loadUser(currentUserId);
+    User otherUser = loadUser(otherUserId);
+
+    Chat chat = createPrivateChatAggregate(currentUser, otherUser);
+
+    PrivateChatCreateResult result = chatRepository.getOrCreatePrivateChat(chat);
+
+    if (result.created()) {
+      publishChatCreated(result.chat());
+    }
+
+    return toResult(result.chat());
+  }
+
+  private Chat createPrivateChatAggregate(User creator, User otherUser) {
+
+    ChatId chatId = new ChatId(idGenerator.generate());
+
+    ChatMemberId creatorMemberId = new ChatMemberId(idGenerator.generate());
+
+    ChatMemberId otherMemberId = new ChatMemberId(idGenerator.generate());
+
+    ChatMember creatorMember = ChatMember.create(creatorMemberId, creator, ChatRole.ADMIN);
+
+    ChatMember otherMember = ChatMember.create(otherMemberId, otherUser, ChatRole.MEMBER);
+
+    return Chat.createPrivate(chatId, creatorMember, otherMember);
   }
 
   private ChatResult createPrivateChat(ChatCreateCommand command, User creator) {

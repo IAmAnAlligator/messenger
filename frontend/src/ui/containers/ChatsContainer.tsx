@@ -106,16 +106,34 @@ export default function ChatsPage() {
             />
 
 
-            <button
-                className="create-chat-btn"
-                onClick={() =>
-                    navigate(
-                        "/chats/create"
-                    )
-                }
-            >
-                Create chat
-            </button>
+            <div className="chat-create-actions">
+
+                <button
+                    className="create-chat-btn"
+                    type="button"
+                    onClick={() =>
+                        navigate(
+                            "/chats/create/group"
+                        )
+                    }
+                >
+                    Create group chat
+                </button>
+
+
+                <button
+                    className="create-private-chat-btn"
+                    type="button"
+                    onClick={() =>
+                        navigate(
+                            "/chats/create/private"
+                        )
+                    }
+                >
+                    New private message
+                </button>
+
+            </div>
 
 
             <div className="chat-content">

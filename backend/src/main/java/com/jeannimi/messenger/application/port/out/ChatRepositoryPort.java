@@ -18,4 +18,6 @@ public interface ChatRepositoryPort {
   Optional<Chat> findById(ChatId chatId);
 
   void delete(Chat chat);
+
+  PrivateChatCreateResult getOrCreatePrivateChat(Chat chat);
 }

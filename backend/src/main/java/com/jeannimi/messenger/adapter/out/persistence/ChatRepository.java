@@ -4,6 +4,7 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ChatPersistenceMapper;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
+import com.jeannimi.messenger.application.port.out.PrivateChatCreateResult;
 import com.jeannimi.messenger.domain.chat.Chat;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatMember;
@@ -21,9 +22,44 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class ChatRepository implements ChatRepositoryPort {
+
   private final ChatJpaRepository chatJpaRepository;
   private final UserJpaRepository userJpaRepository;
   private final ChatPersistenceMapper chatPersistenceMapper;
+
+  @Override
+  public PrivateChatCreateResult getOrCreatePrivateChat(Chat chat) {
+    Objects.requireNonNull(chat, "chat");
+
+    int inserted =
+        chatJpaRepository.insertPrivateChatIfAbsent(
+            chat.getId().value(),
+            chat.getName(),
+            chat.getType().name(),
+            chat.getCreatedAt(),
+            chat.getLastMessageAt(),
+            chat.getPrivateKey());
+
+    if (inserted == 0) {
+      Chat existing =
+          chatJpaRepository
+              .findByPrivateKey(chat.getPrivateKey())
+              .map(chatPersistenceMapper::toDomain)
+              .orElseThrow(
+                  () -> new IllegalStateException("Private chat exists but could not be loaded"));
+
+      return new PrivateChatCreateResult(existing, false);
+    }
+
+    /*
+     * Chat row was inserted by native SQL.
+     *
+     * Now use the existing save() implementation to add members.
+     */
+    Chat saved = save(chat);
+
+    return new PrivateChatCreateResult(saved, true);
+  }
 
   @Override
   public Chat save(Chat chat) {

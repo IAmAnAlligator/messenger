@@ -4,26 +4,40 @@ import {
     Route
 } from "react-router-dom";
 
-import AuthPage from "./ui/pages/AuthPage";
+import AuthPage
+    from "./ui/pages/AuthPage";
 
-import ChatsPage from "./ui/pages/ChatsPage";
+import ChatsPage
+    from "./ui/pages/ChatsPage";
 
-import ChatPage from "./ui/pages/ChatPage";
+import ChatPage
+    from "./ui/pages/ChatPage";
 
-import ChatEditPage from "./ui/pages/ChatEditPage";
+import ChatEditPage
+    from "./ui/pages/ChatEditPage";
 
-import ChatCreatePage from "./ui/pages/ChatCreatePage";
+import ChatCreatePage
+    from "./ui/pages/ChatCreatePage";
 
-import ProfilePage from "./ui/pages/ProfilePage";
+import ProfilePage
+    from "./ui/pages/ProfilePage";
 
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute
+    from "./components/ProtectedRoute";
 
-import MemberProfilePage from "./ui/pages/MemberProfilePage";
+import MemberProfilePage
+    from "./ui/pages/MemberProfilePage";
+
+import GroupChatCreatePage
+    from "./ui/pages/GroupChatCreatePage";
+
+import PrivateChatCreatePage
+    from "./ui/pages/PrivateChatCreatePage";
+
+import NewPrivateChatPage
+    from "./ui/pages/NewPrivateChatPage";
 
 
-/**
- * Главный компонент приложения
- */
 function App() {
 
     return (
@@ -34,10 +48,11 @@ function App() {
 
                 <Routes>
 
-
                     <Route
                         path="/"
-                        element={<AuthPage />}
+                        element={
+                            <AuthPage />
+                        }
                     />
 
 
@@ -60,14 +75,45 @@ function App() {
                         }
                     />
 
+
                     <Route
-    path="/chats/:chatId/members/:userId/profile"
-    element={
-        <ProtectedRoute>
-            <MemberProfilePage />
-        </ProtectedRoute>
-    }
-/>
+                        path="/chats/create/group"
+                        element={
+                            <ProtectedRoute>
+                                <GroupChatCreatePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                    <Route
+                        path="/chats/create/private"
+                        element={
+                            <ProtectedRoute>
+                                <PrivateChatCreatePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                    <Route
+                        path="/chats/new"
+                        element={
+                            <ProtectedRoute>
+                                <NewPrivateChatPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+
+                    <Route
+                        path="/chats/:chatId/members/:userId/profile"
+                        element={
+                            <ProtectedRoute>
+                                <MemberProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
 
 
                     <Route
@@ -98,7 +144,6 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-
 
                 </Routes>
 

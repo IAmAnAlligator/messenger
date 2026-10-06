@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.adapter.out.websocket;
 
-import com.jeannimi.messenger.adapter.out.websocket.dto.WebSocketEvent;
 import com.jeannimi.messenger.adapter.out.websocket.dto.ChatCreatedWebSocketDto;
 import com.jeannimi.messenger.adapter.out.websocket.dto.ChatDeletedWebSocketDto;
 import com.jeannimi.messenger.adapter.out.websocket.dto.ChatMemberAddedWebSocketDto;
@@ -10,6 +9,7 @@ import com.jeannimi.messenger.adapter.out.websocket.dto.ChatRenamedWebSocketDto;
 import com.jeannimi.messenger.adapter.out.websocket.dto.MessageCreatedWebSocketDto;
 import com.jeannimi.messenger.adapter.out.websocket.dto.MessageDeletedWebSocketDto;
 import com.jeannimi.messenger.adapter.out.websocket.dto.MessageReadWebSocketDto;
+import com.jeannimi.messenger.adapter.out.websocket.dto.WebSocketEvent;
 import com.jeannimi.messenger.application.event.ApplicationEvent;
 import com.jeannimi.messenger.application.event.ChatCreatedEvent;
 import com.jeannimi.messenger.application.event.ChatDeletedEvent;

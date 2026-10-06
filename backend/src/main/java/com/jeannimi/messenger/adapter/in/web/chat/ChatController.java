@@ -18,6 +18,7 @@ import com.jeannimi.messenger.application.chat.dto.ChatResult;
 import com.jeannimi.messenger.application.chat.service.ChatService;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
+import com.jeannimi.messenger.application.exception.ChatNotFoundException;
 import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
@@ -47,6 +48,16 @@ public class ChatController {
 
   private final ChatService chatService;
   private final CursorPaginationMapper cursorMapper;
+
+  @GetMapping("/private-with/{userId}")
+  public ChatDto findPrivateChat(
+      @PathVariable UUID userId, @AuthenticationPrincipal CustomUserDetails user) {
+    ChatResult result =
+        chatService
+            .findPrivateChat(user.id(), new UserId(userId))
+            .orElseThrow(() -> new ChatNotFoundException("Private chat not found"));
+    return toDto(result);
+  }
 
   @PostMapping
   public ChatDto createChat(
@@ -151,20 +162,14 @@ public class ChatController {
       @AuthenticationPrincipal CustomUserDetails currentUser) {
 
     UserProfileResult result =
-        chatService.getMemberProfile(
-            new ChatId(chatId),
-            currentUser.id(),
-            new UserId(userId));
+        chatService.getMemberProfile(new ChatId(chatId), currentUser.id(), new UserId(userId));
 
     return toProfileResponse(result);
   }
 
   private UserProfileResponse toProfileResponse(UserProfileResult result) {
 
-    return new UserProfileResponse(
-        result.id().value(),
-        result.username(),
-        result.handle());
+    return new UserProfileResponse(result.id().value(), result.username(), result.handle());
   }
 
   private ChatDto toDto(ChatResult result) {

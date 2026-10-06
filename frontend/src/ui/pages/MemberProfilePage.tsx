@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import {
+    useLocation,
     useNavigate,
     useParams,
     useSearchParams
@@ -27,10 +28,21 @@ type UserProfileResponse = {
 };
 
 
+type ExistingPrivateChatResponse = {
+
+    id: string;
+
+};
+
+
 export default function MemberProfilePage() {
 
     const navigate =
         useNavigate();
+
+
+    const location =
+        useLocation();
 
 
     const {
@@ -55,9 +67,18 @@ export default function MemberProfilePage() {
     ] =
         useState(true);
 
+
     const [
-    searchParams
-] = useSearchParams();
+        openingChat,
+        setOpeningChat
+    ] =
+        useState(false);
+
+
+    const [
+        searchParams
+    ] =
+        useSearchParams();
 
 
     const [
@@ -129,39 +150,122 @@ export default function MemberProfilePage() {
     ]);
 
 
-function handleBack() {
+    function handleBack() {
 
-    if (!chatId) {
+        if (!chatId) {
+
+            navigate(
+                "/chats"
+            );
+
+            return;
+
+        }
+
+
+        const from =
+            searchParams.get(
+                "from"
+            );
+
+
+        if (from === "edit") {
+
+            navigate(
+                `/chats/${chatId}/edit`
+            );
+
+            return;
+
+        }
+
 
         navigate(
-            "/chats"
+            `/chats/${chatId}`
         );
-
-        return;
 
     }
 
 
-    const from =
-        searchParams.get("from");
+    async function handleSendMessage() {
+
+        if (
+            !profile ||
+            openingChat
+        ) {
+            return;
+        }
 
 
-    if (from === "edit") {
+        try {
 
-        navigate(
-            `/chats/${chatId}/edit`
-        );
+            setOpeningChat(true);
 
-        return;
+            setError(null);
+
+
+            const response =
+                await api.get<ExistingPrivateChatResponse>(
+                    `/chats/private-with/${profile.id}`,
+                    {
+                        validateStatus: (
+                            status
+                        ) =>
+                            status === 200 ||
+                            status === 404
+                    }
+                );
+
+
+            if (response.status === 200) {
+
+                navigate(
+                    `/chats/${response.data.id}`
+                );
+
+                return;
+
+            }
+
+
+            if (response.status === 404) {
+
+                navigate(
+                    `/chats/new?recipientId=${encodeURIComponent(profile.id)}`,
+                    {
+                        state: {
+                            recipient: profile,
+
+                            backTo:
+                                location.pathname +
+                                location.search
+                        }
+                    }
+                );
+
+                return;
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Failed to open private chat",
+                error
+            );
+
+
+            setError(
+                "Failed to open chat"
+            );
+
+        } finally {
+
+            setOpeningChat(false);
+
+        }
 
     }
-
-
-    navigate(
-        `/chats/${chatId}`
-    );
-
-}
 
 
     if (loading) {
@@ -174,10 +278,13 @@ function handleBack() {
 
                     <button
                         type="button"
-                        onClick={handleBack}
+                        onClick={
+                            handleBack
+                        }
                     >
                         ← Back
                     </button>
+
 
                     <h2>
                         Profile
@@ -209,10 +316,13 @@ function handleBack() {
 
                     <button
                         type="button"
-                        onClick={handleBack}
+                        onClick={
+                            handleBack
+                        }
                     >
                         ← Back
                     </button>
+
 
                     <h2>
                         Profile
@@ -223,7 +333,11 @@ function handleBack() {
 
                 <main className="profile-content">
 
-                    {error ?? "Profile not found"}
+                    {
+                        error
+                        ??
+                        "Profile not found"
+                    }
 
                 </main>
 
@@ -242,7 +356,9 @@ function handleBack() {
 
                 <button
                     type="button"
-                    onClick={handleBack}
+                    onClick={
+                        handleBack
+                    }
                 >
                     ← Back
                 </button>
@@ -264,7 +380,9 @@ function handleBack() {
                     </span>
 
                     <span className="profile-value">
-                        {profile.username}
+                        {
+                            profile.username
+                        }
                     </span>
 
                 </div>
@@ -277,10 +395,30 @@ function handleBack() {
                     </span>
 
                     <span className="profile-value">
-                        @{profile.handle}
+                        @{
+                            profile.handle
+                        }
                     </span>
 
                 </div>
+
+
+                <button
+                    type="button"
+                    className="profile-send-message-button"
+                    disabled={
+                        openingChat
+                    }
+                    onClick={() => {
+                        void handleSendMessage();
+                    }}
+                >
+                    {
+                        openingChat
+                            ? "Opening..."
+                            : "Send message"
+                    }
+                </button>
 
             </main>
 
@@ -289,3 +427,4 @@ function handleBack() {
     );
 
 }
+

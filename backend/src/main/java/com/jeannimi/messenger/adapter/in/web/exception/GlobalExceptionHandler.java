@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.in.web.exception;
 
 import com.jeannimi.messenger.adapter.out.filestorage.FileStorageException;
 import com.jeannimi.messenger.application.exception.BadRequestException;
+import com.jeannimi.messenger.application.exception.ChatNotFoundException;
 import com.jeannimi.messenger.application.exception.ConflictException;
 import com.jeannimi.messenger.application.exception.ForbiddenException;
 import com.jeannimi.messenger.application.exception.NotFoundException;
@@ -59,6 +60,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
 
+    return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(ChatNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleChatNotFound(ChatNotFoundException ex) {
+    log.debug("Chat not found: {}", ex.getMessage());
     return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
   }
 

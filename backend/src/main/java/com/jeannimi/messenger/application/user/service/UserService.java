@@ -62,9 +62,7 @@ public class UserService {
   public UserProfileResult getProfile(UserId userId) {
 
     User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new NotFoundException("User not found"));
+        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 
     return toProfileResult(user);
   }
@@ -72,9 +70,7 @@ public class UserService {
   private UserProfileResult toProfileResult(User user) {
 
     return new UserProfileResult(
-        user.getId(),
-        user.getUsername().getValue(),
-        user.getHandle().getValue());
+        user.getId(), user.getUsername().getValue(), user.getHandle().getValue());
   }
 
   private UserResult toResult(User user) {

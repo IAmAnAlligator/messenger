@@ -39,10 +39,7 @@ public class UserController {
   }
 
   private UserProfileResponse toProfileResponse(UserResult result) {
-    return new UserProfileResponse(
-        result.id().value(),
-        result.username(),
-        result.handle());
+    return new UserProfileResponse(result.id().value(), result.username(), result.handle());
   }
 
   private UserDto toDto(UserResult result) {
