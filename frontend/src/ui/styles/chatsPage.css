@@ -197,3 +197,31 @@
     padding:20px;
 
 }
+
+/*
+    Индикатор непрочитанного чата
+*/
+
+.chat-name-container {
+
+    display:flex;
+
+    align-items:center;
+
+}
+
+.chat-unread-indicator {
+
+    width:12px;
+
+    height:12px;
+
+    margin-left:6px;
+
+    border-radius:50%;
+
+    background:#2196f3;
+
+    flex-shrink:0;
+
+}

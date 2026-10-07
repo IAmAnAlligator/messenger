@@ -1,29 +1,44 @@
 import {
+    useEffect
+} from "react";
+
+import {
     useNavigate
 } from "react-router-dom";
+
 
 import {
     useAuth
 } from "../../contexts/AuthContext";
 
+
+import {
+    useChatsContext
+} from "../../contexts/ChatsContext";
+
+
 import {
     useChats
 } from "../../hooks/useChats";
+
 
 import type {
     ChatDto
 } from "../../hooks/useChats";
 
+
 import ChatsHeader
     from "../components/chat/view/ChatsHeader";
+
 
 import ChatList
     from "../components/chat/list/ChatList";
 
+
 import "../styles/chatsPage.css";
 
 
-export default function ChatsPage() {
+export default function ChatsContainer() {
 
     const navigate =
         useNavigate();
@@ -36,32 +51,52 @@ export default function ChatsPage() {
 
 
     const {
+        markChatAsRead,
+        isChatUnread,
+        chatEventsVersion
+    } = useChatsContext();
+
+
+    const {
         chats,
         loading,
         loadingMore,
         hasNext,
-        loadMore
+        loadMore,
+        reload
     } = useChats();
 
 
-    async function handleLogout() {
+    /*
+     * Reload the chat list whenever
+     * a relevant WebSocket event arrives.
+     */
+    useEffect(
+        () => {
 
-        await logout();
+            void reload();
 
-        navigate(
-            "/",
-            {
-                replace: true
-            }
-        );
+        },
+        [
+            chatEventsVersion,
+            reload
+        ]
+    );
+
+
+    function handleLogout() {
+
+        logout();
+
+        navigate("/");
+
     }
 
 
     function handleProfile() {
 
-        navigate(
-            "/profile"
-        );
+        navigate("/profile");
+
     }
 
 
@@ -69,137 +104,161 @@ export default function ChatsPage() {
         chat: ChatDto
     ): string {
 
-        if (chat.type === "GROUP") {
+        if (
+            chat.type === "GROUP"
+        ) {
+
             return chat.name;
+
         }
 
 
-        const other =
+        const otherMember =
             chat.members.find(
                 member =>
-                    member.user.id !== user?.id
+                    member.user.id !==
+                    user?.id
             );
 
 
         return (
-            other?.user.username
-            ??
+            otherMember?.user.username ??
             chat.name
         );
+
+    }
+
+
+    function handleOpenChat(
+        chatId: string
+    ) {
+
+        markChatAsRead(
+            chatId
+        );
+
+
+        navigate(
+            `/chats/${chatId}`
+        );
+
+    }
+
+
+    function handleNewGroup() {
+
+        navigate(
+            "/chats/create/group"
+        );
+
+    }
+
+
+    function handleNewPrivate() {
+
+        navigate(
+            "/chats/create/private"
+        );
+
     }
 
 
     return (
 
-        <div className="chats-page">
+        <div className="chats-container">
 
             <ChatsHeader
-
-                onProfile={
-                    handleProfile
-                }
 
                 onLogout={
                     handleLogout
                 }
 
+                onProfile={
+                    handleProfile
+                }
+
             />
 
 
-            <div className="chat-create-actions">
+            <div className="chats-actions">
 
                 <button
-                    className="create-chat-btn"
-                    type="button"
-                    onClick={() =>
-                        navigate(
-                            "/chats/create/group"
-                        )
+                    onClick={
+                        handleNewGroup
                     }
                 >
-                    Create group chat
+                    New group
                 </button>
 
 
                 <button
-                    className="create-private-chat-btn"
-                    type="button"
-                    onClick={() =>
-                        navigate(
-                            "/chats/create/private"
-                        )
+                    onClick={
+                        handleNewPrivate
                     }
                 >
-                    New private message
+                    New chat
                 </button>
 
             </div>
 
 
-            <div className="chat-content">
+            {loading && (
 
-                {
-                    loading && (
+                <div className="chat-loader">
 
-                        <div className="chat-loading">
-                            Loading...
-                        </div>
+                    Loading...
 
-                    )
-                }
+                </div>
+
+            )}
 
 
-                {
-                    !loading &&
-                    chats.length === 0 && (
+            {!loading &&
+                chats.length === 0 && (
 
-                        <div className="empty-chats">
-                            No chats
-                        </div>
+                    <div className="chat-empty">
 
-                    )
-                }
+                        No chats
+
+                    </div>
+
+                )}
 
 
-                {
-                    !loading &&
-                    chats.length > 0 && (
+            {!loading &&
+                chats.length > 0 && (
 
-                        <ChatList
+                    <ChatList
 
-                            chats={
-                                chats
-                            }
+                        chats={chats}
 
-                            getName={
-                                getChatName
-                            }
+                        getName={
+                            getChatName
+                        }
 
-                            onOpen={
-                                id =>
-                                    navigate(
-                                        `/chats/${id}`
-                                    )
-                            }
+                        isUnread={
+                            isChatUnread
+                        }
 
-                            hasNext={
-                                hasNext
-                            }
+                        onOpen={
+                            handleOpenChat
+                        }
 
-                            loadingMore={
-                                loadingMore
-                            }
+                        hasNext={
+                            hasNext
+                        }
 
-                            loadMore={
-                                loadMore
-                            }
+                        loadingMore={
+                            loadingMore
+                        }
 
-                        />
+                        loadMore={
+                            loadMore
+                        }
 
-                    )
-                }
+                    />
 
-            </div>
+                )}
 
         </div>
 

@@ -3,18 +3,25 @@ import {
     useRef
 } from "react";
 
-import ChatItem from "./ChatItem";
+import ChatItem
+    from "./ChatItem";
 
 import type {
     ChatDto
 } from "../../../../hooks/useChats";
 
+
 type Props = {
+
     chats: ChatDto[];
 
     getName(
         chat: ChatDto
     ): string;
+
+    isUnread(
+        chatId: string
+    ): boolean;
 
     onOpen(
         id: string
@@ -25,63 +32,95 @@ type Props = {
     loadingMore: boolean;
 
     loadMore(): void;
+
 };
 
+
 export default function ChatList({
+
     chats,
+
     getName,
+
+    isUnread,
+
     onOpen,
+
     hasNext,
+
     loadingMore,
+
     loadMore
+
 }: Props) {
+
+
     const containerRef =
         useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const container =
-            containerRef.current;
 
-        if (!container) {
-            return;
-        }
+    useEffect(
+        () => {
 
-        const handleScroll = () => {
-            const distanceFromBottom =
-                container.scrollHeight -
-                container.scrollTop -
-                container.clientHeight;
+            const container =
+                containerRef.current;
 
-            if (
-                distanceFromBottom <= 100 &&
-                hasNext &&
-                !loadingMore
-            ) {
-                loadMore();
+
+            if (!container) {
+                return;
             }
-        };
 
-        container.addEventListener(
-            "scroll",
-            handleScroll
-        );
 
-        handleScroll();
+            const handleScroll =
+                () => {
 
-        return () => {
-            container.removeEventListener(
+                    const distanceFromBottom =
+                        container.scrollHeight -
+                        container.scrollTop -
+                        container.clientHeight;
+
+
+                    if (
+                        distanceFromBottom <= 100 &&
+                        hasNext &&
+                        !loadingMore
+                    ) {
+                        loadMore();
+                    }
+
+                };
+
+
+            container.addEventListener(
                 "scroll",
                 handleScroll
             );
-        };
-    }, [
-        hasNext,
-        loadingMore,
-        loadMore,
-        chats.length
-    ]);
+
+
+            handleScroll();
+
+
+            return () => {
+
+                container.removeEventListener(
+                    "scroll",
+                    handleScroll
+                );
+
+            };
+
+        },
+        [
+            hasNext,
+            loadingMore,
+            loadMore,
+            chats.length
+        ]
+    );
+
 
     return (
+
         <div className="chat-content">
 
             <div
@@ -91,21 +130,39 @@ export default function ChatList({
 
                 <div className="chat-list">
 
-                    {chats.map(chat => (
-                        <ChatItem
-                            key={chat.id}
-                            chat={chat}
-                            name={getName(chat)}
-                            onClick={() =>
-                                onOpen(chat.id)
-                            }
-                        />
-                    ))}
+                    {chats.map(
+                        chat => (
+
+                            <ChatItem
+
+                                key={chat.id}
+
+                                chat={chat}
+
+                                name={getName(chat)}
+
+                                unread={
+                                    isUnread(chat.id)
+                                }
+
+                                onClick={() =>
+                                    onOpen(chat.id)
+                                }
+
+                            />
+
+                        )
+                    )}
+
 
                     {loadingMore && (
+
                         <div className="chat-loader">
+
                             Loading...
+
                         </div>
+
                     )}
 
                 </div>
@@ -113,5 +170,7 @@ export default function ChatList({
             </div>
 
         </div>
+
     );
+
 }

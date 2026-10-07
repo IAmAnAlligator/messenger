@@ -5,42 +5,49 @@ import type {
 
 type Props = {
 
-    chat:ChatDto;
+    chat: ChatDto;
 
-    name:string;
+    name: string;
 
-    onClick():void;
+    unread: boolean;
+
+    onClick(): void;
 
 };
 
 
 export default function ChatItem({
 
-  //  chat,
-
     name,
+
+    unread,
 
     onClick
 
-}:Props){
+}: Props) {
 
 
-return (
+    return (
 
-<div
+        <div
+            className="chat-item"
+            onClick={onClick}
+        >
 
-    className="chat-item"
+            <div className="chat-name-container">
 
-    onClick={onClick}
+                <span className="chat-name">
+                    {name}
+                </span>
 
->
+                {unread && (
+                    <span className="chat-unread-indicator" />
+                )}
 
-    {name}
+            </div>
 
-</div>
+        </div>
 
-
-);
-
+    );
 
 }
