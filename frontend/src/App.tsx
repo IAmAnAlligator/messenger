@@ -1,7 +1,8 @@
 import {
     BrowserRouter,
     Routes,
-    Route
+    Route,
+    Navigate
 } from "react-router-dom";
 
 import AuthPage
@@ -49,7 +50,17 @@ function App() {
                 <Routes>
 
                     <Route
-                        path="/"
+    path="/"
+    element={
+        <Navigate
+            to="/login"
+            replace
+        />
+    }
+/>
+
+                    <Route
+                        path="/login"
                         element={
                             <AuthPage />
                         }

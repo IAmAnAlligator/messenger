@@ -1,3 +1,4 @@
+
 import {
     useCallback,
     useEffect,
@@ -5,13 +6,26 @@ import {
     useState
 } from "react";
 
+
 import {
     api
 } from "../api/client";
 
+
 import type {
     UserDto
 } from "../types/user";
+
+
+import {
+    useChatsContext
+} from "../contexts/ChatsContext";
+
+
+export type LastMessageStatus =
+    | "NONE"
+    | "SENT"
+    | "READ";
 
 
 export type ChatMemberDto = {
@@ -25,21 +39,10 @@ export type ChatMemberDto = {
 };
 
 
-export type ChatDto = {
+export type ChatDto = { id: string; name: string; type: "PRIVATE" | "GROUP"; members: ChatMemberDto[]; createdAt: string; lastMessageAt: string | null; lastMessage: LastMessageDto | null; unreadCount: number; lastMessageStatus: LastMessageStatus; };
 
-    id: string;
+export type LastMessageDto = { id: string; sender: UserDto; content: string | null; createdAt: string; };
 
-    name: string;
-
-    type: "PRIVATE" | "GROUP";
-
-    members: ChatMemberDto[];
-
-    createdAt: string;
-
-    lastMessageAt: string | null;
-
-};
 
 
 type ChatCursor = {
@@ -89,6 +92,11 @@ function mergeChats(
 
 
 export function useChats() {
+
+    const {
+        chatEventsVersion
+    } = useChatsContext();
+
 
     const [
         chats,
@@ -270,7 +278,8 @@ export function useChats() {
 
         },
         [
-            loadChats
+            loadChats,
+            chatEventsVersion
         ]
     );
 
@@ -285,10 +294,9 @@ export function useChats() {
 
         hasNext,
 
-        loadMore,
-
-        reload: loadChats
+        loadMore
 
     };
 
 }
+

@@ -63,6 +63,7 @@ public class WebSocketEventPublisherAdapter implements RealtimeEventPublisherPor
     WebSocketEvent<MessageReadWebSocketDto> webSocketEvent =
         WebSocketEvent.of(EventType.MESSAGE_READ, payload);
     sendToChat(event.chatId(), webSocketEvent);
+    sendToUser(event.senderId(), webSocketEvent);
   }
 
   private void publishMessageDeleted(MessageDeletedEvent event) {

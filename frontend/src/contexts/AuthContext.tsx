@@ -120,10 +120,7 @@ export function AuthProvider({
 
             disconnectSocket();
 
-            connectSocket(
-                token
-            );
-
+            connectSocket();
 
         } catch {
 

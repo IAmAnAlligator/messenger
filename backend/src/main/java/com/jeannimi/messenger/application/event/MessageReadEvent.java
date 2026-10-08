@@ -9,6 +9,7 @@ public record MessageReadEvent(
     MessageId messageId,
     ChatId chatId,
     UserId readerId,
+    UserId senderId,
     Instant readAt,
-    MessageId lastReadMessageId)
-    implements ApplicationEvent {}
+    MessageId lastReadMessageId
+) implements ApplicationEvent {}

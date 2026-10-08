@@ -5,6 +5,10 @@ import type {
     StompSubscription
 } from "@stomp/stompjs";
 
+import {
+    refreshToken
+} from "./refresh";
+
 
 type SubscriptionCallback =
     (message: IMessage) => void;
@@ -41,17 +45,148 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT = 5;
 
 
-export function connectSocket(
-    token: string
-) {
+let refreshPromise:
+    Promise<string> | null = null;
 
-    /*
-     * Если socket уже создан и активен,
-     * повторно Client не создаём.
-     */
+
+function getTokenExpiration(
+    token: string
+): number | null {
+
+    try {
+
+        const payload =
+            token.split(".")[1];
+
+        if (!payload) {
+            return null;
+        }
+
+
+        const decoded =
+            JSON.parse(
+                atob(
+                    payload
+                        .replace(/-/g, "+")
+                        .replace(/_/g, "/")
+                )
+            );
+
+
+        if (
+            typeof decoded.exp !== "number"
+        ) {
+
+            return null;
+
+        }
+
+
+        return decoded.exp * 1000;
+
+    } catch {
+
+        return null;
+
+    }
+
+}
+
+
+async function getValidAccessToken(): Promise<string> {
+
+    const token =
+        localStorage.getItem(
+            "accessToken"
+        );
+
+
+    if (!token) {
+
+        throw new Error(
+            "Access token not found"
+        );
+
+    }
+
+
+    const expiration =
+        getTokenExpiration(
+            token
+        );
+
+
+    if (
+        expiration === null ||
+        expiration <= Date.now()
+    ) {
+
+        return refreshAccessToken();
+
+    }
+
+
+    return token;
+
+}
+
+
+async function refreshAccessToken(): Promise<string> {
+
+    if (refreshPromise) {
+
+        return refreshPromise;
+
+    }
+
+
+    refreshPromise =
+        refreshToken()
+            .then(data => {
+
+                localStorage.setItem(
+                    "accessToken",
+                    data.accessToken
+                );
+
+
+                return data.accessToken;
+
+            })
+            .finally(() => {
+
+                refreshPromise = null;
+
+            });
+
+
+    return refreshPromise;
+
+}
+
+
+function forceLogout() {
+
+    localStorage.removeItem(
+        "accessToken"
+    );
+
+
+    disconnectSocket();
+
+
+    window.location.href =
+        "/login";
+
+}
+
+
+export async function connectSocket() {
 
     if (client?.active) {
+
         return client;
+
     }
 
 
@@ -64,10 +199,7 @@ export function connectSocket(
             reconnectDelay:
                 3000,
 
-            connectHeaders: {
-                Authorization:
-                    `Bearer ${token}`
-            },
+            connectHeaders: {},
 
             debug: message => {
 
@@ -78,11 +210,47 @@ export function connectSocket(
 
             },
 
-            beforeConnect: () => {
+            beforeConnect: async () => {
 
                 console.log(
                     "[WS] connecting..."
                 );
+
+
+                try {
+
+                    const accessToken =
+                        await getValidAccessToken();
+
+
+                    if (!client) {
+
+                        return;
+
+                    }
+
+
+                    client.connectHeaders = {
+
+                        Authorization:
+                            `Bearer ${accessToken}`
+
+                    };
+
+                } catch (error) {
+
+                    console.error(
+                        "[WS AUTH ERROR]",
+                        error
+                    );
+
+
+                    forceLogout();
+
+
+                    throw error;
+
+                }
 
             },
 
@@ -96,26 +264,8 @@ export function connectSocket(
                 reconnectAttempts = 0;
 
 
-                /*
-                 * После каждого успешного подключения
-                 * восстанавливаем все подписки.
-                 *
-                 * Это работает как для первого connect,
-                 * так и для reconnect.
-                 */
-
                 resubscribeAll();
 
-
-                /*
-                 * Уведомляем всех подписчиков,
-                 * например useChatSocket.
-                 *
-                 * Важно:
-                 * здесь нет chatId и reloadMessages.
-                 * WebSocket-сервис ничего не знает
-                 * о конкретном чате.
-                 */
 
                 connectionListeners.forEach(
                     listener => {
@@ -189,26 +339,6 @@ export function connectSocket(
                     frame
                 );
 
-
-                /*
-                 * STOMP ERROR означает,
-                 * что сервер отклонил CONNECT
-                 * или произошла фатальная ошибка.
-                 *
-                 * В этом случае reconnect не продолжаем.
-                 */
-
-                disconnectSocket();
-
-
-                localStorage.removeItem(
-                    "accessToken"
-                );
-
-
-                window.location.href =
-                    "/login";
-
             }
 
         });
@@ -221,16 +351,6 @@ export function connectSocket(
 
 }
 
-
-/*
- * Регистрирует listener, который будет вызван
- * после каждого успешного подключения:
- *
- * - initial connect
- * - reconnect
- *
- * Возвращает функцию удаления listener.
- */
 
 export function onSocketConnected(
     listener: ConnectionListener
@@ -299,11 +419,6 @@ export function subscribe(
     );
 
 
-    /*
-     * Если socket уже подключён,
-     * создаём STOMP subscription сразу.
-     */
-
     if (client?.connected) {
 
         createSubscription(
@@ -327,7 +442,9 @@ export function unsubscribe(
 
 
     if (!callbacks) {
+
         return;
+
     }
 
 
@@ -335,12 +452,6 @@ export function unsubscribe(
         callback
     );
 
-
-    /*
-     * Если для destination больше
-     * нет callback'ов — удаляем
-     * саму STOMP subscription.
-     */
 
     if (
         callbacks.size === 0
@@ -377,18 +488,11 @@ function createSubscription(
 ) {
 
     if (!client?.connected) {
+
         return;
+
     }
 
-
-    /*
-     * На один destination создаём
-     * только одну STOMP subscription.
-     *
-     * Несколько React-компонентов могут
-     * использовать один destination —
-     * callbacks будут храниться в Set.
-     */
 
     const existing =
         activeSubs.get(
@@ -397,7 +501,9 @@ function createSubscription(
 
 
     if (existing) {
+
         return;
+
     }
 
 
@@ -413,7 +519,9 @@ function createSubscription(
 
 
                 if (!callbacks) {
+
                     return;
+
                 }
 
 
@@ -453,14 +561,11 @@ function createSubscription(
 function resubscribeAll() {
 
     if (!client?.connected) {
+
         return;
+
     }
 
-
-    /*
-     * Старые STOMP subscriptions
-     * больше не считаем активными.
-     */
 
     activeSubs.forEach(
         subscription => {
@@ -484,14 +589,6 @@ function resubscribeAll() {
 
     activeSubs.clear();
 
-
-    /*
-     * subscriptions содержит логические
-     * подписки приложения.
-     *
-     * Восстанавливаем их на новом
-     * STOMP connection.
-     */
 
     for (
         const destination
@@ -509,10 +606,6 @@ function resubscribeAll() {
 
 export function disconnectSocket() {
 
-    /*
-     * Удаляем реальные STOMP subscriptions.
-     */
-
     activeSubs.forEach(
         subscription => {
 
@@ -536,16 +629,8 @@ export function disconnectSocket() {
     activeSubs.clear();
 
 
-    /*
-     * Удаляем логические subscriptions.
-     */
-
     subscriptions.clear();
 
-
-    /*
-     * Удаляем listeners подключения.
-     */
 
     connectionListeners.clear();
 
@@ -554,10 +639,6 @@ export function disconnectSocket() {
 
 
     if (client) {
-
-        /*
-         * deactivate() завершает STOMP client.
-         */
 
         client.deactivate();
 

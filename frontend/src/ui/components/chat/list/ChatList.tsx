@@ -1,30 +1,22 @@
-import {
-    useEffect,
-    useRef
-} from "react";
-
-import ChatItem
-    from "./ChatItem";
 
 import type {
     ChatDto
 } from "../../../../hooks/useChats";
 
+import {
+    useAuth
+} from "../../../../contexts/AuthContext";
+
 
 type Props = {
-
     chats: ChatDto[];
 
     getName(
         chat: ChatDto
     ): string;
 
-    isUnread(
-        chatId: string
-    ): boolean;
-
     onOpen(
-        id: string
+        chatId: string
     ): void;
 
     hasNext: boolean;
@@ -32,145 +24,182 @@ type Props = {
     loadingMore: boolean;
 
     loadMore(): void;
-
 };
 
 
 export default function ChatList({
-
     chats,
-
     getName,
-
-    isUnread,
-
     onOpen,
-
     hasNext,
-
     loadingMore,
-
     loadMore
-
 }: Props) {
 
-
-    const containerRef =
-        useRef<HTMLDivElement>(null);
+    const { user } = useAuth();
 
 
-    useEffect(
-        () => {
+    function formatLastMessage(
+        chat: ChatDto
+    ): string {
 
-            const container =
-                containerRef.current;
+        if (!chat.lastMessage) {
+            return "";
+        }
+
+        const prefix =
+            chat.lastMessage.sender.id === user?.id
+                ? "you: "
+                : `${chat.lastMessage.sender.username}: `;
+
+        if (
+            chat.lastMessage.content === null
+        ) {
+            return `${prefix}📎`;
+        }
+
+        const preview =
+            chat.lastMessage.content.length > 15
+                ? `${chat.lastMessage.content.slice(0, 15)}...`
+                : chat.lastMessage.content;
+
+        return `${prefix}${preview}`;
+    }
 
 
-            if (!container) {
-                return;
+    function formatLastMessageDate(
+        chat: ChatDto
+    ): string {
+
+        if (!chat.lastMessage) {
+            return "";
+        }
+
+        return new Date(
+            chat.lastMessage.createdAt
+        ).toLocaleString(
+            "en-US",
+            {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
             }
+        );
+    }
 
 
-            const handleScroll =
-                () => {
+    function getLastMessageStatus(
+        chat: ChatDto
+    ): string | null {
 
-                    const distanceFromBottom =
-                        container.scrollHeight -
-                        container.scrollTop -
-                        container.clientHeight;
+        if (!chat.lastMessage) {
+            return null;
+        }
 
+        if (
+            chat.lastMessage.sender.id !== user?.id
+        ) {
+            return null;
+        }
 
-                    if (
-                        distanceFromBottom <= 100 &&
-                        hasNext &&
-                        !loadingMore
-                    ) {
-                        loadMore();
-                    }
+        if (
+            chat.lastMessageStatus === "READ"
+        ) {
+            return "✓✓";
+        }
 
-                };
+        if (
+            chat.lastMessageStatus === "SENT"
+        ) {
+            return "✓";
+        }
 
-
-            container.addEventListener(
-                "scroll",
-                handleScroll
-            );
-
-
-            handleScroll();
-
-
-            return () => {
-
-                container.removeEventListener(
-                    "scroll",
-                    handleScroll
-                );
-
-            };
-
-        },
-        [
-            hasNext,
-            loadingMore,
-            loadMore,
-            chats.length
-        ]
-    );
+        return null;
+    }
 
 
     return (
+        <div className="chat-list">
 
-        <div className="chat-content">
+            {chats.map(
+                chat => {
 
-            <div
-                className="chat-list-container"
-                ref={containerRef}
-            >
+                    const status =
+                        getLastMessageStatus(chat);
 
-                <div className="chat-list">
+                    return (
+                        <div
+                            key={chat.id}
+                            className="chat-item"
+                            onClick={() => onOpen(chat.id)}
+                        >
 
-                    {chats.map(
-                        chat => (
+                            <div className="chat-info">
 
-                            <ChatItem
+                                <div className="chat-name-container">
 
-                                key={chat.id}
+                                    <span className="chat-name">
+                                        {getName(chat)}
+                                    </span>
 
-                                chat={chat}
+                                    {chat.unreadCount > 0 && (
+                                        <span className="chat-unread-badge">
+                                            {chat.unreadCount}
+                                        </span>
+                                    )}
 
-                                name={getName(chat)}
-
-                                unread={
-                                    isUnread(chat.id)
-                                }
-
-                                onClick={() =>
-                                    onOpen(chat.id)
-                                }
-
-                            />
-
-                        )
-                    )}
+                                </div>
 
 
-                    {loadingMore && (
 
-                        <div className="chat-loader">
 
-                            Loading...
+                                {chat.lastMessage && (
+                                    <>
+                                        <div className="chat-last-message">
+                                            {formatLastMessage(chat)}
+                                        </div>
+
+                                        <div className="chat-message-date">
+                                            {formatLastMessageDate(chat)}
+                                        </div>
+
+                                    </>
+                                )}
+
+                                {status && (
+    <div
+        className={
+            chat.lastMessageStatus === "READ"
+                ? "chat-message-status chat-message-status-read"
+                : "chat-message-status"
+        }
+    >
+        {status}
+    </div>
+)}
+
+                            </div>
 
                         </div>
+                    );
+                }
+            )}
 
-                    )}
 
-                </div>
-
-            </div>
+            {hasNext && (
+                <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                >
+                    {loadingMore
+                        ? "Loading..."
+                        : "Load more"}
+                </button>
+            )}
 
         </div>
-
     );
-
 }

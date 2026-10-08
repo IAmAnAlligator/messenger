@@ -1,24 +1,27 @@
 import {
     createContext,
-    useCallback,
     useContext,
     useEffect,
     useState
 } from "react";
 
+
 import type {
     ReactNode
 } from "react";
 
+
 import type {
     IMessage
 } from "@stomp/stompjs";
+
 
 import {
     connectSocket,
     subscribe,
     unsubscribe
 } from "../services/chatSocket";
+
 
 import {
     useAuth
@@ -34,51 +37,7 @@ type WebSocketEvent<T> = {
 };
 
 
-type MessageCreatedPayload = {
-
-    id: string;
-
-    chatId: string;
-
-    sender: {
-
-        id: string;
-
-        handle: string;
-
-        username: string;
-
-        role: string;
-
-    };
-
-    content: string;
-
-    createdAt: string;
-
-    attachment: unknown | null;
-
-};
-
-
-type ChatEventPayload = {
-
-    chatId?: string;
-
-    id?: string;
-
-};
-
-
 type ChatsContextValue = {
-
-    isChatUnread(
-        chatId: string
-    ): boolean;
-
-    markChatAsRead(
-        chatId: string
-    ): void;
 
     chatEventsVersion: number;
 
@@ -107,7 +66,8 @@ const CHAT_LIST_EVENTS =
         "CHAT_MEMBER_REMOVED",
         "CHAT_MEMBER_LEFT",
         "MESSAGE_CREATED",
-        "MESSAGE_DELETED"
+        "MESSAGE_DELETED",
+        "MESSAGE_READ"
     ]);
 
 
@@ -125,65 +85,9 @@ export function ChatsProvider({
 
 
     const [
-        unreadChatIds,
-        setUnreadChatIds
-    ] = useState<Set<string>>(
-        () => new Set()
-    );
-
-
-    const [
         chatEventsVersion,
         setChatEventsVersion
     ] = useState(0);
-
-
-    const markChatAsRead =
-        useCallback(
-            (chatId: string) => {
-
-                setUnreadChatIds(
-                    previous => {
-
-                        if (
-                            !previous.has(chatId)
-                        ) {
-                            return previous;
-                        }
-
-
-                        const next =
-                            new Set(previous);
-
-
-                        next.delete(chatId);
-
-
-                        return next;
-
-                    }
-                );
-
-            },
-            []
-        );
-
-
-    const isChatUnread =
-        useCallback(
-            (
-                chatId: string
-            ): boolean => {
-
-                return unreadChatIds.has(
-                    chatId
-                );
-
-            },
-            [
-                unreadChatIds
-            ]
-        );
 
 
     useEffect(
@@ -223,10 +127,6 @@ export function ChatsProvider({
                             ) as WebSocketEvent<unknown>;
 
 
-                        /*
-                         * Ignore events that do not
-                         * affect the chat list.
-                         */
                         if (
                             !CHAT_LIST_EVENTS.has(
                                 event.type
@@ -237,158 +137,12 @@ export function ChatsProvider({
 
 
                         /*
-                         * MESSAGE_CREATED needs
-                         * special handling because
-                         * it controls the unread
-                         * indicator.
-                         */
-                        if (
-                            event.type ===
-                            "MESSAGE_CREATED"
-                        ) {
-
-                            const payload =
-                                event.payload as MessageCreatedPayload;
-
-
-                            if (
-                                !payload?.chatId ||
-                                !payload.sender?.id
-                            ) {
-                                return;
-                            }
-
-
-                            /*
-                             * The sender also receives
-                             * their own MESSAGE_CREATED.
-                             *
-                             * Do not mark own messages
-                             * as unread.
-                             */
-                            if (
-                                payload.sender.id ===
-                                userId
-                            ) {
-
-                                /*
-                                 * The chat list itself
-                                 * still needs updating
-                                 * because lastMessageAt
-                                 * may have changed.
-                                 */
-                                setChatEventsVersion(
-                                    previous =>
-                                        previous + 1
-                                );
-
-                                return;
-                            }
-
-
-                            setUnreadChatIds(
-                                previous => {
-
-                                    if (
-                                        previous.has(
-                                            payload.chatId
-                                        )
-                                    ) {
-                                        return previous;
-                                    }
-
-
-                                    const next =
-                                        new Set(
-                                            previous
-                                        );
-
-
-                                    next.add(
-                                        payload.chatId
-                                    );
-
-
-                                    return next;
-
-                                }
-                            );
-
-
-                            /*
-                             * Notify ChatsContainer
-                             * that the chat list must
-                             * be reloaded.
-                             */
-                            setChatEventsVersion(
-                                previous =>
-                                    previous + 1
-                            );
-
-
-                            return;
-                        }
-
-
-                        /*
-                         * CHAT_DELETED:
+                         * WebSocket is only a signal
+                         * that backend data changed.
                          *
-                         * The deleted chat must no
-                         * longer be marked unread.
-                         */
-                        if (
-                            event.type ===
-                            "CHAT_DELETED"
-                        ) {
-
-                            const payload =
-                                event.payload as ChatEventPayload;
-
-
-                            const chatId =
-                                payload?.chatId ??
-                                payload?.id;
-
-
-                            if (chatId) {
-
-                                setUnreadChatIds(
-                                    previous => {
-
-                                        if (
-                                            !previous.has(
-                                                chatId
-                                            )
-                                        ) {
-                                            return previous;
-                                        }
-
-
-                                        const next =
-                                            new Set(
-                                                previous
-                                            );
-
-
-                                        next.delete(
-                                            chatId
-                                        );
-
-
-                                        return next;
-
-                                    }
-                                );
-
-                            }
-
-                        }
-
-
-                        /*
-                         * All other chat-list
-                         * events cause the list
-                         * to be reloaded.
+                         * The actual chat state,
+                         * unreadCount and message status
+                         * are loaded from backend.
                          */
                         setChatEventsVersion(
                             previous =>
@@ -429,22 +183,10 @@ export function ChatsProvider({
     );
 
 
-    /*
-     * Logout / user change:
-     *
-     * unread state belongs to the
-     * current authenticated user.
-     */
     useEffect(
         () => {
 
-            if (!userId) {
-
-                setUnreadChatIds(
-                    new Set()
-                );
-
-            }
+            setChatEventsVersion(0);
 
         },
         [
@@ -454,10 +196,6 @@ export function ChatsProvider({
 
 
     const value: ChatsContextValue = {
-
-        isChatUnread,
-
-        markChatAsRead,
 
         chatEventsVersion
 

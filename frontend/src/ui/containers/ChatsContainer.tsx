@@ -1,8 +1,4 @@
 import {
-    useEffect
-} from "react";
-
-import {
     useNavigate
 } from "react-router-dom";
 
@@ -10,11 +6,6 @@ import {
 import {
     useAuth
 } from "../../contexts/AuthContext";
-
-
-import {
-    useChatsContext
-} from "../../contexts/ChatsContext";
 
 
 import {
@@ -51,37 +42,12 @@ export default function ChatsContainer() {
 
 
     const {
-        markChatAsRead,
-        isChatUnread,
-        chatEventsVersion
-    } = useChatsContext();
-
-
-    const {
         chats,
         loading,
         loadingMore,
         hasNext,
-        loadMore,
-        reload
+        loadMore
     } = useChats();
-
-
-    /*
-     * Reload the chat list whenever
-     * a relevant WebSocket event arrives.
-     */
-    useEffect(
-        () => {
-
-            void reload();
-
-        },
-        [
-            chatEventsVersion,
-            reload
-        ]
-    );
 
 
     function handleLogout() {
@@ -132,11 +98,6 @@ export default function ChatsContainer() {
     function handleOpenChat(
         chatId: string
     ) {
-
-        markChatAsRead(
-            chatId
-        );
-
 
         navigate(
             `/chats/${chatId}`
@@ -234,10 +195,6 @@ export default function ChatsContainer() {
 
                         getName={
                             getChatName
-                        }
-
-                        isUnread={
-                            isChatUnread
                         }
 
                         onOpen={

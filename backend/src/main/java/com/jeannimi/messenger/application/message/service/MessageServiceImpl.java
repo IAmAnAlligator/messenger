@@ -340,7 +340,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     MessageReadEvent event =
-        new MessageReadEvent(message.getId(), chatId, userId, Instant.now(), lastReadMessageId);
+        new MessageReadEvent(message.getId(), chatId, userId, message.getSenderId(), Instant.now(), lastReadMessageId);
 
     eventPublisher.publish(EventType.MESSAGE_READ, new AggregateId(chatId.value()), event);
 

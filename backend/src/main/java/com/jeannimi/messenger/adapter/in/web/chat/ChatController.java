@@ -4,6 +4,7 @@ import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatMemberDto;
+import com.jeannimi.messenger.adapter.in.web.chat.dto.LastMessageDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.RenameChatRequest;
 import com.jeannimi.messenger.adapter.in.web.mapper.CursorPaginationMapper;
 import com.jeannimi.messenger.adapter.in.web.pagination.CursorDto;
@@ -19,6 +20,7 @@ import com.jeannimi.messenger.application.chat.service.ChatService;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
 import com.jeannimi.messenger.application.exception.ChatNotFoundException;
+import com.jeannimi.messenger.application.message.dto.LastMessageResult;
 import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
@@ -175,7 +177,11 @@ public class ChatController {
   private ChatDto toDto(ChatResult result) {
 
     List<ChatMemberDto> members =
-        result.members() == null ? List.of() : result.members().stream().map(this::toDto).toList();
+        result.members() == null
+            ? List.of()
+            : result.members().stream()
+                .map(this::toDto)
+                .toList();
 
     return new ChatDto(
         result.id().value(),
@@ -183,7 +189,28 @@ public class ChatController {
         result.type(),
         members,
         result.createdAt(),
-        result.lastMessageAt());
+        result.lastMessageAt(),
+        toDto(result.lastMessage()),
+        result.unreadCount(),
+        result.lastMessageStatus());
+  }
+
+
+  private LastMessageDto toDto(LastMessageResult result) {
+
+    if (result == null) {
+      return null;
+    }
+
+    return new LastMessageDto(
+        result.id().value(),
+        new UserDto(
+            result.sender().id().value(),
+            result.sender().handle(),
+            result.sender().username(),
+            result.sender().role()),
+        result.content(),
+        result.createdAt());
   }
 
   private ChatMemberDto toDto(ChatMemberResult result) {

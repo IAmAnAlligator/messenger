@@ -5,6 +5,7 @@ import com.jeannimi.messenger.application.chat.command.ChatCreateCommand;
 import com.jeannimi.messenger.application.chat.command.RenameChatCommand;
 import com.jeannimi.messenger.application.chat.dto.ChatMemberResult;
 import com.jeannimi.messenger.application.chat.dto.ChatResult;
+import com.jeannimi.messenger.application.chat.dto.LastMessageStatus;
 import com.jeannimi.messenger.application.common.pagination.Cursor;
 import com.jeannimi.messenger.application.common.pagination.CursorPageQuery;
 import com.jeannimi.messenger.application.common.pagination.CursorPageResult;
@@ -19,11 +20,13 @@ import com.jeannimi.messenger.application.exception.BadRequestException;
 import com.jeannimi.messenger.application.exception.ConflictException;
 import com.jeannimi.messenger.application.exception.ForbiddenException;
 import com.jeannimi.messenger.application.exception.NotFoundException;
+import com.jeannimi.messenger.application.message.dto.ChatListData;
 import com.jeannimi.messenger.application.message.service.MessageService;
 import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
+import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.application.port.out.PrivateChatCreateResult;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserProfileResult;
@@ -57,6 +60,7 @@ public class ChatServiceImpl implements ChatService {
 
   private final ChatRepositoryPort chatRepository;
   private final UserRepositoryPort userRepository;
+  private final MessageRepositoryPort messageRepository;
   private final ChatMemberRepositoryPort chatMemberRepository;
   private final MessageService messageService;
   private final EventPublisherPort eventPublisher;
@@ -275,10 +279,31 @@ public class ChatServiceImpl implements ChatService {
 
     List<Chat> orderedChats = restoreOrder(ids, chats);
 
+    List<ChatId> chatIds =
+        orderedChats.stream()
+            .map(Chat::getId)
+            .toList();
+
+    Map<ChatId, ChatListData> chatDataById =
+        messageRepository.findChatListData(
+                userId,
+                chatIds)
+            .stream()
+            .collect(Collectors.toMap(
+                ChatListData::chatId,
+                Function.identity()));
+
     Cursor<ChatId> nextCursor = createNextCursor(orderedChats, hasMore);
 
     return new CursorPageResult<>(
-        orderedChats.stream().map(this::toResult).toList(), nextCursor, hasMore);
+        orderedChats.stream()
+            .map(chat ->
+                toResult(
+                    chat,
+                    chatDataById.get(chat.getId())))
+            .toList(),
+        nextCursor,
+        hasMore);
   }
 
   private List<ChatId> takePage(List<ChatId> ids, int pageSize) {
@@ -480,13 +505,31 @@ public class ChatServiceImpl implements ChatService {
     List<ChatMemberResult> memberResults =
         chat.getMembers().stream().map(this::toMemberResult).toList();
 
+    return new ChatResult( chat.getId(), chat.getName(), chat.getType().name(), memberResults, chat.getCreatedAt(), chat.getLastMessageAt(), null, 0, LastMessageStatus.NONE);
+  }
+
+  private ChatResult toResult(
+      Chat chat,
+      ChatListData data) {
+
     return new ChatResult(
         chat.getId(),
         chat.getName(),
         chat.getType().name(),
-        memberResults,
+        chat.getMembers().stream()
+            .map(this::toMemberResult)
+            .toList(),
         chat.getCreatedAt(),
-        chat.getLastMessageAt());
+        chat.getLastMessageAt(),
+        data == null
+            ? null
+            : data.lastMessage(),
+        data == null
+            ? 0
+            : data.unreadCount(),
+        data == null
+            ? LastMessageStatus.NONE
+            : data.lastMessageStatus());
   }
 
   private ChatMemberResult toMemberResult(ChatMember member) {

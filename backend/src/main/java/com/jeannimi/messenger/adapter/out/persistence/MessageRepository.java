@@ -1,20 +1,33 @@
 package com.jeannimi.messenger.adapter.out.persistence;
 
+
 import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.FileAttachmentPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.mapper.LastMessagePersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.MessagePersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageProjection;
+import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageStatusProjection;
+import com.jeannimi.messenger.adapter.out.persistence.projection.UnreadCountProjection;
+import com.jeannimi.messenger.application.chat.dto.LastMessageStatus;
+import com.jeannimi.messenger.application.message.dto.ChatListData;
+import com.jeannimi.messenger.application.message.dto.LastMessageResult;
 import com.jeannimi.messenger.application.message.dto.MessageWithSender;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;
 import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -28,6 +41,84 @@ public class MessageRepository implements MessageRepositoryPort {
   private final UserJpaRepository userJpaRepository;
   private final MessagePersistenceMapper messagePersistenceMapper;
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;
+  private final LastMessagePersistenceMapper lastMessagePersistenceMapper;
+
+  @Override
+  public List<ChatListData> findChatListData(
+      UserId userId,
+      List<ChatId> chatIds) {
+
+    if (chatIds.isEmpty()) {
+      return List.of();
+    }
+
+    List<UUID> ids =
+        chatIds.stream()
+            .map(ChatId::value)
+            .toList();
+
+    List<LastMessageProjection> lastMessages =
+        messageJpaRepository.findLastMessagesByChatIds(ids);
+
+    List<UnreadCountProjection> unreadCounts =
+        messageJpaRepository.findUnreadCounts(
+            userId.value(),
+            ids);
+
+    List<LastMessageStatusProjection> statuses =
+        messageJpaRepository.findLastMessageStatuses(
+            userId.value(),
+            ids);
+
+    Map<UUID, LastMessageProjection> lastMessageByChatId =
+        lastMessages.stream()
+            .collect(Collectors.toMap(
+                LastMessageProjection::getChatId,
+                Function.identity()));
+
+    Map<UUID, Long> unreadCountByChatId =
+        unreadCounts.stream()
+            .collect(Collectors.toMap(
+                UnreadCountProjection::getChatId,
+                UnreadCountProjection::getUnreadCount));
+
+    Map<UUID, LastMessageStatus> statusByChatId =
+        statuses.stream()
+            .collect(Collectors.toMap(
+                LastMessageStatusProjection::getChatId,
+                projection ->
+                    LastMessageStatus.valueOf(
+                        projection.getStatus())));
+
+    return chatIds.stream()
+        .map(chatId -> {
+
+          LastMessageProjection projection =
+              lastMessageByChatId.get(chatId.value());
+
+          LastMessageResult lastMessage =
+              projection == null
+                  ? null
+                  : lastMessagePersistenceMapper.toResult(projection);
+
+          long unreadCount =
+              unreadCountByChatId.getOrDefault(
+                  chatId.value(),
+                  0L);
+
+          LastMessageStatus status =
+              statusByChatId.getOrDefault(
+                  chatId.value(),
+                  LastMessageStatus.NONE);
+
+          return new ChatListData(
+              chatId,
+              lastMessage,
+              unreadCount,
+              status);
+        })
+        .toList();
+  }
 
   @Override
   public List<FileAttachment> findAttachmentsByChatId(ChatId chatId) {

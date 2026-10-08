@@ -198,30 +198,109 @@
 
 }
 
-/*
-    Индикатор непрочитанного чата
-*/
+
+.chat-info {
+    min-width: 0;
+}
 
 .chat-name-container {
-
-    display:flex;
-
-    align-items:center;
-
+    display: flex;
+    align-items: center;
 }
 
-.chat-unread-indicator {
-
-    width:12px;
-
-    height:12px;
-
-    margin-left:6px;
-
-    border-radius:50%;
-
-    background:#2196f3;
-
-    flex-shrink:0;
-
+.chat-name {
+    font-size: 16px;
+    font-weight: 500;
 }
+
+
+.chat-unread-badge {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 20px;
+    height: 20px;
+
+    margin-left: 6px;
+    padding: 0 5px;
+
+    border-radius: 999px;
+
+    background: #2196f3;
+    color: white;
+
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+
+    box-sizing: border-box;
+
+    flex-shrink: 0;
+}
+
+
+.chat-item {
+    display: flex;
+    align-items: flex-start;
+
+    padding: 15px 20px;
+
+    border-bottom: 1px solid #eee;
+
+    cursor: pointer;
+}
+
+
+.chat-item:hover {
+    background: #f5f5f5;
+}
+
+
+.chat-info {
+    min-width: 0;
+}
+
+
+.chat-name-container {
+    display: flex;
+    align-items: center;
+}
+
+
+.chat-name {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+
+.chat-last-message {
+    margin-top: 4px;
+
+    font-size: 13px;
+    color: #777;
+}
+
+
+.chat-message-date {
+    margin-top: 4px;
+
+    font-size: 12px;
+    color: #999;
+}
+
+
+.chat-message-status {
+    margin-top: 3px;
+
+    font-size: 14px;
+    line-height: 1;
+}
+
+.chat-message-status-read {
+    color: #2196f3;
+}
+
+
+

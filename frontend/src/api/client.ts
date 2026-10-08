@@ -168,7 +168,7 @@ api.interceptors.response.use(
                  * 🚪 выкидываем пользователя на login
                  * (жёсткий logout)
                  */
-                window.location.href = "/";
+                window.location.href = "/login";
 
                 return Promise.reject(e);
             }
