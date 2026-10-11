@@ -11,5 +11,5 @@ public record MessageReadEvent(
     UserId readerId,
     UserId senderId,
     Instant readAt,
-    MessageId lastReadMessageId
-) implements ApplicationEvent {}
+    MessageId lastReadMessageId)
+    implements ApplicationEvent {}

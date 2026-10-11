@@ -51,9 +51,7 @@ public class MessagePersistenceMapper {
         fileAttachmentPersistenceMapper.toEntity(message.getAttachment());
 
     String encryptedContent =
-        message.getContent() == null
-            ? null
-            : messageEncryptionPort.encrypt(message.getContent());
+        message.getContent() == null ? null : messageEncryptionPort.encrypt(message.getContent());
 
     return new MessageJpaEntity(
         message.getId().value(),

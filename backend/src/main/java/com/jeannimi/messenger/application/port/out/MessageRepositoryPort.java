@@ -15,23 +15,14 @@ public interface MessageRepositoryPort {
 
   List<FileAttachment> findAttachmentsByChatId(ChatId chatId);
 
-  Optional<MessageWithSender> findByIdAndChatId(
-      MessageId messageId,
-      ChatId chatId);
+  Optional<MessageWithSender> findByIdAndChatId(MessageId messageId, ChatId chatId);
 
-  List<MessageWithSender> findWithSenderByChatId(
-      ChatId chatId,
-      int limit);
+  List<MessageWithSender> findWithSenderByChatId(ChatId chatId, int limit);
 
   List<MessageWithSender> findWithSenderByChatIdAndCursor(
-      ChatId chatId,
-      Instant createdAt,
-      MessageId id,
-      int limit);
+      ChatId chatId, Instant createdAt, MessageId id, int limit);
 
-  List<ChatListData> findChatListData(
-      UserId userId,
-      List<ChatId> chatIds);
+  List<ChatListData> findChatListData(UserId userId, List<ChatId> chatIds);
 
   int deleteByChatId(ChatId chatId);
 

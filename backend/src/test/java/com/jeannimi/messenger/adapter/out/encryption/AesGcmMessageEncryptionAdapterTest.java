@@ -20,11 +20,9 @@ class AesGcmMessageEncryptionAdapterTest {
 
     new SecureRandom().nextBytes(key);
 
-    String base64Key =
-        Base64.getEncoder().encodeToString(key);
+    String base64Key = Base64.getEncoder().encodeToString(key);
 
-    encryption =
-        new AesGcmMessageEncryptionAdapter(base64Key);
+    encryption = new AesGcmMessageEncryptionAdapter(base64Key);
   }
 
   @Test
@@ -32,11 +30,9 @@ class AesGcmMessageEncryptionAdapterTest {
 
     String plaintext = "Привет, как дела?";
 
-    String encrypted =
-        encryption.encrypt(plaintext);
+    String encrypted = encryption.encrypt(plaintext);
 
-    String decrypted =
-        encryption.decrypt(encrypted);
+    String decrypted = encryption.decrypt(encrypted);
 
     assertEquals(plaintext, decrypted);
   }
@@ -46,8 +42,7 @@ class AesGcmMessageEncryptionAdapterTest {
 
     String plaintext = "Привет, как дела?";
 
-    String encrypted =
-        encryption.encrypt(plaintext);
+    String encrypted = encryption.encrypt(plaintext);
 
     assertNotEquals(plaintext, encrypted);
   }
@@ -57,11 +52,9 @@ class AesGcmMessageEncryptionAdapterTest {
 
     String plaintext = "Hello";
 
-    String encrypted1 =
-        encryption.encrypt(plaintext);
+    String encrypted1 = encryption.encrypt(plaintext);
 
-    String encrypted2 =
-        encryption.encrypt(plaintext);
+    String encrypted2 = encryption.encrypt(plaintext);
 
     assertNotEquals(encrypted1, encrypted2);
   }
@@ -69,15 +62,11 @@ class AesGcmMessageEncryptionAdapterTest {
   @Test
   void shouldRejectModifiedCiphertext() {
 
-    String encrypted =
-        encryption.encrypt("Hello");
+    String encrypted = encryption.encrypt("Hello");
 
     String modified =
-        encrypted.substring(0, encrypted.length() - 1)
-            + (encrypted.endsWith("A") ? "B" : "A");
+        encrypted.substring(0, encrypted.length() - 1) + (encrypted.endsWith("A") ? "B" : "A");
 
-    assertThrows(
-        IllegalStateException.class,
-        () -> encryption.decrypt(modified));
+    assertThrows(IllegalStateException.class, () -> encryption.decrypt(modified));
   }
 }

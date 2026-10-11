@@ -33,18 +33,15 @@ public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
     try {
       keyBytes = Base64.getDecoder().decode(base64Key);
     } catch (IllegalArgumentException e) {
-      throw new IllegalStateException(
-          "Message encryption key must be valid Base64", e);
+      throw new IllegalStateException("Message encryption key must be valid Base64", e);
     }
 
     if (keyBytes.length != KEY_SIZE_BYTES) {
-      throw new IllegalStateException(
-          "Message encryption key must contain exactly 32 bytes");
+      throw new IllegalStateException("Message encryption key must contain exactly 32 bytes");
     }
 
     this.secretKey = new SecretKeySpec(keyBytes, ALGORITHM);
     this.secureRandom = new SecureRandom();
-
   }
 
   @Override
@@ -60,13 +57,11 @@ public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
     try {
       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
 
-      GCMParameterSpec parameterSpec =
-          new GCMParameterSpec(TAG_SIZE_BITS, iv);
+      GCMParameterSpec parameterSpec = new GCMParameterSpec(TAG_SIZE_BITS, iv);
 
       cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
 
-      byte[] ciphertext =
-          cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+      byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
       return FORMAT_VERSION
           + ":"
@@ -76,8 +71,7 @@ public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
 
     } catch (GeneralSecurityException e) {
 
-      throw new IllegalStateException(
-          "Failed to encrypt message", e);
+      throw new IllegalStateException("Failed to encrypt message", e);
     }
   }
 
@@ -85,22 +79,19 @@ public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
   public String decrypt(String encryptedText) {
 
     if (encryptedText == null) {
-      throw new IllegalArgumentException(
-          "Encrypted text must not be null");
+      throw new IllegalArgumentException("Encrypted text must not be null");
     }
 
     String[] parts = encryptedText.split(":", 3);
 
     if (parts.length != 3) {
-      throw new IllegalArgumentException(
-          "Invalid encrypted message format");
+      throw new IllegalArgumentException("Invalid encrypted message format");
     }
 
     String version = parts[0];
 
     if (!FORMAT_VERSION.equals(version)) {
-      throw new IllegalArgumentException(
-          "Unsupported encrypted message version: " + version);
+      throw new IllegalArgumentException("Unsupported encrypted message version: " + version);
     }
 
     byte[] iv;
@@ -113,35 +104,28 @@ public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
 
     } catch (IllegalArgumentException e) {
 
-      throw new IllegalArgumentException(
-          "Invalid Base64 in encrypted message", e);
+      throw new IllegalArgumentException("Invalid Base64 in encrypted message", e);
     }
 
     if (iv.length != IV_SIZE_BYTES) {
-      throw new IllegalArgumentException(
-          "Invalid AES-GCM IV length");
+      throw new IllegalArgumentException("Invalid AES-GCM IV length");
     }
 
     try {
 
       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
 
-      GCMParameterSpec parameterSpec =
-          new GCMParameterSpec(TAG_SIZE_BITS, iv);
+      GCMParameterSpec parameterSpec = new GCMParameterSpec(TAG_SIZE_BITS, iv);
 
       cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 
       byte[] plaintext = cipher.doFinal(ciphertext);
 
-      return new String(
-          plaintext,
-          StandardCharsets.UTF_8);
+      return new String(plaintext, StandardCharsets.UTF_8);
 
     } catch (GeneralSecurityException e) {
 
-      throw new IllegalStateException(
-          "Failed to decrypt message",
-          e);
+      throw new IllegalStateException("Failed to decrypt message", e);
     }
   }
 }

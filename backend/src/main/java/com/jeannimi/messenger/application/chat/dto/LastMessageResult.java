@@ -5,7 +5,4 @@ import com.jeannimi.messenger.domain.message.MessageId;
 import java.time.Instant;
 
 public record LastMessageResult(
-    MessageId id,
-    UserResult sender,
-    String content,
-    Instant createdAt) {}
+    MessageId id, UserResult sender, String content, Instant createdAt) {}

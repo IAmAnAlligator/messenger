@@ -23,10 +23,10 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "messages",
     indexes = {
-        @Index(
-            name = "idx_messages_chat_created_id",
-            columnList = "chat_id, created_at DESC, id DESC"),
-        @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
+      @Index(
+          name = "idx_messages_chat_created_id",
+          columnList = "chat_id, created_at DESC, id DESC"),
+      @Index(name = "idx_messages_file_attachment_id", columnList = "file_attachment_id")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

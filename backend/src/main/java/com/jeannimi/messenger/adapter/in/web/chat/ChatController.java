@@ -177,11 +177,7 @@ public class ChatController {
   private ChatDto toDto(ChatResult result) {
 
     List<ChatMemberDto> members =
-        result.members() == null
-            ? List.of()
-            : result.members().stream()
-                .map(this::toDto)
-                .toList();
+        result.members() == null ? List.of() : result.members().stream().map(this::toDto).toList();
 
     return new ChatDto(
         result.id().value(),
@@ -194,7 +190,6 @@ public class ChatController {
         result.unreadCount(),
         result.lastMessageStatus());
   }
-
 
   private LastMessageDto toDto(LastMessageResult result) {
 

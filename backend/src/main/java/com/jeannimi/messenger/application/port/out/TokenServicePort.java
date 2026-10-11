@@ -2,6 +2,7 @@ package com.jeannimi.messenger.application.port.out;
 
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;
+import java.time.Instant;
 
 public interface TokenServicePort {
 
@@ -16,4 +17,6 @@ public interface TokenServicePort {
   String extractTokenType(String token);
 
   String extractRole(String token);
+
+  Instant extractExpiration(String newRefreshToken);
 }

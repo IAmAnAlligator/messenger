@@ -1,6 +1,5 @@
 package com.jeannimi.messenger.adapter.out.persistence;
 
-
 import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
@@ -44,79 +43,54 @@ public class MessageRepository implements MessageRepositoryPort {
   private final LastMessagePersistenceMapper lastMessagePersistenceMapper;
 
   @Override
-  public List<ChatListData> findChatListData(
-      UserId userId,
-      List<ChatId> chatIds) {
+  public List<ChatListData> findChatListData(UserId userId, List<ChatId> chatIds) {
 
     if (chatIds.isEmpty()) {
       return List.of();
     }
 
-    List<UUID> ids =
-        chatIds.stream()
-            .map(ChatId::value)
-            .toList();
+    List<UUID> ids = chatIds.stream().map(ChatId::value).toList();
 
-    List<LastMessageProjection> lastMessages =
-        messageJpaRepository.findLastMessagesByChatIds(ids);
+    List<LastMessageProjection> lastMessages = messageJpaRepository.findLastMessagesByChatIds(ids);
 
     List<UnreadCountProjection> unreadCounts =
-        messageJpaRepository.findUnreadCounts(
-            userId.value(),
-            ids);
+        messageJpaRepository.findUnreadCounts(userId.value(), ids);
 
     List<LastMessageStatusProjection> statuses =
-        messageJpaRepository.findLastMessageStatuses(
-            userId.value(),
-            ids);
+        messageJpaRepository.findLastMessageStatuses(userId.value(), ids);
 
     Map<UUID, LastMessageProjection> lastMessageByChatId =
         lastMessages.stream()
-            .collect(Collectors.toMap(
-                LastMessageProjection::getChatId,
-                Function.identity()));
+            .collect(Collectors.toMap(LastMessageProjection::getChatId, Function.identity()));
 
     Map<UUID, Long> unreadCountByChatId =
         unreadCounts.stream()
-            .collect(Collectors.toMap(
-                UnreadCountProjection::getChatId,
-                UnreadCountProjection::getUnreadCount));
+            .collect(
+                Collectors.toMap(
+                    UnreadCountProjection::getChatId, UnreadCountProjection::getUnreadCount));
 
     Map<UUID, LastMessageStatus> statusByChatId =
         statuses.stream()
-            .collect(Collectors.toMap(
-                LastMessageStatusProjection::getChatId,
-                projection ->
-                    LastMessageStatus.valueOf(
-                        projection.getStatus())));
+            .collect(
+                Collectors.toMap(
+                    LastMessageStatusProjection::getChatId,
+                    projection -> LastMessageStatus.valueOf(projection.getStatus())));
 
     return chatIds.stream()
-        .map(chatId -> {
+        .map(
+            chatId -> {
+              LastMessageProjection projection = lastMessageByChatId.get(chatId.value());
 
-          LastMessageProjection projection =
-              lastMessageByChatId.get(chatId.value());
+              LastMessageResult lastMessage =
+                  projection == null ? null : lastMessagePersistenceMapper.toResult(projection);
 
-          LastMessageResult lastMessage =
-              projection == null
-                  ? null
-                  : lastMessagePersistenceMapper.toResult(projection);
+              long unreadCount = unreadCountByChatId.getOrDefault(chatId.value(), 0L);
 
-          long unreadCount =
-              unreadCountByChatId.getOrDefault(
-                  chatId.value(),
-                  0L);
+              LastMessageStatus status =
+                  statusByChatId.getOrDefault(chatId.value(), LastMessageStatus.NONE);
 
-          LastMessageStatus status =
-              statusByChatId.getOrDefault(
-                  chatId.value(),
-                  LastMessageStatus.NONE);
-
-          return new ChatListData(
-              chatId,
-              lastMessage,
-              unreadCount,
-              status);
-        })
+              return new ChatListData(chatId, lastMessage, unreadCount, status);
+            })
         .toList();
   }
 

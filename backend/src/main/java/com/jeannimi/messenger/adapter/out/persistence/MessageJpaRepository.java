@@ -82,8 +82,7 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
               m.id DESC
           """,
       nativeQuery = true)
-  List<LastMessageProjection> findLastMessagesByChatIds(
-      @Param("chatIds") List<UUID> chatIds);
+  List<LastMessageProjection> findLastMessagesByChatIds(@Param("chatIds") List<UUID> chatIds);
 
   @Query(
       value =
@@ -92,47 +91,45 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
               cm.chat_id AS chatId,
               COUNT(m.id) AS unreadCount
           FROM chat_members cm
-  
+
           LEFT JOIN messages m
             ON m.chat_id = cm.chat_id
            AND m.sender_id <> :userId
-  
+
           LEFT JOIN messages last_read
             ON last_read.id = cm.last_read_message_id
            AND last_read.chat_id = cm.chat_id
-  
+
           WHERE cm.user_id = :userId
             AND cm.chat_id IN (:chatIds)
-  
+
             AND (
                 cm.last_read_message_id IS NULL
-  
+
                 OR m.created_at > last_read.created_at
-  
+
                 OR (
                     m.created_at = last_read.created_at
                     AND m.id > last_read.id
                 )
             )
-  
+
           GROUP BY cm.chat_id
           """,
       nativeQuery = true)
   List<UnreadCountProjection> findUnreadCounts(
-      @Param("userId") UUID userId,
-      @Param("chatIds") List<UUID> chatIds);
-
+      @Param("userId") UUID userId, @Param("chatIds") List<UUID> chatIds);
 
   @Query(
       value =
           """
           SELECT
               lm.chat_id AS chatId,
-  
+
               CASE
                   WHEN lm.sender_id <> :userId
                       THEN 'NONE'
-  
+
                   WHEN EXISTS (
                       SELECT 1
                       FROM chat_members reader
@@ -141,13 +138,13 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
                            reader.last_read_message_id
                        AND read_message.chat_id =
                            lm.chat_id
-  
+
                       WHERE reader.chat_id = lm.chat_id
                         AND reader.user_id <> :userId
-  
+
                         AND (
                             read_message.created_at > lm.created_at
-  
+
                             OR (
                                 read_message.created_at = lm.created_at
                                 AND read_message.id >= lm.id
@@ -155,10 +152,10 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
                         )
                   )
                       THEN 'READ'
-  
+
                   ELSE 'SENT'
               END AS status
-  
+
           FROM (
               SELECT DISTINCT ON (m.chat_id)
                   m.chat_id,
@@ -175,6 +172,5 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
           """,
       nativeQuery = true)
   List<LastMessageStatusProjection> findLastMessageStatuses(
-      @Param("userId") UUID userId,
-      @Param("chatIds") List<UUID> chatIds);
+      @Param("userId") UUID userId, @Param("chatIds") List<UUID> chatIds);
 }

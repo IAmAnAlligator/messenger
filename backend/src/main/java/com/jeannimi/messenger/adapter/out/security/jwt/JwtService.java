@@ -89,6 +89,11 @@ public class JwtService implements TokenServicePort {
   }
 
   @Override
+  public Instant extractExpiration(String token) {
+    return extractClaims(token).getExpiration().toInstant();
+  }
+
+  @Override
   public boolean isTokenValid(String token) {
     try {
       extractClaims(token);

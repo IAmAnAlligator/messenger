@@ -279,29 +279,16 @@ public class ChatServiceImpl implements ChatService {
 
     List<Chat> orderedChats = restoreOrder(ids, chats);
 
-    List<ChatId> chatIds =
-        orderedChats.stream()
-            .map(Chat::getId)
-            .toList();
+    List<ChatId> chatIds = orderedChats.stream().map(Chat::getId).toList();
 
     Map<ChatId, ChatListData> chatDataById =
-        messageRepository.findChatListData(
-                userId,
-                chatIds)
-            .stream()
-            .collect(Collectors.toMap(
-                ChatListData::chatId,
-                Function.identity()));
+        messageRepository.findChatListData(userId, chatIds).stream()
+            .collect(Collectors.toMap(ChatListData::chatId, Function.identity()));
 
     Cursor<ChatId> nextCursor = createNextCursor(orderedChats, hasMore);
 
     return new CursorPageResult<>(
-        orderedChats.stream()
-            .map(chat ->
-                toResult(
-                    chat,
-                    chatDataById.get(chat.getId())))
-            .toList(),
+        orderedChats.stream().map(chat -> toResult(chat, chatDataById.get(chat.getId()))).toList(),
         nextCursor,
         hasMore);
   }
@@ -505,31 +492,30 @@ public class ChatServiceImpl implements ChatService {
     List<ChatMemberResult> memberResults =
         chat.getMembers().stream().map(this::toMemberResult).toList();
 
-    return new ChatResult( chat.getId(), chat.getName(), chat.getType().name(), memberResults, chat.getCreatedAt(), chat.getLastMessageAt(), null, 0, LastMessageStatus.NONE);
+    return new ChatResult(
+        chat.getId(),
+        chat.getName(),
+        chat.getType().name(),
+        memberResults,
+        chat.getCreatedAt(),
+        chat.getLastMessageAt(),
+        null,
+        0,
+        LastMessageStatus.NONE);
   }
 
-  private ChatResult toResult(
-      Chat chat,
-      ChatListData data) {
+  private ChatResult toResult(Chat chat, ChatListData data) {
 
     return new ChatResult(
         chat.getId(),
         chat.getName(),
         chat.getType().name(),
-        chat.getMembers().stream()
-            .map(this::toMemberResult)
-            .toList(),
+        chat.getMembers().stream().map(this::toMemberResult).toList(),
         chat.getCreatedAt(),
         chat.getLastMessageAt(),
-        data == null
-            ? null
-            : data.lastMessage(),
-        data == null
-            ? 0
-            : data.unreadCount(),
-        data == null
-            ? LastMessageStatus.NONE
-            : data.lastMessageStatus());
+        data == null ? null : data.lastMessage(),
+        data == null ? 0 : data.unreadCount(),
+        data == null ? LastMessageStatus.NONE : data.lastMessageStatus());
   }
 
   private ChatMemberResult toMemberResult(ChatMember member) {

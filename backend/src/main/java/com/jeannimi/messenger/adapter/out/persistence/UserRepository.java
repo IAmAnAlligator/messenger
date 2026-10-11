@@ -33,10 +33,15 @@ public class UserRepository implements UserRepositoryPort {
 
   @Override
   public List<User> searchByUsername(String query, UserId currentUserId) {
-
-    return userJpaRepository.searchByUsername(query, currentUserId.value()).stream()
+    return userJpaRepository
+        .searchByUsername(escapeLikePattern(query), currentUserId.value())
+        .stream()
         .map(userPersistenceMapper::toDomain)
         .toList();
+  }
+
+  private String escapeLikePattern(String value) {
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
   }
 
   @Override

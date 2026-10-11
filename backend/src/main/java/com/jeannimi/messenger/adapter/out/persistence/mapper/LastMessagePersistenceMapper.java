@@ -16,8 +16,7 @@ public class LastMessagePersistenceMapper {
 
   private final MessageEncryptionPort messageEncryptionPort;
 
-  public LastMessageResult toResult(
-      LastMessageProjection projection) {
+  public LastMessageResult toResult(LastMessageProjection projection) {
 
     UserResult sender =
         new UserResult(
@@ -29,13 +28,9 @@ public class LastMessagePersistenceMapper {
     String content =
         projection.getEncryptedContent() == null
             ? null
-            : messageEncryptionPort.decrypt(
-                projection.getEncryptedContent());
+            : messageEncryptionPort.decrypt(projection.getEncryptedContent());
 
     return new LastMessageResult(
-        new MessageId(projection.getMessageId()),
-        sender,
-        content,
-        projection.getCreatedAt());
+        new MessageId(projection.getMessageId()), sender, content, projection.getCreatedAt());
   }
 }
