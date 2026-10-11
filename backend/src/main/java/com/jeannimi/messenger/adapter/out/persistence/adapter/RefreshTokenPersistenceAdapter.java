@@ -1,7 +1,8 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.RefreshTokenEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.RefreshTokenMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.RefreshTokenJpaRepository;
 import com.jeannimi.messenger.application.auth.dto.RotationResult;
 import com.jeannimi.messenger.application.port.out.RefreshTokenRepositoryPort;
 import com.jeannimi.messenger.domain.auth.RefreshToken;

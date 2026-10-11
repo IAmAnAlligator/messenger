@@ -1,8 +1,10 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ChatPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.ChatJpaRepository;
+import com.jeannimi.messenger.adapter.out.persistence.repository.UserJpaRepository;
 import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.PrivateChatCreateResult;
 import com.jeannimi.messenger.domain.chat.Chat;
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class ChatRepository implements ChatRepositoryPort {
+public class ChatPersistenceAdapter implements ChatRepositoryPort {
 
   private final ChatJpaRepository chatJpaRepository;
   private final UserJpaRepository userJpaRepository;

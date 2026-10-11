@@ -1,7 +1,8 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.UserPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.UserJpaRepository;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class UserRepository implements UserRepositoryPort {
+public class UserPersistenceAdapter implements UserRepositoryPort {
 
   private final UserJpaRepository userJpaRepository;
   private final UserPersistenceMapper userPersistenceMapper;

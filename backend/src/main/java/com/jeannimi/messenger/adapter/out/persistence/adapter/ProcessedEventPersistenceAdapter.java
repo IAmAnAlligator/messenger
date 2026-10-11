@@ -1,7 +1,8 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.ProcessedEventJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ProcessedEventPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.ProcessedEventJpaRepository;
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
 import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
@@ -12,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
-public class ProcessedEventRepository implements ProcessedEventRepositoryPort {
+public class ProcessedEventPersistenceAdapter implements ProcessedEventRepositoryPort {
 
   private final ProcessedEventJpaRepository processedEventJpaRepository;
   private final ProcessedEventPersistenceMapper processedEventPersistenceMapper;

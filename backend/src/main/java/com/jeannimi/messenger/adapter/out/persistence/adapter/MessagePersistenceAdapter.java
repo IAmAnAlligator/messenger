@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.ChatJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
@@ -9,6 +9,9 @@ import com.jeannimi.messenger.adapter.out.persistence.mapper.MessagePersistenceM
 import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageProjection;
 import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageStatusProjection;
 import com.jeannimi.messenger.adapter.out.persistence.projection.UnreadCountProjection;
+import com.jeannimi.messenger.adapter.out.persistence.repository.ChatJpaRepository;
+import com.jeannimi.messenger.adapter.out.persistence.repository.MessageJpaRepository;
+import com.jeannimi.messenger.adapter.out.persistence.repository.UserJpaRepository;
 import com.jeannimi.messenger.application.chat.dto.LastMessageStatus;
 import com.jeannimi.messenger.application.message.dto.ChatListData;
 import com.jeannimi.messenger.application.message.dto.LastMessageResult;
@@ -33,7 +36,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class MessageRepository implements MessageRepositoryPort {
+public class MessagePersistenceAdapter implements MessageRepositoryPort {
 
   private final MessageJpaRepository messageJpaRepository;
   private final ChatJpaRepository chatJpaRepository;

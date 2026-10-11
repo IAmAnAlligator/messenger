@@ -1,6 +1,7 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.mapper.FileAttachmentPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.FileAttachmentJpaRepository;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.FileAttachmentId;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class FileAttachmentRepository implements FileAttachmentRepositoryPort {
+public class FileAttachmentPersistenceAdapter implements FileAttachmentRepositoryPort {
 
   private final FileAttachmentJpaRepository fileAttachmentJpaRepository;
   private final FileAttachmentPersistenceMapper fileAttachmentPersistenceMapper;

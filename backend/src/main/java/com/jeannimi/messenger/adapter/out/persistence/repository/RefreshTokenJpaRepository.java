@@ -1,4 +1,4 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.repository;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.RefreshTokenEntity;
 import jakarta.persistence.LockModeType;

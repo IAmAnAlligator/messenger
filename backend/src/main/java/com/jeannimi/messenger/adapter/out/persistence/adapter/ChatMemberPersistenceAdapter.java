@@ -1,6 +1,7 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ChatMemberPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.ChatMemberJpaRepository;
 import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatMember;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class ChatMemberRepository implements ChatMemberRepositoryPort {
+public class ChatMemberPersistenceAdapter implements ChatMemberRepositoryPort {
 
   private final ChatMemberJpaRepository chatMemberJpaRepository;
   private final ChatMemberPersistenceMapper chatMemberPersistenceMapper;

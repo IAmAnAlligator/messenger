@@ -1,7 +1,8 @@
-package com.jeannimi.messenger.adapter.out.persistence;
+package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.OutboxEventJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.OutboxEventPersistenceMapper;
+import com.jeannimi.messenger.adapter.out.persistence.repository.OutboxJpaRepository;
 import com.jeannimi.messenger.application.outbox.OutboxBatchRequest;
 import com.jeannimi.messenger.application.outbox.OutboxCreateData;
 import com.jeannimi.messenger.application.outbox.OutboxEventData;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class OutboxRepository implements OutboxRepositoryPort {
+public class OutboxPersistenceAdapter implements OutboxRepositoryPort {
 
   private final OutboxJpaRepository outboxJpaRepository;
   private final OutboxEventPersistenceMapper outboxEventPersistenceMapper;
