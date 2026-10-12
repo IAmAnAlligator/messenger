@@ -41,7 +41,9 @@ public class AuthService {
   private final HandleGeneratorPort handleGenerator;
   private final IdGenerator idGenerator;
   private final RefreshTokenRepositoryPort refreshTokenRepository;
+  private final RefreshTokenRevocationService refreshTokenRevocationService;
 
+  @Transactional
   public AuthResult login(String emailValue, String password) {
 
     Email email = new Email(emailValue);
@@ -59,6 +61,7 @@ public class AuthService {
     return generateTokens(user);
   }
 
+  @Transactional
   public AuthResult register(String usernameValue, String emailValue, String password) {
     Username username = new Username(usernameValue);
     Email email = new Email(emailValue);
@@ -81,13 +84,56 @@ public class AuthService {
 
   @Transactional
   public AuthResult refresh(String refreshToken) {
+    validateRefreshToken(refreshToken);
 
+    UserId userId = tokenService.extractUserId(refreshToken);
+
+    User user = userRepository.findById(userId)
+        .orElseThrow(() ->
+            new UnauthorizedException("Invalid token"));
+
+    String currentTokenHash = hashToken(refreshToken);
+
+    RefreshToken current = refreshTokenRepository.findByTokenHash(currentTokenHash)
+        .orElseThrow(() ->
+            new UnauthorizedException("Refresh token not found"));
+
+    if (!current.getUserId().equals(userId)) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    Instant now = Instant.now();
+
+    String newRefreshToken = tokenService.generateRefreshToken(user);
+    RefreshToken replacement = createReplacement(
+        userId,
+        current.getSessionId(),
+        newRefreshToken,
+        now
+    );
+
+    rotateRefreshToken(
+        currentTokenHash,
+        replacement,
+        current.getSessionId(),
+        now
+    );
+
+    return new AuthResult(
+        tokenService.generateAccessToken(user),
+        newRefreshToken
+    );
+  }
+
+  private void validateRefreshToken(String refreshToken) {
     if (refreshToken == null || refreshToken.isBlank()) {
       throw new UnauthorizedException("No refresh token");
     }
 
     if (!tokenService.isTokenValid(refreshToken)) {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw new UnauthorizedException(
+          "Invalid or expired refresh token"
+      );
     }
 
     String tokenType = tokenService.extractTokenType(refreshToken);
@@ -95,50 +141,54 @@ public class AuthService {
     if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
       throw new UnauthorizedException("Invalid token type");
     }
+  }
 
-    UserId userId = tokenService.extractUserId(refreshToken);
+  private RefreshToken createReplacement(
+      UserId userId,
+      SessionId sessionId,
+      String newRefreshToken,
+      Instant now
+  ) {
+    return RefreshToken.create(
+        new RefreshTokenId(idGenerator.generate()),
+        sessionId,
+        userId,
+        hashToken(newRefreshToken),
+        now,
+        tokenService.extractExpiration(newRefreshToken)
+    );
+  }
 
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new UnauthorizedException("Invalid token"));
+  private void rotateRefreshToken(
+      String currentTokenHash,
+      RefreshToken replacement,
+      SessionId sessionId,
+      Instant now
+  ) {
+    RotationResult result = refreshTokenRepository.rotate(
+        currentTokenHash,
+        replacement,
+        now
+    );
 
-    String currentTokenHash = hashToken(refreshToken);
+    if (result == RotationResult.REUSE_DETECTED) {
+      refreshTokenRevocationService.revokeSession(
+          sessionId,
+          now
+      );
 
-    RefreshToken current =
-        refreshTokenRepository
-            .findByTokenHash(currentTokenHash)
-            .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
-
-    if (!current.getUserId().equals(userId)) {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new UnauthorizedException(
+          "Refresh token is invalid or has already been used"
+      );
     }
-
-    String newRefreshToken = tokenService.generateRefreshToken(user);
-
-    String newTokenHash = hashToken(newRefreshToken);
-
-    SessionId sessionId = current.getSessionId();
-
-    Instant now = Instant.now();
-
-    RefreshToken replacement =
-        RefreshToken.create(
-            new RefreshTokenId(idGenerator.generate()),
-            sessionId,
-            userId,
-            newTokenHash,
-            now,
-            tokenService.extractExpiration(newRefreshToken));
-
-    RotationResult result = refreshTokenRepository.rotate(currentTokenHash, replacement, now);
 
     if (result != RotationResult.ROTATED) {
-      throw new UnauthorizedException("Refresh token is invalid or has already been used");
+      throw new UnauthorizedException(
+          "Refresh token is invalid or has already been used"
+      );
     }
-
-    return new AuthResult(tokenService.generateAccessToken(user), newRefreshToken);
   }
+
 
   private AuthResult generateTokens(User user) {
 
@@ -189,6 +239,7 @@ public class AuthService {
     }
   }
 
+  @Transactional
   public void logout(String refreshToken) {
 
     if (refreshToken == null || refreshToken.isBlank()) {

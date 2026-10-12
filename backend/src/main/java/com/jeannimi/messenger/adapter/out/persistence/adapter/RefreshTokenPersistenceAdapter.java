@@ -18,23 +18,23 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class RefreshTokenPersistenceAdapter implements RefreshTokenRepositoryPort {
 
-  private final RefreshTokenJpaRepository repository;
+  private final RefreshTokenJpaRepository refreshTokenJpaRepository;
   private final RefreshTokenMapper refreshTokenMapper;
 
   @Override
   public void save(RefreshToken refreshToken) {
-    repository.save(refreshTokenMapper.toEntity(refreshToken));
+    refreshTokenJpaRepository.save(refreshTokenMapper.toEntity(refreshToken));
   }
 
   @Override
   public Optional<RefreshToken> findByTokenHash(String tokenHash) {
-    return repository.findByTokenHash(tokenHash).map(refreshTokenMapper::toDomain);
+    return refreshTokenJpaRepository.findByTokenHash(tokenHash).map(refreshTokenMapper::toDomain);
   }
 
   @Override
   public RotationResult rotate(String currentTokenHash, RefreshToken replacement, Instant now) {
     Optional<RefreshTokenEntity> optionalCurrent =
-        repository.findByTokenHashForUpdate(currentTokenHash);
+        refreshTokenJpaRepository.findByTokenHashForUpdate(currentTokenHash);
 
     if (optionalCurrent.isEmpty()) {
       return RotationResult.NOT_FOUND;
@@ -45,8 +45,6 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenRepositoryPor
     RefreshToken current = refreshTokenMapper.toDomain(currentEntity);
 
     if (current.isRevoked()) {
-      repository.revokeActiveBySessionId(currentEntity.getSessionId(), now);
-
       return RotationResult.REUSE_DETECTED;
     }
 
@@ -68,25 +66,25 @@ public class RefreshTokenPersistenceAdapter implements RefreshTokenRepositoryPor
         current.getRevokedAt(),
         current.getReplacedByTokenId() == null ? null : current.getReplacedByTokenId().value());
 
-    repository.save(currentEntity);
+    refreshTokenJpaRepository.save(currentEntity);
 
-    repository.save(refreshTokenMapper.toEntity(replacement));
+    refreshTokenJpaRepository.save(refreshTokenMapper.toEntity(replacement));
 
     return RotationResult.ROTATED;
   }
 
   @Override
   public int revokeSession(SessionId sessionId, Instant revokedAt) {
-    return repository.revokeActiveBySessionId(sessionId.value(), revokedAt);
+    return refreshTokenJpaRepository.revokeActiveBySessionId(sessionId.value(), revokedAt);
   }
 
   @Override
   public int revokeAllActiveByUserId(UserId userId, Instant revokedAt) {
-    return repository.revokeActiveByUserId(userId.value(), revokedAt);
+    return refreshTokenJpaRepository.revokeActiveByUserId(userId.value(), revokedAt);
   }
 
   @Override
   public Optional<RefreshToken> findById(RefreshTokenId id) {
-    return repository.findById(id.value()).map(refreshTokenMapper::toDomain);
+    return refreshTokenJpaRepository.findById(id.value()).map(refreshTokenMapper::toDomain);
   }
 }

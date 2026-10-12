@@ -20,7 +20,6 @@ public class PasswordHashAdapter implements PasswordHashPort {
 
   @Override
   public boolean matches(Password password, PasswordHash passwordHash) {
-
     return passwordEncoder.matches(password.getValue(), passwordHash.getValue());
   }
 }

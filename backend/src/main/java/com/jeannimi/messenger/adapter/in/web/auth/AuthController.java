@@ -8,6 +8,7 @@ import com.jeannimi.messenger.application.auth.service.AuthService;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
   private static final String REFRESH_COOKIE = "refreshToken";
@@ -41,7 +43,7 @@ public class AuthController {
   @PostMapping("/refresh")
   public ResponseEntity<AuthAccessResponse> refresh(
       @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken) {
-
+    log.info("REFRESH TOKEN REQUEST");
     return authResponse(authService.refresh(refreshToken));
   }
 

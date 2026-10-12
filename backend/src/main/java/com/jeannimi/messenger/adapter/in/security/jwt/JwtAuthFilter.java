@@ -12,6 +12,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +29,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private static final String ACCESS_TOKEN_TYPE = "ACCESS";
 
   private final TokenServicePort tokenService;
+  private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+
+  @Override
+  protected boolean shouldNotFilter(
+      @NonNull HttpServletRequest request) {
+
+    return "/api/auth/refresh".equals(
+        request.getServletPath()
+    );
+  }
 
   @Override
   protected void doFilterInternal(
@@ -36,30 +47,39 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
 
-    if (!hasAuthentication()) {
-      authenticateIfTokenPresent(request);
-    }
+    if (hasAuthentication()) {
+      filterChain.doFilter(request, response);
+    } else {
+      try {
+        authenticateIfTokenPresent(request);
+        filterChain.doFilter(request, response);
+      } catch (JwtAuthenticationException exception) {
+        clearContext();
 
-    filterChain.doFilter(request, response);
+        authenticationEntryPoint.commence(
+            request,
+            response,
+            new BadCredentialsException(
+                "Invalid or expired token",
+                exception
+            )
+        );
+      }
+    }
   }
 
   private boolean hasAuthentication() {
     return SecurityContextHolder.getContext().getAuthentication() != null;
   }
 
-  private void authenticateIfTokenPresent(HttpServletRequest request) {
+  private void authenticateIfTokenPresent(
+      HttpServletRequest request) {
 
     String header = request.getHeader("Authorization");
 
     if (hasBearerToken(header)) {
       String token = extractToken(header);
-
-      try {
-        authenticate(token, request);
-      } catch (JwtAuthenticationException e) {
-        clearContext();
-        throw e;
-      }
+      authenticate(token, request);
     }
   }
 
