@@ -3,6 +3,7 @@ package com.jeannimi.messenger.domain.user;
 import com.jeannimi.messenger.domain.common.DomainId;
 import java.util.Objects;
 import java.util.UUID;
+import lombok.NonNull;
 
 public record UserId(UUID value) implements Comparable<UserId>, DomainId {
 
@@ -11,7 +12,7 @@ public record UserId(UUID value) implements Comparable<UserId>, DomainId {
   }
 
   @Override
-  public int compareTo(UserId other) {
+  public int compareTo(@NonNull UserId other) {
     Objects.requireNonNull(other, "User id must not be null");
 
     return value.compareTo(other.value);

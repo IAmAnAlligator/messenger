@@ -1,15 +1,13 @@
 package com.jeannimi.messenger.application.auth.service;
 
 import static com.jeannimi.messenger.application.auth.AuthTokenConstants.REFRESH_TOKEN_TYPE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.jeannimi.messenger.application.auth.dto.RotationResult.REUSE_DETECTED;
+import static com.jeannimi.messenger.application.auth.dto.RotationResult.ROTATED;
+import static com.jeannimi.messenger.domain.user.Role.USER;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.jeannimi.messenger.application.auth.dto.AuthResult;
 import com.jeannimi.messenger.application.auth.dto.RotationResult;
@@ -22,13 +20,14 @@ import com.jeannimi.messenger.application.port.out.RefreshTokenRepositoryPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.domain.auth.RefreshToken;
-import com.jeannimi.messenger.domain.auth.RefreshTokenId;
 import com.jeannimi.messenger.domain.auth.SessionId;
+import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.Password;
 import com.jeannimi.messenger.domain.user.PasswordHash;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;
+import com.jeannimi.messenger.domain.user.Username;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,87 +46,75 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-  private static final String EMAIL = "alex@example.com";
-  private static final String PASSWORD = "Password123";
+  private static final UUID USER_UUID = UUID.fromString("0199a111-1111-7111-8111-111111111111");
 
-  private static final String ACCESS_TOKEN = "access-token";
-  private static final String REFRESH_TOKEN = "refresh-token";
-  private static final String NEW_ACCESS_TOKEN = "new-access-token";
-  private static final String NEW_REFRESH_TOKEN = "new-refresh-token";
+  private static final UUID SESSION_UUID = UUID.fromString("0199a222-2222-7222-8222-222222222222");
 
-  private static final UUID USER_UUID =
-      UUID.fromString("01912345-6789-7123-8123-123456789abc");
-
-  private static final UUID REFRESH_UUID =
-      UUID.fromString("01912345-6789-7123-8123-123456789abd");
-
-  private static final UUID SESSION_UUID =
-      UUID.fromString("01912345-6789-7123-8123-123456789abe");
+  private static final UUID TOKEN_UUID = UUID.fromString("0199a333-3333-7333-8333-333333333333");
 
   private static final UUID REPLACEMENT_UUID =
-      UUID.fromString("01912345-6789-7123-8123-123456789abf");
+      UUID.fromString("0199a444-4444-7444-8444-444444444444");
 
-  private static final Instant EXPIRATION =
-      Instant.parse("2026-11-11T12:00:00Z");
+  private static final String EMAIL = "user@example.com";
+  private static final String PASSWORD = "password123";
+  private static final String ACCESS_TOKEN = "access-token";
+  private static final String REFRESH_TOKEN = "refresh-token";
+  private static final String NEW_REFRESH_TOKEN = "new-refresh-token";
 
-  @Mock
-  private UserRepositoryPort userRepository;
+  private static final Instant EXPIRATION = Instant.parse("2026-11-13T12:00:00Z");
 
-  @Mock
-  private RefreshTokenRepositoryPort refreshTokenRepository;
+  @Mock private UserRepositoryPort userRepository;
 
-  @Mock
-  private PasswordHashPort passwordHashPort;
+  @Mock private PasswordHashPort passwordHashPort;
 
-  @Mock
-  private TokenServicePort tokenService;
+  @Mock private TokenServicePort tokenService;
 
-  @Mock
-  private HandleGeneratorPort handleGenerator;
+  @Mock private HandleGeneratorPort handleGenerator;
 
-  @Mock
-  private IdGenerator idGenerator;
+  @Mock private IdGenerator idGenerator;
 
-  @Mock
+  @Mock private RefreshTokenRepositoryPort refreshTokenRepository;
+
+  @Mock private RefreshTokenRevocationService refreshTokenRevocationService;
+
+  @InjectMocks private AuthService authService;
+
   private User user;
-
-  @Mock
-  private PasswordHash passwordHash;
-
-  @InjectMocks
-  private AuthService authService;
-
   private UserId userId;
-  private SessionId sessionId;
-  private RefreshToken currentRefreshToken;
+  private PasswordHash passwordHash;
 
   @BeforeEach
   void setUp() {
     userId = new UserId(USER_UUID);
-    sessionId = new SessionId(SESSION_UUID);
-
-    currentRefreshToken = RefreshToken.create(
-        new RefreshTokenId(REFRESH_UUID),
-        sessionId,
-        userId,
-        hash(REFRESH_TOKEN),
-        Instant.parse("2026-10-12T12:00:00Z"),
-        EXPIRATION
-    );
+    passwordHash = new PasswordHash(PASSWORD);
+    user =
+        User.create(
+            userId,
+            new Handle("abc1234"),
+            new Username("Test User"),
+            new Email(EMAIL),
+            passwordHash,
+            USER);
   }
 
+  // -------------------------------------------------------------------------
+  // login
+  // -------------------------------------------------------------------------
+
   @Test
-  void login_shouldReturnAuthResult_whenCredentialsAreValid() {
-    when(userRepository.findByEmail(EMAIL))
-        .thenReturn(Optional.of(user));
+  void login_shouldReturnTokens_whenCredentialsAreValid() {
 
-    when(user.getId()).thenReturn(userId);
-    when(user.getPasswordHash()).thenReturn(passwordHash);
+    when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
-    when(passwordHashPort.matches(any(Password.class), eq(passwordHash)))
-        .thenReturn(true);
+    when(passwordHashPort.matches(any(Password.class), eq(passwordHash))).thenReturn(true);
 
-    stubGeneratedTokens(REFRESH_UUID, SESSION_UUID);
+    when(tokenService.generateAccessToken(user)).thenReturn(ACCESS_TOKEN);
+
+    when(tokenService.generateRefreshToken(user)).thenReturn(REFRESH_TOKEN);
+
+    when(tokenService.extractExpiration(REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    when(idGenerator.generate()).thenReturn(TOKEN_UUID, SESSION_UUID);
 
     AuthResult result = authService.login(EMAIL, PASSWORD);
 
@@ -136,348 +123,374 @@ class AuthServiceTest {
     assertEquals(REFRESH_TOKEN, result.refreshToken());
 
     verify(userRepository).findByEmail(EMAIL);
+
     verify(passwordHashPort).matches(any(Password.class), eq(passwordHash));
+
     verify(refreshTokenRepository).save(any(RefreshToken.class));
   }
 
   @Test
   void login_shouldThrowUnauthorizedException_whenUserDoesNotExist() {
-    when(userRepository.findByEmail(EMAIL))
-        .thenReturn(Optional.empty());
+    when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.login(EMAIL, PASSWORD)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.login(EMAIL, PASSWORD));
 
+    verifyNoInteractions(passwordHashPort);
     verifyNoInteractions(tokenService);
     verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
   void login_shouldThrowUnauthorizedException_whenPasswordIsIncorrect() {
-    when(userRepository.findByEmail(EMAIL))
-        .thenReturn(Optional.of(user));
+    when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
-    when(user.getPasswordHash()).thenReturn(passwordHash);
+    when(passwordHashPort.matches(any(Password.class), eq(passwordHash))).thenReturn(false);
 
-    when(passwordHashPort.matches(any(Password.class), eq(passwordHash)))
-        .thenReturn(false);
-
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.login(EMAIL, PASSWORD)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.login(EMAIL, PASSWORD));
 
     verifyNoInteractions(tokenService);
     verifyNoInteractions(refreshTokenRepository);
   }
 
+  //  // -------------------------------------------------------------------------
+  //  // register
+  //  // -------------------------------------------------------------------------
+
   @Test
-  void register_shouldSaveUserAndRefreshToken_whenEmailIsAvailable() {
-    when(userRepository.existsByEmail(EMAIL))
-        .thenReturn(false);
+  void register_shouldCreateUserAndReturnTokens_whenEmailIsAvailable() {
+    String username = "Test User";
 
-    when(handleGenerator.generate())
-        .thenReturn(new Handle("abc1234"));
+    when(userRepository.existsByEmail(EMAIL)).thenReturn(false);
 
-    when(idGenerator.generate())
-        .thenReturn(USER_UUID, REFRESH_UUID, SESSION_UUID);
+    when(handleGenerator.generate()).thenReturn(new Handle("abc1234"));
 
-    when(passwordHashPort.hash(any(Password.class)))
-        .thenReturn(passwordHash);
+    when(idGenerator.generate()).thenReturn(USER_UUID, TOKEN_UUID, SESSION_UUID);
 
-    when(tokenService.generateAccessToken(any(User.class)))
-        .thenReturn(ACCESS_TOKEN);
+    when(passwordHashPort.hash(any(Password.class))).thenReturn(passwordHash);
 
-    when(tokenService.generateRefreshToken(any(User.class)))
-        .thenReturn(REFRESH_TOKEN);
+    when(tokenService.generateAccessToken(any(User.class))).thenReturn(ACCESS_TOKEN);
 
-    when(tokenService.extractExpiration(REFRESH_TOKEN))
-        .thenReturn(EXPIRATION);
+    when(tokenService.generateRefreshToken(any(User.class))).thenReturn(REFRESH_TOKEN);
 
-    AuthResult result = authService.register("Alex", EMAIL, PASSWORD);
+    when(tokenService.extractExpiration(REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    AuthResult result = authService.register(username, EMAIL, PASSWORD);
 
     assertNotNull(result);
     assertEquals(ACCESS_TOKEN, result.accessToken());
     assertEquals(REFRESH_TOKEN, result.refreshToken());
 
-    verify(userRepository).save(any(User.class));
+    ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+
+    verify(userRepository).save(userCaptor.capture());
+
+    User savedUser = userCaptor.getValue();
+
+    assertNotNull(savedUser);
+    assertEquals(USER, savedUser.getRole());
+
+    verify(passwordHashPort).hash(any(Password.class));
     verify(refreshTokenRepository).save(any(RefreshToken.class));
   }
 
   @Test
   void register_shouldThrowConflictException_whenEmailAlreadyExists() {
-    when(userRepository.existsByEmail(EMAIL))
-        .thenReturn(true);
+    when(userRepository.existsByEmail(EMAIL)).thenReturn(true);
 
-    assertThrows(
-        ConflictException.class,
-        () -> authService.register("Alex", EMAIL, PASSWORD)
-    );
+    assertThrows(ConflictException.class, () -> authService.register("Test User", EMAIL, PASSWORD));
 
     verify(userRepository, never()).save(any(User.class));
-    verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
-    verify(tokenService, never()).generateAccessToken(any(User.class));
-    verify(tokenService, never()).generateRefreshToken(any(User.class));
+    verifyNoInteractions(handleGenerator);
+    verifyNoInteractions(passwordHashPort);
+    verifyNoInteractions(tokenService);
+    verifyNoInteractions(refreshTokenRepository);
   }
 
+  //  // -------------------------------------------------------------------------
+  //  // refresh
+  //  // -------------------------------------------------------------------------
+
   @Test
-  void refresh_shouldRotateTokenAndReturnAuthResult_whenTokenIsValid() {
-    stubValidRefreshToken();
-    stubReplacementToken();
+  void refresh_shouldRotateTokenAndPreserveSession_whenTokenIsValid() {
+    RefreshToken current = mock(RefreshToken.class);
+
+    String currentHash = hashToken(REFRESH_TOKEN);
+
+    SessionId sessionId = new SessionId(SESSION_UUID);
+
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
+
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
+
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    when(refreshTokenRepository.findByTokenHash(currentHash)).thenReturn(Optional.of(current));
+
+    when(current.getUserId()).thenReturn(userId);
+    when(current.getSessionId()).thenReturn(sessionId);
+
+    when(tokenService.generateRefreshToken(user)).thenReturn(NEW_REFRESH_TOKEN);
+
+    when(tokenService.extractExpiration(NEW_REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    when(tokenService.generateAccessToken(user)).thenReturn(ACCESS_TOKEN);
+
+    when(idGenerator.generate()).thenReturn(REPLACEMENT_UUID);
 
     when(refreshTokenRepository.rotate(
-        eq(hash(REFRESH_TOKEN)),
-        any(RefreshToken.class),
-        any(Instant.class)
-    )).thenReturn(RotationResult.ROTATED);
+            eq(currentHash), any(RefreshToken.class), any(Instant.class)))
+        .thenReturn(ROTATED);
 
     AuthResult result = authService.refresh(REFRESH_TOKEN);
 
     assertNotNull(result);
-//    assertEquals(NEW_ACCESS_TOKEN, result.accessToken());
-//    assertEquals(NEW_REFRESH_TOKEN, result.refreshToken());
+    assertEquals(ACCESS_TOKEN, result.accessToken());
+    assertEquals(NEW_REFRESH_TOKEN, result.refreshToken());
 
-    verify(refreshTokenRepository).rotate(
-        eq(hash(REFRESH_TOKEN)),
-        any(RefreshToken.class),
-        any(Instant.class)
-    );
-  }
+    ArgumentCaptor<RefreshToken> replacementCaptor = ArgumentCaptor.forClass(RefreshToken.class);
 
-  @Test
-  void refresh_shouldPreserveSession_whenTokenIsRotated() {
-    stubValidRefreshToken();
-    stubReplacementToken();
+    verify(refreshTokenRepository)
+        .rotate(eq(currentHash), replacementCaptor.capture(), any(Instant.class));
 
-    when(refreshTokenRepository.rotate(
-        eq(hash(REFRESH_TOKEN)),
-        any(RefreshToken.class),
-        any(Instant.class)
-    )).thenReturn(RotationResult.ROTATED);
-
-    authService.refresh(REFRESH_TOKEN);
-
-    ArgumentCaptor<RefreshToken> captor =
-        ArgumentCaptor.forClass(RefreshToken.class);
-
-    verify(refreshTokenRepository).rotate(
-        eq(hash(REFRESH_TOKEN)),
-        captor.capture(),
-        any(Instant.class)
-    );
-
-    RefreshToken replacement = captor.getValue();
+    RefreshToken replacement = replacementCaptor.getValue();
 
     assertEquals(sessionId, replacement.getSessionId());
     assertEquals(userId, replacement.getUserId());
-    assertEquals(hash(NEW_REFRESH_TOKEN), replacement.getTokenHash());
+    assertEquals(hashToken(NEW_REFRESH_TOKEN), replacement.getTokenHash());
+
+    verify(refreshTokenRevocationService, never())
+        .revokeSession(any(SessionId.class), any(Instant.class));
   }
 
   @Test
-  void refresh_shouldThrowUnauthorizedException_whenTokenIsNull() {
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(null)
-    );
+  void refresh_shouldThrowUnauthorizedException_whenTokenIsMissing() {
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(null));
 
     verifyNoInteractions(refreshTokenRepository);
+    verifyNoInteractions(userRepository);
   }
 
   @Test
   void refresh_shouldThrowUnauthorizedException_whenTokenIsBlank() {
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh("   ")
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(" "));
 
     verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
   void refresh_shouldThrowUnauthorizedException_whenTokenIsInvalid() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(false);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(false);
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
 
-    verify(refreshTokenRepository, never())
-        .findByTokenHash(any(String.class));
+    verify(tokenService, never()).extractTokenType(any(String.class));
+
+    verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
   void refresh_shouldThrowUnauthorizedException_whenTokenTypeIsIncorrect() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn("ACCESS");
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn("ACCESS");
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
 
-    verify(refreshTokenRepository, never())
-        .findByTokenHash(any(String.class));
+    verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
   void refresh_shouldThrowUnauthorizedException_whenUserDoesNotExist() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
 
-    when(tokenService.extractUserId(REFRESH_TOKEN))
-        .thenReturn(userId);
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
 
-    when(userRepository.findById(userId))
-        .thenReturn(Optional.empty());
+    when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
 
-    verify(refreshTokenRepository, never())
-        .findByTokenHash(any(String.class));
-
-    verify(refreshTokenRepository, never()).rotate(
-        any(String.class),
-        any(RefreshToken.class),
-        any(Instant.class)
-    );
+    verify(refreshTokenRepository, never()).findByTokenHash(any(String.class));
   }
 
   @Test
-  void refresh_shouldThrowUnauthorizedException_whenTokenRecordDoesNotExist() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+  void refresh_shouldThrowUnauthorizedException_whenTokenIsNotStored() {
+    String currentHash = hashToken(REFRESH_TOKEN);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractUserId(REFRESH_TOKEN))
-        .thenReturn(userId);
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
 
-    when(userRepository.findById(userId))
-        .thenReturn(Optional.of(user));
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
 
-    when(refreshTokenRepository.findByTokenHash(hash(REFRESH_TOKEN)))
-        .thenReturn(Optional.empty());
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    when(refreshTokenRepository.findByTokenHash(currentHash)).thenReturn(Optional.empty());
 
-    verify(refreshTokenRepository, never()).rotate(
-        any(String.class),
-        any(RefreshToken.class),
-        any(Instant.class)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
+
+    verify(refreshTokenRepository, never())
+        .rotate(any(String.class), any(RefreshToken.class), any(Instant.class));
   }
 
   @Test
   void refresh_shouldThrowUnauthorizedException_whenTokenBelongsToAnotherUser() {
-    UserId anotherUserId = new UserId(
-        UUID.fromString("01912345-6789-7123-8123-123456789ac0")
-    );
+    RefreshToken current = mock(RefreshToken.class);
 
-    RefreshToken tokenForAnotherUser = RefreshToken.create(
-        new RefreshTokenId(REFRESH_UUID),
-        sessionId,
-        anotherUserId,
-        hash(REFRESH_TOKEN),
-        Instant.parse("2026-10-12T12:00:00Z"),
-        EXPIRATION
-    );
+    UserId anotherUserId = new UserId(UUID.fromString("0199a555-5555-7555-8555-555555555555"));
 
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+    String currentHash = hashToken(REFRESH_TOKEN);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractUserId(REFRESH_TOKEN))
-        .thenReturn(userId);
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
 
-    when(userRepository.findById(userId))
-        .thenReturn(Optional.of(user));
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
 
-    when(refreshTokenRepository.findByTokenHash(hash(REFRESH_TOKEN)))
-        .thenReturn(Optional.of(tokenForAnotherUser));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    when(refreshTokenRepository.findByTokenHash(currentHash)).thenReturn(Optional.of(current));
 
-    verify(refreshTokenRepository, never()).rotate(
-        any(String.class),
-        any(RefreshToken.class),
-        any(Instant.class)
-    );
+    when(current.getUserId()).thenReturn(anotherUserId);
+
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
+
+    verify(refreshTokenRepository, never())
+        .rotate(any(String.class), any(RefreshToken.class), any(Instant.class));
+
+    verifyNoInteractions(refreshTokenRevocationService);
   }
 
-//  @Test
-//  void refresh_shouldThrowUnauthorizedException_whenRotationDetectsReuse() {
-//    stubValidRefreshToken();
-//
-//    when(refreshTokenRepository.rotate(
-//        eq(hash(REFRESH_TOKEN)),
-//        any(RefreshToken.class),
-//        any(Instant.class)
-//    )).thenReturn(RotationResult.REUSE_DETECTED);
-//
-//    assertThrows(
-//        UnauthorizedException.class,
-//        () -> authService.refresh(REFRESH_TOKEN)
-//    );
-//  }
-
   @Test
-  void refresh_shouldThrowUnauthorizedException_whenTokenIsExpiredInRepository() {
-    stubValidRefreshToken();
-    stubReplacementToken();
+  void refresh_shouldRevokeSession_whenTokenReuseIsDetected() {
+    RefreshToken current = mock(RefreshToken.class);
+
+    String currentHash = hashToken(REFRESH_TOKEN);
+
+    SessionId sessionId = new SessionId(SESSION_UUID);
+
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
+
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
+
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    when(refreshTokenRepository.findByTokenHash(currentHash)).thenReturn(Optional.of(current));
+
+    when(current.getUserId()).thenReturn(userId);
+    when(current.getSessionId()).thenReturn(sessionId);
+
+    when(tokenService.generateRefreshToken(user)).thenReturn(NEW_REFRESH_TOKEN);
+
+    when(tokenService.extractExpiration(NEW_REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    when(idGenerator.generate()).thenReturn(REPLACEMENT_UUID);
 
     when(refreshTokenRepository.rotate(
-        eq(hash(REFRESH_TOKEN)),
-        any(RefreshToken.class),
-        any(Instant.class)
-    )).thenReturn(RotationResult.EXPIRED);
+            eq(currentHash), any(RefreshToken.class), any(Instant.class)))
+        .thenReturn(REUSE_DETECTED);
 
-    assertThrows(
-        UnauthorizedException.class,
-        () -> authService.refresh(REFRESH_TOKEN)
-    );
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
+
+    verify(refreshTokenRevocationService).revokeSession(eq(sessionId), any(Instant.class));
 
     verify(tokenService, never()).generateAccessToken(any(User.class));
   }
 
   @Test
-  void logout_shouldRevokeSession_whenRefreshTokenIsValidAndStored() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+  void refresh_shouldThrowUnauthorizedException_whenRotationFails() {
+    RefreshToken current = mock(RefreshToken.class);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
+    String currentHash = hashToken(REFRESH_TOKEN);
 
-    when(refreshTokenRepository.findByTokenHash(hash(REFRESH_TOKEN)))
-        .thenReturn(Optional.of(currentRefreshToken));
+    SessionId sessionId = new SessionId(SESSION_UUID);
+
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
+
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
+
+    when(tokenService.extractUserId(REFRESH_TOKEN)).thenReturn(userId);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    when(refreshTokenRepository.findByTokenHash(currentHash)).thenReturn(Optional.of(current));
+
+    when(current.getUserId()).thenReturn(userId);
+    when(current.getSessionId()).thenReturn(sessionId);
+
+    when(tokenService.generateRefreshToken(user)).thenReturn(NEW_REFRESH_TOKEN);
+
+    when(tokenService.extractExpiration(NEW_REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    when(idGenerator.generate()).thenReturn(REPLACEMENT_UUID);
+
+    when(refreshTokenRepository.rotate(
+            eq(currentHash), any(RefreshToken.class), any(Instant.class)))
+        .thenReturn(RotationResult.NOT_FOUND);
+
+    assertThrows(UnauthorizedException.class, () -> authService.refresh(REFRESH_TOKEN));
+
+    verify(refreshTokenRevocationService, never())
+        .revokeSession(any(SessionId.class), any(Instant.class));
+  }
+
+  @Test
+  void login_shouldStoreSha256HashOfRefreshToken() throws Exception {
+    when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+    when(passwordHashPort.matches(any(Password.class), eq(passwordHash))).thenReturn(true);
+
+    when(tokenService.generateAccessToken(user)).thenReturn(ACCESS_TOKEN);
+
+    when(tokenService.generateRefreshToken(user)).thenReturn(REFRESH_TOKEN);
+
+    when(tokenService.extractExpiration(REFRESH_TOKEN)).thenReturn(EXPIRATION);
+
+    when(idGenerator.generate()).thenReturn(TOKEN_UUID, SESSION_UUID);
+
+    authService.login(EMAIL, PASSWORD);
+
+    ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+
+    verify(refreshTokenRepository).save(captor.capture());
+
+    String expectedHash =
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(REFRESH_TOKEN.getBytes(StandardCharsets.UTF_8)));
+
+    assertEquals(expectedHash, captor.getValue().getTokenHash());
+  }
+
+  //  // -------------------------------------------------------------------------
+  //  // logout
+  //  // -------------------------------------------------------------------------
+
+  @Test
+  void logout_shouldRevokeSession_whenRefreshTokenExists() {
+    RefreshToken storedToken = mock(RefreshToken.class);
+
+    String tokenHash = hashToken(REFRESH_TOKEN);
+
+    SessionId sessionId = new SessionId(SESSION_UUID);
+
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
+
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
+
+    when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(storedToken));
+
+    when(storedToken.getSessionId()).thenReturn(sessionId);
 
     authService.logout(REFRESH_TOKEN);
 
-    verify(refreshTokenRepository).revokeSession(
-        eq(sessionId),
-        any(Instant.class)
-    );
+    verify(refreshTokenRepository).revokeSession(eq(sessionId), any(Instant.class));
   }
 
   @Test
@@ -490,7 +503,7 @@ class AuthServiceTest {
 
   @Test
   void logout_shouldDoNothing_whenTokenIsBlank() {
-    authService.logout("   ");
+    authService.logout(" ");
 
     verifyNoInteractions(tokenService);
     verifyNoInteractions(refreshTokenRepository);
@@ -498,122 +511,72 @@ class AuthServiceTest {
 
   @Test
   void logout_shouldDoNothing_whenTokenIsInvalid() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(false);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(false);
 
     authService.logout(REFRESH_TOKEN);
 
-    verify(refreshTokenRepository, never())
-        .findByTokenHash(any(String.class));
+    verify(tokenService, never()).extractTokenType(any(String.class));
+
+    verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
   void logout_shouldDoNothing_whenTokenTypeIsIncorrect() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn("ACCESS");
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn("ACCESS");
 
     authService.logout(REFRESH_TOKEN);
 
-    verify(refreshTokenRepository, never())
-        .findByTokenHash(any(String.class));
+    verifyNoInteractions(refreshTokenRepository);
   }
 
   @Test
-  void logout_shouldDoNothing_whenTokenRecordDoesNotExist() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+  void logout_shouldDoNothing_whenTokenIsNotStored() {
+    when(tokenService.isTokenValid(REFRESH_TOKEN)).thenReturn(true);
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
+    when(tokenService.extractTokenType(REFRESH_TOKEN)).thenReturn(REFRESH_TOKEN_TYPE);
 
-    when(refreshTokenRepository.findByTokenHash(hash(REFRESH_TOKEN)))
+    when(refreshTokenRepository.findByTokenHash(hashToken(REFRESH_TOKEN)))
         .thenReturn(Optional.empty());
 
     authService.logout(REFRESH_TOKEN);
 
-    verify(refreshTokenRepository, never())
-        .revokeSession(any(SessionId.class), any(Instant.class));
+    verify(refreshTokenRepository, never()).revokeSession(any(SessionId.class), any(Instant.class));
   }
+
+  //  // -------------------------------------------------------------------------
+  //  // logoutAll
+  //  // -------------------------------------------------------------------------
 
   @Test
   void logoutAll_shouldRevokeAllActiveTokensForUser() {
     authService.logoutAll(userId);
 
-    verify(refreshTokenRepository).revokeAllActiveByUserId(
-        eq(userId),
-        any(Instant.class)
-    );
+    verify(refreshTokenRepository).revokeAllActiveByUserId(eq(userId), any(Instant.class));
   }
 
   @Test
   void logoutAll_shouldThrowIllegalArgumentException_whenUserIdIsNull() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> authService.logoutAll(null)
-    );
+    assertThrows(IllegalArgumentException.class, () -> authService.logoutAll(null));
 
     verifyNoInteractions(refreshTokenRepository);
   }
 
-  private void stubValidRefreshToken() {
-    when(tokenService.isTokenValid(REFRESH_TOKEN))
-        .thenReturn(true);
+  // -------------------------------------------------------------------------
+  // Test helpers
+  // -------------------------------------------------------------------------
 
-    when(tokenService.extractTokenType(REFRESH_TOKEN))
-        .thenReturn(REFRESH_TOKEN_TYPE);
-
-    when(tokenService.extractUserId(REFRESH_TOKEN))
-        .thenReturn(userId);
-
-    when(userRepository.findById(userId))
-        .thenReturn(Optional.of(user));
-
-    when(refreshTokenRepository.findByTokenHash(hash(REFRESH_TOKEN)))
-        .thenReturn(Optional.of(currentRefreshToken));
-  }
-
-  private void stubReplacementToken() {
-    when(tokenService.generateRefreshToken(user))
-        .thenReturn(NEW_REFRESH_TOKEN);
-
-    when(tokenService.extractExpiration(NEW_REFRESH_TOKEN))
-        .thenReturn(EXPIRATION);
-
-    when(idGenerator.generate())
-        .thenReturn(REPLACEMENT_UUID);
-
-//    when(tokenService.generateAccessToken(user))
-//        .thenReturn(NEW_ACCESS_TOKEN);
-  }
-
-  private void stubGeneratedTokens(UUID refreshUuid, UUID sessionUuid) {
-    when(tokenService.generateAccessToken(user))
-        .thenReturn(ACCESS_TOKEN);
-
-    when(tokenService.generateRefreshToken(user))
-        .thenReturn(REFRESH_TOKEN);
-
-    when(tokenService.extractExpiration(REFRESH_TOKEN))
-        .thenReturn(EXPIRATION);
-
-    when(idGenerator.generate())
-        .thenReturn(refreshUuid, sessionUuid);
-  }
-
-  private static String hash(String token) {
+  private String hashToken(String token) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-      byte[] hash = digest.digest(
-          token.getBytes(StandardCharsets.UTF_8)
-      );
+      byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
 
       return HexFormat.of().formatHex(hash);
+
     } catch (NoSuchAlgorithmException exception) {
-      throw new IllegalStateException(exception);
+      throw new IllegalStateException("SHA-256 algorithm is unavailable", exception);
     }
   }
 }

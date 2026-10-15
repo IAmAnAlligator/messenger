@@ -32,12 +32,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtAuthenticationEntryPoint authenticationEntryPoint;
 
   @Override
-  protected boolean shouldNotFilter(
-      @NonNull HttpServletRequest request) {
+  protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
 
-    return "/api/auth/refresh".equals(
-        request.getServletPath()
-    );
+    return "/api/auth/refresh".equals(request.getServletPath());
   }
 
   @Override
@@ -57,13 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         clearContext();
 
         authenticationEntryPoint.commence(
-            request,
-            response,
-            new BadCredentialsException(
-                "Invalid or expired token",
-                exception
-            )
-        );
+            request, response, new BadCredentialsException("Invalid or expired token", exception));
       }
     }
   }
@@ -72,8 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     return SecurityContextHolder.getContext().getAuthentication() != null;
   }
 
-  private void authenticateIfTokenPresent(
-      HttpServletRequest request) {
+  private void authenticateIfTokenPresent(HttpServletRequest request) {
 
     String header = request.getHeader("Authorization");
 

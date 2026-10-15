@@ -3,7 +3,6 @@ package com.jeannimi.messenger.application.auth.service;
 import com.jeannimi.messenger.application.port.out.RefreshTokenRepositoryPort;
 import com.jeannimi.messenger.domain.auth.SessionId;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

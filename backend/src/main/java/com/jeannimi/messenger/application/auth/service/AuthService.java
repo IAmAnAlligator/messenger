@@ -88,15 +88,17 @@ public class AuthService {
 
     UserId userId = tokenService.extractUserId(refreshToken);
 
-    User user = userRepository.findById(userId)
-        .orElseThrow(() ->
-            new UnauthorizedException("Invalid token"));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new UnauthorizedException("Invalid token"));
 
     String currentTokenHash = hashToken(refreshToken);
 
-    RefreshToken current = refreshTokenRepository.findByTokenHash(currentTokenHash)
-        .orElseThrow(() ->
-            new UnauthorizedException("Refresh token not found"));
+    RefreshToken current =
+        refreshTokenRepository
+            .findByTokenHash(currentTokenHash)
+            .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
 
     if (!current.getUserId().equals(userId)) {
       throw new UnauthorizedException("Invalid refresh token");
@@ -105,24 +107,12 @@ public class AuthService {
     Instant now = Instant.now();
 
     String newRefreshToken = tokenService.generateRefreshToken(user);
-    RefreshToken replacement = createReplacement(
-        userId,
-        current.getSessionId(),
-        newRefreshToken,
-        now
-    );
+    RefreshToken replacement =
+        createReplacement(userId, current.getSessionId(), newRefreshToken, now);
 
-    rotateRefreshToken(
-        currentTokenHash,
-        replacement,
-        current.getSessionId(),
-        now
-    );
+    rotateRefreshToken(currentTokenHash, replacement, current.getSessionId(), now);
 
-    return new AuthResult(
-        tokenService.generateAccessToken(user),
-        newRefreshToken
-    );
+    return new AuthResult(tokenService.generateAccessToken(user), newRefreshToken);
   }
 
   private void validateRefreshToken(String refreshToken) {
@@ -131,9 +121,7 @@ public class AuthService {
     }
 
     if (!tokenService.isTokenValid(refreshToken)) {
-      throw new UnauthorizedException(
-          "Invalid or expired refresh token"
-      );
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
     String tokenType = tokenService.extractTokenType(refreshToken);
@@ -144,59 +132,36 @@ public class AuthService {
   }
 
   private RefreshToken createReplacement(
-      UserId userId,
-      SessionId sessionId,
-      String newRefreshToken,
-      Instant now
-  ) {
+      UserId userId, SessionId sessionId, String newRefreshToken, Instant now) {
     return RefreshToken.create(
         new RefreshTokenId(idGenerator.generate()),
         sessionId,
         userId,
         hashToken(newRefreshToken),
         now,
-        tokenService.extractExpiration(newRefreshToken)
-    );
+        tokenService.extractExpiration(newRefreshToken));
   }
 
   private void rotateRefreshToken(
-      String currentTokenHash,
-      RefreshToken replacement,
-      SessionId sessionId,
-      Instant now
-  ) {
-    RotationResult result = refreshTokenRepository.rotate(
-        currentTokenHash,
-        replacement,
-        now
-    );
+      String currentTokenHash, RefreshToken replacement, SessionId sessionId, Instant now) {
+    RotationResult result = refreshTokenRepository.rotate(currentTokenHash, replacement, now);
 
     if (result == RotationResult.REUSE_DETECTED) {
-      refreshTokenRevocationService.revokeSession(
-          sessionId,
-          now
-      );
+      refreshTokenRevocationService.revokeSession(sessionId, now);
 
-      throw new UnauthorizedException(
-          "Refresh token is invalid or has already been used"
-      );
+      throw new UnauthorizedException("Refresh token is invalid or has already been used");
     }
 
     if (result != RotationResult.ROTATED) {
-      throw new UnauthorizedException(
-          "Refresh token is invalid or has already been used"
-      );
+      throw new UnauthorizedException("Refresh token is invalid or has already been used");
     }
   }
 
-
   private AuthResult generateTokens(User user) {
 
-    String accessToken =
-        tokenService.generateAccessToken(user);
+    String accessToken = tokenService.generateAccessToken(user);
 
-    String refreshToken =
-        tokenService.generateRefreshToken(user);
+    String refreshToken = tokenService.generateRefreshToken(user);
 
     Instant now = Instant.now();
 
@@ -207,35 +172,24 @@ public class AuthService {
             user.getId(),
             hashToken(refreshToken),
             now,
-            tokenService.extractExpiration(refreshToken)
-        );
+            tokenService.extractExpiration(refreshToken));
 
     refreshTokenRepository.save(refreshTokenEntity);
 
-    return new AuthResult(
-        accessToken,
-        refreshToken
-    );
+    return new AuthResult(accessToken, refreshToken);
   }
 
   private String hashToken(String token) {
 
     try {
-      MessageDigest digest =
-          MessageDigest.getInstance("SHA-256");
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-      byte[] hash =
-          digest.digest(
-              token.getBytes(StandardCharsets.UTF_8)
-          );
+      byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
 
       return HexFormat.of().formatHex(hash);
 
     } catch (NoSuchAlgorithmException exception) {
-      throw new IllegalStateException(
-          "SHA-256 algorithm is unavailable",
-          exception
-      );
+      throw new IllegalStateException("SHA-256 algorithm is unavailable", exception);
     }
   }
 
