@@ -41,6 +41,10 @@ public final class RefreshToken {
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
     this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
 
+    if (id.equals(replacedByTokenId)) {
+      throw new IllegalArgumentException("Token cannot replace itself");
+    }
+
     if (tokenHash.isBlank()) {
       throw new IllegalArgumentException("Token hash must not be blank");
     }
