@@ -8,13 +8,16 @@ import org.junit.jupiter.api.Test;
 
 class SessionIdTest {
 
+  private static final UUID SESSION_UUID = UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789012");
+
+  private static final UUID ANOTHER_SESSION_UUID =
+      UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789013");
+
   @Test
   void constructor_shouldCreateSessionId_whenValueIsValid() {
-    UUID value = UUID.randomUUID();
+    SessionId sessionId = new SessionId(SESSION_UUID);
 
-    SessionId sessionId = new SessionId(value);
-
-    assertThat(sessionId.value()).isEqualTo(value);
+    assertThat(sessionId.value()).isEqualTo(SESSION_UUID);
   }
 
   @Test
@@ -26,28 +29,24 @@ class SessionIdTest {
 
   @Test
   void equals_shouldReturnTrue_whenValuesAreEqual() {
-    UUID value = UUID.randomUUID();
-
-    SessionId first = new SessionId(value);
-    SessionId second = new SessionId(value);
+    SessionId first = new SessionId(SESSION_UUID);
+    SessionId second = new SessionId(SESSION_UUID);
 
     assertThat(first).isEqualTo(second);
   }
 
   @Test
   void equals_shouldReturnFalse_whenValuesAreDifferent() {
-    SessionId first = new SessionId(UUID.randomUUID());
-    SessionId second = new SessionId(UUID.randomUUID());
+    SessionId first = new SessionId(SESSION_UUID);
+    SessionId second = new SessionId(ANOTHER_SESSION_UUID);
 
     assertThat(first).isNotEqualTo(second);
   }
 
   @Test
   void hashCode_shouldBeEqual_whenValuesAreEqual() {
-    UUID value = UUID.randomUUID();
-
-    SessionId first = new SessionId(value);
-    SessionId second = new SessionId(value);
+    SessionId first = new SessionId(SESSION_UUID);
+    SessionId second = new SessionId(SESSION_UUID);
 
     assertThat(first.hashCode()).isEqualTo(second.hashCode());
   }

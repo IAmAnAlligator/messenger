@@ -10,6 +10,13 @@ import org.junit.jupiter.api.Test;
 
 class UserTest {
 
+  private static final UUID USER_UUID = UUID.fromString("01a1116e-427f-707b-8c4b-f2d4b371d24e");
+
+  private static final UUID ANOTHER_USER_UUID =
+      UUID.fromString("01a1116f-e068-7339-a582-630ab575df51");
+
+  private static final Instant CREATED_AT = Instant.parse("2026-01-01T10:00:00Z");
+
   private UserId userId;
   private Handle handle;
   private Username username;
@@ -20,13 +27,13 @@ class UserTest {
 
   @BeforeEach
   void setUp() {
-    userId = new UserId(UUID.fromString("01a1116e-427f-707b-8c4b-f2d4b371d24e"));
+    userId = new UserId(USER_UUID);
     handle = new Handle("abc1234");
     username = new Username("Alex");
     email = new Email("alex@example.com");
     passwordHash = new PasswordHash("$2a$12$exampleHash");
     role = Role.USER;
-    createdAt = Instant.parse("2026-10-15T10:00:00Z");
+    createdAt = CREATED_AT;
   }
 
   @Test
@@ -146,13 +153,7 @@ class UserTest {
 
     User second =
         User.reconstitute(
-            new UserId(UUID.fromString("01a1116f-e068-7339-a582-630ab575df51")),
-            handle,
-            username,
-            email,
-            passwordHash,
-            role,
-            createdAt);
+            new UserId(ANOTHER_USER_UUID), handle, username, email, passwordHash, role, createdAt);
 
     assertThat(first).isNotEqualTo(second);
   }

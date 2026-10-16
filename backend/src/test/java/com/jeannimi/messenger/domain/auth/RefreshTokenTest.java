@@ -13,6 +13,21 @@ import org.junit.jupiter.api.Test;
 
 class RefreshTokenTest {
 
+  private static final UUID TOKEN_UUID = UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789012");
+
+  private static final UUID ANOTHER_TOKEN_UUID =
+      UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789013");
+
+  private static final UUID SESSION_UUID = UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789014");
+
+  private static final UUID USER_UUID = UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789015");
+
+  private static final UUID FIRST_REPLACEMENT_UUID =
+      UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789016");
+
+  private static final UUID SECOND_REPLACEMENT_UUID =
+      UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789017");
+
   private static final Instant CREATED_AT = Instant.parse("2026-10-15T10:00:00Z");
 
   private static final Instant EXPIRES_AT = Instant.parse("2026-11-14T10:00:00Z");
@@ -26,9 +41,9 @@ class RefreshTokenTest {
 
   @BeforeEach
   void setUp() {
-    tokenId = new RefreshTokenId(UUID.randomUUID());
-    sessionId = new SessionId(UUID.randomUUID());
-    userId = new UserId(UUID.randomUUID());
+    tokenId = new RefreshTokenId(TOKEN_UUID);
+    sessionId = new SessionId(SESSION_UUID);
+    userId = new UserId(USER_UUID);
     tokenHash = "a".repeat(64);
   }
 
@@ -126,19 +141,11 @@ class RefreshTokenTest {
 
   @Test
   void reconstitute_shouldRestoreToken_whenArgumentsAreValid() {
-    Instant revokedAt = NOW;
-    RefreshTokenId replacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId replacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
 
     RefreshToken token =
         RefreshToken.reconstitute(
-            tokenId,
-            sessionId,
-            userId,
-            tokenHash,
-            CREATED_AT,
-            EXPIRES_AT,
-            revokedAt,
-            replacementId);
+            tokenId, sessionId, userId, tokenHash, CREATED_AT, EXPIRES_AT, NOW, replacementId);
 
     assertThat(token.getId()).isEqualTo(tokenId);
     assertThat(token.getSessionId()).isEqualTo(sessionId);
@@ -146,7 +153,7 @@ class RefreshTokenTest {
     assertThat(token.getTokenHash()).isEqualTo(tokenHash);
     assertThat(token.getCreatedAt()).isEqualTo(CREATED_AT);
     assertThat(token.getExpiresAt()).isEqualTo(EXPIRES_AT);
-    assertThat(token.getRevokedAt()).isEqualTo(revokedAt);
+    assertThat(token.getRevokedAt()).isEqualTo(NOW);
     assertThat(token.getReplacedByTokenId()).isEqualTo(replacementId);
   }
 
@@ -167,7 +174,6 @@ class RefreshTokenTest {
   @Test
   void isExpired_shouldReturnTrue_whenNowIsAfterExpiration() {
     RefreshToken token = createToken();
-
     Instant now = EXPIRES_AT.plusSeconds(1);
 
     assertThat(token.isExpired(now)).isTrue();
@@ -251,7 +257,7 @@ class RefreshTokenTest {
   @Test
   void replaceWith_shouldRevokeTokenAndSetReplacementId_whenTokenIsActive() {
     RefreshToken token = createToken();
-    RefreshTokenId replacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId replacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
 
     token.replaceWith(replacementId, NOW);
 
@@ -273,7 +279,7 @@ class RefreshTokenTest {
   @Test
   void replaceWith_shouldThrowNullPointerException_whenNowIsNull() {
     RefreshToken token = createToken();
-    RefreshTokenId replacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId replacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
 
     assertThatNullPointerException()
         .isThrownBy(() -> token.replaceWith(replacementId, null))
@@ -292,8 +298,8 @@ class RefreshTokenTest {
   @Test
   void replaceWith_shouldThrowIllegalStateException_whenTokenHasAlreadyBeenReplaced() {
     RefreshToken token = createToken();
-    RefreshTokenId firstReplacementId = new RefreshTokenId(UUID.randomUUID());
-    RefreshTokenId secondReplacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId firstReplacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
+    RefreshTokenId secondReplacementId = new RefreshTokenId(SECOND_REPLACEMENT_UUID);
 
     token.replaceWith(firstReplacementId, NOW);
 
@@ -307,7 +313,7 @@ class RefreshTokenTest {
     RefreshToken token = createToken();
     token.revoke(NOW);
 
-    RefreshTokenId replacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId replacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
 
     assertThatIllegalStateException()
         .isThrownBy(() -> token.replaceWith(replacementId, NOW))
@@ -317,7 +323,7 @@ class RefreshTokenTest {
   @Test
   void replaceWith_shouldThrowIllegalStateException_whenTokenIsExpired() {
     RefreshToken token = createToken();
-    RefreshTokenId replacementId = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId replacementId = new RefreshTokenId(FIRST_REPLACEMENT_UUID);
 
     assertThatIllegalStateException()
         .isThrownBy(() -> token.replaceWith(replacementId, EXPIRES_AT))
@@ -334,6 +340,7 @@ class RefreshTokenTest {
   @Test
   void equals_shouldReturnTrue_whenIdsAreEqual() {
     RefreshToken first = createToken();
+
     RefreshToken second =
         RefreshToken.reconstitute(
             tokenId, sessionId, userId, "differentHash", CREATED_AT, EXPIRES_AT, NOW, null);
@@ -344,9 +351,10 @@ class RefreshTokenTest {
   @Test
   void equals_shouldReturnFalse_whenIdsAreDifferent() {
     RefreshToken first = createToken();
+
     RefreshToken second =
         RefreshToken.create(
-            new RefreshTokenId(UUID.randomUUID()),
+            new RefreshTokenId(ANOTHER_TOKEN_UUID),
             sessionId,
             userId,
             tokenHash,
@@ -366,6 +374,7 @@ class RefreshTokenTest {
   @Test
   void hashCode_shouldBeEqual_whenIdsAreEqual() {
     RefreshToken first = createToken();
+
     RefreshToken second =
         RefreshToken.reconstitute(
             tokenId, sessionId, userId, "differentHash", CREATED_AT, EXPIRES_AT, null, null);
@@ -376,9 +385,10 @@ class RefreshTokenTest {
   @Test
   void hashCode_shouldBeDifferent_whenIdsAreDifferent() {
     RefreshToken first = createToken();
+
     RefreshToken second =
         RefreshToken.create(
-            new RefreshTokenId(UUID.randomUUID()),
+            new RefreshTokenId(ANOTHER_TOKEN_UUID),
             sessionId,
             userId,
             tokenHash,

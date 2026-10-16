@@ -111,4 +111,22 @@ public final class FileAttachment {
       throw new MessageException(MessageError.FILE_TOO_LARGE, "File size exceeds 10 MB");
     }
   }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+
+    if (!(object instanceof FileAttachment other)) {
+      return false;
+    }
+
+    return id.equals(other.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return id.hashCode();
+  }
 }

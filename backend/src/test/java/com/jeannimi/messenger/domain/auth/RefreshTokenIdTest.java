@@ -8,13 +8,16 @@ import org.junit.jupiter.api.Test;
 
 class RefreshTokenIdTest {
 
+  private static final UUID TOKEN_UUID = UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789012");
+
+  private static final UUID ANOTHER_TOKEN_UUID =
+      UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789013");
+
   @Test
   void constructor_shouldCreateRefreshTokenId_whenValueIsValid() {
-    UUID value = UUID.randomUUID();
+    RefreshTokenId refreshTokenId = new RefreshTokenId(TOKEN_UUID);
 
-    RefreshTokenId refreshTokenId = new RefreshTokenId(value);
-
-    assertThat(refreshTokenId.value()).isEqualTo(value);
+    assertThat(refreshTokenId.value()).isEqualTo(TOKEN_UUID);
   }
 
   @Test
@@ -26,28 +29,24 @@ class RefreshTokenIdTest {
 
   @Test
   void equals_shouldReturnTrue_whenValuesAreEqual() {
-    UUID value = UUID.randomUUID();
-
-    RefreshTokenId first = new RefreshTokenId(value);
-    RefreshTokenId second = new RefreshTokenId(value);
+    RefreshTokenId first = new RefreshTokenId(TOKEN_UUID);
+    RefreshTokenId second = new RefreshTokenId(TOKEN_UUID);
 
     assertThat(first).isEqualTo(second);
   }
 
   @Test
   void equals_shouldReturnFalse_whenValuesAreDifferent() {
-    RefreshTokenId first = new RefreshTokenId(UUID.randomUUID());
-    RefreshTokenId second = new RefreshTokenId(UUID.randomUUID());
+    RefreshTokenId first = new RefreshTokenId(TOKEN_UUID);
+    RefreshTokenId second = new RefreshTokenId(ANOTHER_TOKEN_UUID);
 
     assertThat(first).isNotEqualTo(second);
   }
 
   @Test
   void hashCode_shouldBeEqual_whenValuesAreEqual() {
-    UUID value = UUID.randomUUID();
-
-    RefreshTokenId first = new RefreshTokenId(value);
-    RefreshTokenId second = new RefreshTokenId(value);
+    RefreshTokenId first = new RefreshTokenId(TOKEN_UUID);
+    RefreshTokenId second = new RefreshTokenId(TOKEN_UUID);
 
     assertThat(first.hashCode()).isEqualTo(second.hashCode());
   }

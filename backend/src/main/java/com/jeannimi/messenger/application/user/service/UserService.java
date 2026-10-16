@@ -2,7 +2,6 @@ package com.jeannimi.messenger.application.user.service;
 
 import com.jeannimi.messenger.application.exception.NotFoundException;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
-import com.jeannimi.messenger.application.user.dto.UserProfileResult;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.User;
@@ -59,22 +58,7 @@ public class UserService {
     }
   }
 
-  public UserProfileResult getProfile(UserId userId) {
-
-    User user =
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
-
-    return toProfileResult(user);
-  }
-
-  private UserProfileResult toProfileResult(User user) {
-
-    return new UserProfileResult(
-        user.getId(), user.getUsername().getValue(), user.getHandle().getValue());
-  }
-
   private UserResult toResult(User user) {
-
     return new UserResult(
         user.getId(), user.getHandle().getValue(), user.getUsername().getValue(), user.getRole());
   }
