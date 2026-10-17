@@ -19,7 +19,6 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventRepositor
   private final ProcessedEventPersistenceMapper processedEventPersistenceMapper;
 
   @Override
-  @Transactional(readOnly = true)
   public boolean existsByEventId(EventId eventId) {
 
     Objects.requireNonNull(eventId, "eventId");
@@ -28,7 +27,6 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventRepositor
   }
 
   @Override
-  @Transactional
   public ProcessedEvent save(ProcessedEvent processedEvent) {
 
     Objects.requireNonNull(processedEvent, "processedEvent");

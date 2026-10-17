@@ -11,6 +11,7 @@ import com.jeannimi.messenger.application.event.EventType;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
+import com.jeannimi.messenger.application.event.service.ProcessedEventService;
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
 import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
 import com.jeannimi.messenger.domain.event.EventId;
@@ -40,7 +41,7 @@ public class EventConsumer {
 
   private final RealtimeEventPublisherPort realtimeEventPublisher;
 
-  private final ProcessedEventRepositoryPort processedRepository;
+  private final ProcessedEventService processedEventService;
 
   private final List<ChatEventHandler> handlers;
 
@@ -158,7 +159,7 @@ public class EventConsumer {
 
       try {
 
-        processedRepository.save(ProcessedEvent.create(eventId));
+        processedEventService.register(eventId);
 
       } catch (DataIntegrityViolationException e) {
 

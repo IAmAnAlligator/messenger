@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
+import com.jeannimi.messenger.application.event.service.ProcessedEventService;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
 import com.jeannimi.messenger.domain.event.EventId;
@@ -24,7 +25,7 @@ public class FileDeleteConsumer {
 
   private final ObjectMapper objectMapper;
   private final FileStoragePort fileStoragePort;
-  private final ProcessedEventRepositoryPort processedEventRepository;
+  private final ProcessedEventService processedEventService;
 
   @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
   public void consume(String payload, Acknowledgment ack) {
@@ -44,7 +45,7 @@ public class FileDeleteConsumer {
        *
        * Но ProcessedMessage создаём ПОСЛЕ успешного удаления.
        */
-      if (processedEventRepository.existsByEventId(eventId)) {
+      if (processedEventService.existsByEventId(eventId)) {
         log.info("Duplicate file deletion event skipped: {}", eventId);
 
         ack.acknowledge();
@@ -66,7 +67,7 @@ public class FileDeleteConsumer {
        */
       try {
 
-        processedEventRepository.save(ProcessedEvent.create(eventId));
+        processedEventService.register(eventId);
 
       } catch (DataIntegrityViolationException e) {
 
