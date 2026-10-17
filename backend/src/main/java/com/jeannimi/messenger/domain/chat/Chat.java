@@ -209,21 +209,6 @@ public final class Chat {
     members.add(member);
   }
 
-  //  private void addMemberInternal(ChatMemberId id, User user, ChatRole role) {
-  //
-  //    Objects.requireNonNull(id, "id");
-  //    Objects.requireNonNull(user, "user");
-  //    Objects.requireNonNull(role, "role");
-  //
-  //    if (hasMember(user.getId())) {
-  //      throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "User already in chat");
-  //    }
-  //
-  //    ChatMember member = ChatMember.create(id, user, role);
-  //
-  //    members.add(member);
-  //  }
-
   public void removeMember(UserId targetUserId, UserId currentUserId) {
 
     Objects.requireNonNull(targetUserId, "targetUserId");
@@ -240,10 +225,6 @@ public final class Chat {
     }
 
     ChatMember target = requireMember(targetUserId);
-
-    if (target.isAdmin() && countAdmins() <= 1) {
-      throw new ChatException(ChatError.LAST_ADMIN_CANNOT_BE_REMOVED, "Cannot remove last admin");
-    }
 
     removeMemberInternal(target);
   }
