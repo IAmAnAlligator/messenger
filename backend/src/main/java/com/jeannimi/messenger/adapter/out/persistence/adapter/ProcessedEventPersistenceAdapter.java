@@ -9,7 +9,6 @@ import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
