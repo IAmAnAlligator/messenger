@@ -11,9 +11,11 @@ import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageNotificationService implements MessageNotificationUseCase {
@@ -44,6 +46,11 @@ public class MessageNotificationService implements MessageNotificationUseCase {
               notification.senderId(),
               notification.senderUsername(),
               enabledRecipients);
+
+      log.debug(
+          "Web Push enabled recipients: {} of {}",
+          enabledRecipients.size(),
+          notification.recipientUserIds().size());
 
       webPushNotificationPort.send(pushNotification);
     }

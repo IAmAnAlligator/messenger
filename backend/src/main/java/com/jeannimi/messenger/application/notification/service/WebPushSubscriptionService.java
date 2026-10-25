@@ -27,13 +27,31 @@ public class WebPushSubscriptionService implements WebPushSubscriptionUseCase {
 
     Objects.requireNonNull(userId, "userId");
 
+    String validatedEndpoint = requireNotBlank(endpoint, "endpoint");
+    String validatedP256dh = requireNotBlank(p256dh, "p256dh");
+    String validatedAuth = requireNotBlank(auth, "auth");
+
     WebPushSubscription subscription =
-        WebPushSubscription.create(
-            new WebPushSubscriptionId(idGenerator.generate()),
-            userId,
-            requireNotBlank(endpoint, "endpoint"),
-            requireNotBlank(p256dh, "p256dh"),
-            requireNotBlank(auth, "auth"));
+        subscriptionRepository
+            .findByEndpoint(validatedEndpoint)
+            .map(
+                existing ->
+                    WebPushSubscription.reconstitute(
+                        existing.getId(),
+                        userId,
+                        validatedEndpoint,
+                        validatedP256dh,
+                        validatedAuth,
+                        existing.getCreatedAt(),
+                        existing.getLastUsedAt()))
+            .orElseGet(
+                () ->
+                    WebPushSubscription.create(
+                        new WebPushSubscriptionId(idGenerator.generate()),
+                        userId,
+                        validatedEndpoint,
+                        validatedP256dh,
+                        validatedAuth));
 
     return toResult(subscriptionRepository.save(subscription));
   }

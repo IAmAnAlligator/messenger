@@ -38,6 +38,8 @@ import PrivateChatCreatePage
 import NewPrivateChatPage
     from "./ui/pages/NewPrivateChatPage";
 
+import NotificationSettingsPage from "./ui/pages/SettingsPage";
+
 
 function App() {
 
@@ -155,6 +157,15 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+
+                    <Route
+    path="/settings"
+    element={
+        <ProtectedRoute>
+            <NotificationSettingsPage />
+        </ProtectedRoute>
+    }
+/>
 
                 </Routes>
 

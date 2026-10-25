@@ -32,7 +32,13 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
             .flatMap(userId -> subscriptionRepository.findAllByUserId(userId).stream())
             .toList();
 
+    log.debug(
+        "Found {} Web Push subscriptions for {} recipients",
+        subscriptions.size(),
+        notification.recipientUserIds().size());
+
     if (subscriptions.isEmpty()) {
+      log.debug("No Web Push subscriptions found");
       return;
     }
 
@@ -43,7 +49,7 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
           objectMapper.writeValueAsBytes(
               new PushPayload(
                   notification.senderUsername(),
-                  "Новое сообщение",
+                  "New message",
                   new PushData(
                       notification.chatId().value().toString(),
                       notification.messageId().value().toString())));
@@ -57,7 +63,6 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
   }
 
   private void sendToSubscription(WebPushSubscription subscription, byte[] payload) {
-
     try {
       Notification pushNotification =
           new Notification(
@@ -76,14 +81,30 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
       }
 
       if (status < 200 || status >= 300) {
+        String responseBody = "";
+
+        try {
+          if (response.getEntity() != null) {
+            responseBody = org.apache.http.util.EntityUtils.toString(response.getEntity());
+          }
+        } catch (Exception exception) {
+          log.warn("Failed to read Web Push error response", exception);
+        }
+
         log.warn(
-            "Web Push failed with HTTP status {} for subscription {}",
+            "Web Push failed: status={}, subscriptionId={}, responseBody={}",
             status,
-            subscription.getId().value());
+            subscription.getId().value(),
+            responseBody);
+
         return;
       }
 
-      log.debug("Web Push sent successfully for subscription {}", subscription.getId().value());
+      log.debug(
+          "Web Push accepted by push service: status={}, subscriptionId={}",
+          status,
+          subscription.getId().value());
+
     } catch (Exception exception) {
       log.warn(
           "Web Push delivery failed for subscription {}", subscription.getId().value(), exception);
@@ -96,6 +117,7 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
           subscription.getUserId(), subscription.getEndpoint());
 
       log.info("Deleted invalid Web Push subscription {}", subscription.getId().value());
+
     } catch (Exception exception) {
       log.error(
           "Failed to delete invalid Web Push subscription {}",

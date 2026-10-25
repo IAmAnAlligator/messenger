@@ -4,12 +4,14 @@ type Props = {
 
     onLogout(): void;
 
+    onNotificationSettings: () => void;
 };
 
 
 export default function ChatsHeader({
     onProfile,
-    onLogout
+    onLogout,
+    onNotificationSettings
 }: Props) {
 
 
@@ -24,6 +26,17 @@ export default function ChatsHeader({
 
             <div className="chats-header-actions">
 
+
+                    <button
+        type="button"
+        className="chats-header-settings"
+        onClick={onNotificationSettings}
+        aria-label="settings"
+        title="settings"
+    >
+        ⚙
+    </button>
+
                 <button
                     onClick={onProfile}
                 >
@@ -36,6 +49,8 @@ export default function ChatsHeader({
                 >
                     Logout
                 </button>
+
+                
 
             </div>
 

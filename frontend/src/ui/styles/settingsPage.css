@@ -1,0 +1,52 @@
+.notification-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 76px;
+    height: 38px;
+    padding: 4px;
+    border: none;
+    border-radius: 24px;
+    background: #bdbdbd;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.notification-toggle.is-enabled {
+    background: #247a45;
+}
+
+.notification-toggle:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.notification-toggle-thumb {
+    position: absolute;
+    left: 4px;
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+    transition: transform 0.2s ease;
+}
+
+.notification-toggle.is-enabled .notification-toggle-thumb {
+    transform: translateX(38px);
+}
+
+.notification-toggle-text {
+    position: absolute;
+    right: 8px;
+    color: #222;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.notification-toggle.is-enabled .notification-toggle-text {
+    right: auto;
+    left: 8px;
+    color: #fff;
+}

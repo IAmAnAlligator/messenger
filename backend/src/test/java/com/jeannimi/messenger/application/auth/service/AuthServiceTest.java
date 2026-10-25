@@ -18,9 +18,11 @@ import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.PasswordHashPort;
 import com.jeannimi.messenger.application.port.out.RefreshTokenRepositoryPort;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
+import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
 import com.jeannimi.messenger.domain.auth.RefreshToken;
 import com.jeannimi.messenger.domain.auth.SessionId;
+import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
 import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.Password;
@@ -76,6 +78,8 @@ class AuthServiceTest {
   @Mock private RefreshTokenRepositoryPort refreshTokenRepository;
 
   @Mock private RefreshTokenRevocationService refreshTokenRevocationService;
+
+  @Mock private UserNotificationSettingsRepositoryPort userNotificationSettingsRepository;
 
   @InjectMocks private AuthService authService;
 
@@ -191,6 +195,8 @@ class AuthServiceTest {
 
     verify(passwordHashPort).hash(any(Password.class));
     verify(refreshTokenRepository).save(any(RefreshToken.class));
+
+    verify(userNotificationSettingsRepository).save(any(UserNotificationSettings.class));
   }
 
   @Test
