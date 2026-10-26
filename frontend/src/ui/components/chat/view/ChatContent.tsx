@@ -1,179 +1,68 @@
-import ChatHeader
-    from "../list/ChatHeader";
+import ChatHeader from "../list/ChatHeader";
+import MessageList from "./MessageList";
+import MessageInput from "./MessageInput";
+import WsError from "../../common/WsError";
 
-import MessageList
-    from "./MessageList";
-
-import MessageInput
-    from "./MessageInput";
-
-import WsError
-    from "../../common/WsError";
-
-import type {
-    ChatDto
-} from "../../../../types/chat";
-
-import type {
-    MessageDto
-} from "../../../../types/message";
-
+import type { ChatDto } from "../../../../types/chat";
+import type { MessageDto } from "../../../../types/message";
 
 type Props = {
-
     chat: ChatDto | null;
-
     messages: MessageDto[];
-
     loading: boolean;
-
     loadingMore: boolean;
-
     hasMore: boolean;
-
     currentUserId: string;
+    isOnline: boolean;
 
-    isMessageReadByOtherUser(
-        messageId: string
-    ): boolean;
+    isMessageReadByOtherUser(messageId: string): boolean;
 
     text: string;
-
     error: string | null;
 
-    onSendFile(
-        file: File
-    ): Promise<void>;
-
-    onLoadMore():
-        void | Promise<void>;
-
-    onReadUpTo(
-        messageId: string
-    ): void;
-
-    onTextChange(
-        value: string
-    ): void;
-
+    onSendFile(file: File): Promise<void>;
+    onLoadMore(): void | Promise<void>;
+    onReadUpTo(messageId: string): void;
+    onTextChange(value: string): void;
     onSend(): void;
-
-    onDelete(
-        id: string
-    ): void;
-
-    onUserProfile(
-    userId: string
-    ): void;
-
+    onDelete(id: string): void;
+    onUserProfile(userId: string): void;
     onBack(): void;
-
     onEdit(): void;
-
 };
 
-
-export default function ChatContent(
-    props: Props
-) {
-
+export default function ChatContent(props: Props) {
     return (
-
         <div className="chat-page">
-
             <ChatHeader
-
-                chat={
-                    props.chat
-                }
-
-                onBack={
-                    props.onBack
-                }
-
-                onEdit={
-                    props.onEdit
-                }
-
+                chat={props.chat}
+                currentUserId={props.currentUserId}
+                isOnline={props.isOnline}
+                onBack={props.onBack}
+                onEdit={props.onEdit}
             />
 
-
-            <WsError
-
-                message={
-                    props.error
-                }
-
-            />
-
+            <WsError message={props.error} />
 
             <MessageList
-
-                loading={
-                    props.loading
-                }
-
-                loadingMore={
-                    props.loadingMore
-                }
-
-                hasMore={
-                    props.hasMore
-                }
-
-                messages={
-                    props.messages
-                }
-
-                currentUserId={
-                    props.currentUserId
-                }
-
-                isMessageReadByOtherUser={
-                    props.isMessageReadByOtherUser
-                }
-
-                onLoadMore={
-                    props.onLoadMore
-                }
-
-                onReadUpTo={
-                    props.onReadUpTo
-                }
-
-                onDelete={
-                    props.onDelete
-                }
-
-                    onUserProfile={
-                     props.onUserProfile
-                 }
-
+                loading={props.loading}
+                loadingMore={props.loadingMore}
+                hasMore={props.hasMore}
+                messages={props.messages}
+                currentUserId={props.currentUserId}
+                isMessageReadByOtherUser={props.isMessageReadByOtherUser}
+                onLoadMore={props.onLoadMore}
+                onReadUpTo={props.onReadUpTo}
+                onDelete={props.onDelete}
+                onUserProfile={props.onUserProfile}
             />
-
 
             <MessageInput
-
-                value={
-                    props.text
-                }
-
-                onChange={
-                    props.onTextChange
-                }
-
-                onSend={
-                    props.onSend
-                }
-
-                onSendFile={
-                    props.onSendFile
-                }
-
+                value={props.text}
+                onChange={props.onTextChange}
+                onSend={props.onSend}
+                onSendFile={props.onSendFile}
             />
-
         </div>
-
     );
-
 }

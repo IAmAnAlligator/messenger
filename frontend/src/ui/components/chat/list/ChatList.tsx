@@ -1,4 +1,3 @@
-
 import type {
     ChatDto
 } from "../../../../hooks/useChats";
@@ -7,13 +6,16 @@ import {
     useAuth
 } from "../../../../contexts/AuthContext";
 
-
 type Props = {
     chats: ChatDto[];
 
     getName(
         chat: ChatDto
     ): string;
+
+    isUserOnline(
+        chat: ChatDto
+    ): boolean;
 
     onOpen(
         chatId: string
@@ -26,23 +28,20 @@ type Props = {
     loadMore(): void;
 };
 
-
 export default function ChatList({
     chats,
     getName,
+    isUserOnline,
     onOpen,
     hasNext,
     loadingMore,
     loadMore
 }: Props) {
-
     const { user } = useAuth();
-
 
     function formatLastMessage(
         chat: ChatDto
     ): string {
-
         if (!chat.lastMessage) {
             return "";
         }
@@ -52,9 +51,7 @@ export default function ChatList({
                 ? "you: "
                 : `${chat.lastMessage.sender.username}: `;
 
-        if (
-            chat.lastMessage.content === null
-        ) {
+        if (chat.lastMessage.content === null) {
             return `${prefix}📎`;
         }
 
@@ -66,11 +63,9 @@ export default function ChatList({
         return `${prefix}${preview}`;
     }
 
-
     function formatLastMessageDate(
         chat: ChatDto
     ): string {
-
         if (!chat.lastMessage) {
             return "";
         }
@@ -90,116 +85,101 @@ export default function ChatList({
         );
     }
 
-
     function getLastMessageStatus(
         chat: ChatDto
     ): string | null {
-
         if (!chat.lastMessage) {
             return null;
         }
 
-        if (
-            chat.lastMessage.sender.id !== user?.id
-        ) {
+        if (chat.lastMessage.sender.id !== user?.id) {
             return null;
         }
 
-        if (
-            chat.lastMessageStatus === "READ"
-        ) {
+        if (chat.lastMessageStatus === "READ") {
             return "✓✓";
         }
 
-        if (
-            chat.lastMessageStatus === "SENT"
-        ) {
+        if (chat.lastMessageStatus === "SENT") {
             return "✓";
         }
 
         return null;
     }
 
-
     return (
         <div className="chat-list">
+            {chats.map(chat => {
+                const status = getLastMessageStatus(chat);
 
-            {chats.map(
-                chat => {
+                const showOnline =
+                    chat.type === "PRIVATE" &&
+                    isUserOnline(chat);
 
-                    const status =
-                        getLastMessageStatus(chat);
-
-                    return (
-                        <div
-                            key={chat.id}
-                            className="chat-item"
-                            onClick={() => onOpen(chat.id)}
-                        >
-
-                            <div className="chat-info">
-
-                                <div className="chat-name-container">
+                return (
+                    <div
+                        key={chat.id}
+                        className="chat-item"
+                        onClick={() => onOpen(chat.id)}
+                    >
+                        <div className="chat-info">
+                            <div className="chat-name-container">
+                                <div className="chat-name-info">
+                                    {showOnline && (
+                                        <div className="chat-online-status">
+                                            <span className="chat-online-status-dot" />
+                                            <span>Online</span>
+                                        </div>
+                                    )}
 
                                     <span className="chat-name">
                                         {getName(chat)}
                                     </span>
-
-                                    {chat.unreadCount > 0 && (
-                                        <span className="chat-unread-badge">
-                                            {chat.unreadCount}
-                                        </span>
-                                    )}
-
                                 </div>
 
-
-
-
-                                {chat.lastMessage && (
-                                    <>
-                                        <div className="chat-last-message">
-                                            {formatLastMessage(chat)}
-                                        </div>
-
-                                        <div className="chat-message-date">
-                                            {formatLastMessageDate(chat)}
-                                        </div>
-
-                                    </>
+                                {chat.unreadCount > 0 && (
+                                    <span className="chat-unread-badge">
+                                        {chat.unreadCount}
+                                    </span>
                                 )}
-
-                                {status && (
-    <div
-        className={
-            chat.lastMessageStatus === "READ"
-                ? "chat-message-status chat-message-status-read"
-                : "chat-message-status"
-        }
-    >
-        {status}
-    </div>
-)}
-
                             </div>
 
-                        </div>
-                    );
-                }
-            )}
+                            {chat.lastMessage && (
+                                <>
+                                    <div className="chat-last-message">
+                                        {formatLastMessage(chat)}
+                                    </div>
 
+                                    <div className="chat-message-date">
+                                        {formatLastMessageDate(chat)}
+                                    </div>
+                                </>
+                            )}
+
+                            {status && (
+                                <div
+                                    className={
+                                        chat.lastMessageStatus === "READ"
+                                            ? "chat-message-status chat-message-status-read"
+                                            : "chat-message-status"
+                                    }
+                                >
+                                    {status}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
 
             {hasNext && (
                 <button
                     onClick={loadMore}
                     disabled={loadingMore}
                 >
-                    {loadingMore
-                        ? "Loading..."
-                        : "Load more"}
+                    {loadingMore ? "Loading..." : "Load more"}
                 </button>
             )}
-
         </div>
     );
 }

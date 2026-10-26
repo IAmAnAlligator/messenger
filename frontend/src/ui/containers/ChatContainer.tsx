@@ -1,4 +1,6 @@
+
 import {
+    useEffect,
     useState
 } from "react";
 
@@ -21,9 +23,22 @@ import {
 import ChatContent
     from "../components/chat/view/ChatContent";
 
+import {
+    onSocketConnected,
+    updatePresence,
+    subscribe,
+    unsubscribe
+} from "../../services/chatSocket";
+
 
 type Props = {
     chatId?: string;
+};
+
+
+type PresenceStatus = {
+    userId: string;
+    online: boolean;
 };
 
 
@@ -36,17 +51,18 @@ export default function ChatContainer(
     const navigate =
         useNavigate();
 
-
     const { user } =
         useAuth();
-
 
     const [
         text,
         setText
-    ] =
-        useState("");
+    ] = useState("");
 
+    const [
+        isOnline,
+        setIsOnline
+    ] = useState(false);
 
     const {
         chat,
@@ -64,20 +80,144 @@ export default function ChatContainer(
         sendFile
     } = useChat(chatId);
 
+    const otherUserId =
+        chat?.type === "PRIVATE"
+            ? chat.members.find(
+                member =>
+                    member.user.id !== user?.id
+            )?.user.id ?? null
+            : null;
 
     const {
         error,
         sendMessage,
         deleteMessage,
         sendReadUpTo
-    } =
-        useChatSocket({
-            chatId,
-            onMessage: addMessage,
-            onDelete: removeMessage,
-            onRead: updateMessageStatus,
-            reloadMessages
-        });
+    } = useChatSocket({
+        chatId,
+        onMessage: addMessage,
+        onDelete: removeMessage,
+        onRead: updateMessageStatus,
+        reloadMessages
+    });
+
+
+    useEffect(() => {
+
+        function publishCurrentPresence() {
+
+            const visible =
+                document.visibilityState === "visible";
+
+            updatePresence(
+                chatId ?? null,
+                visible && Boolean(chatId)
+            );
+
+        }
+
+        publishCurrentPresence();
+
+        const unsubscribeConnection =
+            onSocketConnected(
+                publishCurrentPresence
+            );
+
+        document.addEventListener(
+            "visibilitychange",
+            publishCurrentPresence
+        );
+
+        return () => {
+
+            document.removeEventListener(
+                "visibilitychange",
+                publishCurrentPresence
+            );
+
+            unsubscribeConnection();
+
+            updatePresence(
+                null,
+                false
+            );
+
+        };
+
+    }, [chatId]);
+
+
+    useEffect(() => {
+
+        setIsOnline(false);
+
+        if (!otherUserId) {
+            return;
+        }
+
+        const handlePresence = (
+            message: { body: string }
+        ) => {
+
+            try {
+
+                const presence =
+                    JSON.parse(
+                        message.body
+                    ) as PresenceStatus;
+
+                if (
+                    presence.userId === otherUserId
+                ) {
+
+                    setIsOnline(
+                        presence.online
+                    );
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to parse presence event",
+                    error
+                );
+
+            }
+
+        };
+
+        const liveDestination =
+            `/topic/presence/user/${otherUserId}`;
+
+        const initialDestination =
+            `/app/presence/user/${otherUserId}`;
+
+        subscribe(
+            liveDestination,
+            handlePresence
+        );
+
+        subscribe(
+            initialDestination,
+            handlePresence
+        );
+
+        return () => {
+
+            unsubscribe(
+                liveDestination,
+                handlePresence
+            );
+
+            unsubscribe(
+                initialDestination,
+                handlePresence
+            );
+
+        };
+
+    }, [otherUserId]);
 
 
     function handleReadUpTo(
@@ -87,7 +227,6 @@ export default function ChatContainer(
         sendReadUpTo(
             messageId
         );
-
 
         markCurrentUserRead(
             messageId
@@ -117,15 +256,16 @@ export default function ChatContainer(
 
     }
 
+
     function handleUserProfile(
-    userId: string
-) {
+        userId: string
+    ) {
 
-    navigate(
-        `/chats/${chatId}/members/${userId}/profile`
-    );
+        navigate(
+            `/chats/${chatId}/members/${userId}/profile`
+        );
 
-}
+    }
 
 
     function handleSend() {
@@ -133,16 +273,13 @@ export default function ChatContainer(
         const content =
             text.trim();
 
-
         if (!content) {
             return;
         }
 
-
         sendMessage(
             content
         );
-
 
         setText("");
 
@@ -184,6 +321,10 @@ export default function ChatContainer(
 
             isMessageReadByOtherUser={
                 isMessageReadByOtherUser
+            }
+
+            isOnline={
+                isOnline
             }
 
             onLoadMore={

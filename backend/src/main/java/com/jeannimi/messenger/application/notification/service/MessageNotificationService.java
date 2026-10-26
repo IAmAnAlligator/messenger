@@ -2,10 +2,10 @@ package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
 import com.jeannimi.messenger.application.port.in.MessageNotificationUseCase;
-import com.jeannimi.messenger.application.port.out.EmailNotificationPort;
 import com.jeannimi.messenger.application.port.out.NotificationEventRepositoryPort;
 import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.application.port.out.WebPushNotificationPort;
+import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
@@ -22,8 +22,8 @@ public class MessageNotificationService implements MessageNotificationUseCase {
 
   private final NotificationEventRepositoryPort notificationEventRepository;
   private final UserNotificationSettingsRepositoryPort settingsRepository;
+  private final UserPresenceService userPresenceService;
   private final WebPushNotificationPort webPushNotificationPort;
-  private final EmailNotificationPort emailNotificationPort;
 
   @Override
   @Transactional
@@ -31,13 +31,27 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     Objects.requireNonNull(notification, "notification");
 
     if (notificationEventRepository.exists(notification.eventId())) {
+      log.debug(
+          "Notification event already processed: {}",
+          notification.eventId()
+      );
       return;
     }
 
-    List<UserId> enabledRecipients =
-        notification.recipientUserIds().stream().filter(this::isWebPushEnabled).toList();
+    List<UserId> eligibleRecipients =
+        notification.recipientUserIds().stream()
+            .filter(userId -> !userId.equals(notification.senderId()))
+            .filter(this::isWebPushEnabled)
+            .filter(userPresenceService::isOnline)
+            .filter(userId ->
+                !userPresenceService.isViewingChat(
+                    userId,
+                    notification.chatId()
+                )
+            )
+            .toList();
 
-    if (!enabledRecipients.isEmpty()) {
+    if (!eligibleRecipients.isEmpty()) {
       MessageNotification pushNotification =
           new MessageNotification(
               notification.eventId(),
@@ -45,17 +59,23 @@ public class MessageNotificationService implements MessageNotificationUseCase {
               notification.chatId(),
               notification.senderId(),
               notification.senderUsername(),
-              enabledRecipients);
+              eligibleRecipients
+          );
 
       log.debug(
-          "Web Push enabled recipients: {} of {}",
-          enabledRecipients.size(),
-          notification.recipientUserIds().size());
+          "Sending Web Push to {} of {} recipients",
+          eligibleRecipients.size(),
+          notification.recipientUserIds().size()
+      );
 
       webPushNotificationPort.send(pushNotification);
+    } else {
+      log.debug(
+          "No eligible Web Push recipients for event {}",
+          notification.eventId()
+      );
     }
 
-    emailNotificationPort.send(notification);
     notificationEventRepository.save(notification.eventId());
   }
 

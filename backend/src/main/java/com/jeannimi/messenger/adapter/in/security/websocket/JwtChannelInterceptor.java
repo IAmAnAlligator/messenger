@@ -2,8 +2,10 @@ package com.jeannimi.messenger.adapter.in.security.websocket;
 
 import static com.jeannimi.messenger.application.auth.AuthTokenConstants.ACCESS_TOKEN_TYPE;
 
+import com.jeannimi.messenger.adapter.in.websocket.presence.PresenceBroadcaster;
 import com.jeannimi.messenger.application.chat.service.ChatService;
 import com.jeannimi.messenger.application.port.out.TokenServicePort;
+import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.security.Principal;
@@ -31,6 +33,8 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
   private final TokenServicePort tokenService;
   private final ChatService chatService;
+  private final UserPresenceService userPresenceService;
+  private final PresenceBroadcaster presenceBroadcaster;
 
   @Override
   public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
@@ -108,7 +112,23 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     accessor.setUser(authentication);
 
-    log.info("WS CONNECTED userId={}", userId);
+    String sessionId = accessor.getSessionId();
+
+    if (sessionId == null) {
+      throw new IllegalStateException("WebSocket session ID must not be null");
+    }
+
+    boolean becameOnline =
+        userPresenceService.registerSession(sessionId, userId);
+
+    if (becameOnline) {
+      presenceBroadcaster.publish(userId, true);
+    }
+
+    log.info(
+        "WS CONNECTED userId={} sessionId={}",
+        userId,
+        sessionId);
   }
 
   private boolean handleSubscribe(StompHeaderAccessor accessor) {
@@ -131,6 +151,10 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
       return true;
     }
 
+    if (isPresenceDestination(destination)) {
+      return isPresenceSubscriptionAllowed(destination, principal);
+    }
+
     if (!isChatDestination(destination)) {
       return true;
     }
@@ -146,6 +170,53 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
   private boolean isChatDestination(String destination) {
 
     return destination.startsWith("/topic/chat/");
+  }
+
+  private boolean isPresenceDestination(String destination) {
+    return destination.startsWith("/topic/presence/")
+        || destination.startsWith("/app/presence/user/");
+  }
+
+  private boolean isPresenceSubscriptionAllowed(
+      String destination,
+      WsUserPrincipal principal) {
+
+    String[] parts = destination.split("/");
+
+    boolean isTopic = destination.startsWith("/topic/");
+    boolean isApp = destination.startsWith("/app/");
+
+    if (parts.length != 5
+        || !("topic".equals(parts[1]) || "app".equals(parts[1]))
+        || !"presence".equals(parts[2])
+        || !"user".equals(parts[3])
+        || !(isTopic || isApp)) {
+      return false;
+    }
+
+    UserId targetUserId;
+
+    try {
+      targetUserId = new UserId(UUID.fromString(parts[4]));
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+
+    if (targetUserId.equals(principal.userId())) {
+      return false;
+    }
+
+    boolean hasPrivateChat = chatService
+        .findPrivateChat(principal.userId(), targetUserId)
+        .isPresent();
+
+    log.info(
+        "WS PRESENCE SUBSCRIBE userId={} targetUserId={} allowed={}",
+        principal.userId(),
+        targetUserId,
+        hasPrivateChat);
+
+    return hasPrivateChat;
   }
 
   private boolean isChatSubscriptionAllowed(String destination, WsUserPrincipal principal) {

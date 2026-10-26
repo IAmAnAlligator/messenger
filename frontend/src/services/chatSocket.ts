@@ -9,6 +9,15 @@ import {
     refreshToken
 } from "./refresh";
 
+type PresenceState = {
+    chatId: string | null;
+    visible: boolean;
+};
+
+let currentPresence: PresenceState = {
+    chatId: null,
+    visible: false
+};
 
 type SubscriptionCallback =
     (message: IMessage) => void;
@@ -47,6 +56,30 @@ const MAX_RECONNECT = 5;
 
 let refreshPromise:
     Promise<string> | null = null;
+
+
+function publishPresence() {
+    if (!client?.connected) {
+        return;
+    }
+
+    client.publish({
+        destination: "/app/presence",
+        body: JSON.stringify(currentPresence)
+    });
+}
+
+export function updatePresence(
+    chatId: string | null,
+    visible: boolean
+) {
+    currentPresence = {
+        chatId: visible ? chatId : null,
+        visible: visible && chatId !== null
+    };
+
+    publishPresence();
+}
 
 
 function getTokenExpiration(
@@ -636,6 +669,11 @@ export function disconnectSocket() {
 
 
     reconnectAttempts = 0;
+
+    currentPresence = {
+    chatId: null,
+    visible: false
+    };
 
 
     if (client) {

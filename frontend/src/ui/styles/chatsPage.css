@@ -314,3 +314,27 @@
 }
 
 
+.chat-name-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.chat-online-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 2px;
+    color: #2eaa65;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.chat-online-status-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: #2eaa65;
+}

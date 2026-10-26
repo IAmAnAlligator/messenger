@@ -9,16 +9,26 @@ import com.jeannimi.messenger.application.message.service.MessageService;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import com.jeannimi.messenger.adapter.in.websocket.dto.PresenceStatus;
+import com.jeannimi.messenger.application.chat.service.ChatService;
+import com.jeannimi.messenger.application.presence.service.UserPresenceService;
+import com.jeannimi.messenger.domain.user.UserId;
+import java.security.Principal;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.simp.annotation.SubscribeMapping;
 
 @Controller
 @RequiredArgsConstructor
 public class ChatWebSocketController {
 
   private final MessageService messageService;
+  private final ChatService chatService;
+  private final UserPresenceService userPresenceService;
 
   @MessageMapping("/chat.send")
   public void sendMessage(@Valid SendMessageCommand command, Authentication authentication) {
@@ -50,6 +60,30 @@ public class ChatWebSocketController {
     MessageId messageId = new MessageId(command.messageId());
 
     messageService.deleteMessage(chatId, messageId, principal.userId());
+  }
+
+  @SubscribeMapping("/presence/user/{userId}")
+  public PresenceStatus getPresence(
+      @DestinationVariable UUID userId,
+      Authentication authentication) {
+
+    WsUserPrincipal principal = getPrincipal(authentication);
+
+    UserId targetUserId = new UserId(userId);
+
+    if (targetUserId.equals(principal.userId())) {
+      throw new ForbiddenException("Cannot request your own presence");
+    }
+
+    if (chatService.findPrivateChat(
+        principal.userId(),
+        targetUserId).isEmpty()) {
+      throw new ForbiddenException("Access denied");
+    }
+
+    return new PresenceStatus(
+        targetUserId.value().toString(),
+        userPresenceService.isOnline(targetUserId));
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {
