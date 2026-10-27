@@ -37,6 +37,11 @@ public class KafkaConfig {
     return new NewTopic(KafkaTopics.CHAT_READ, 1, (short) 1);
   }
 
+  @Bean
+  public NewTopic chatMessageDeletedTopic() {
+    return new NewTopic(KafkaTopics.CHAT_MESSAGE_DELETED, 1, (short) 1);
+  }
+
   // =========================
   // ERROR HANDLING
   // =========================
@@ -62,13 +67,7 @@ public class KafkaConfig {
 
     factory.setConsumerFactory(consumerFactory);
 
-    // 3 partitions:
-    //
-    // partition-0 -> consumer-1
-    // partition-1 -> consumer-2
-    // partition-2 -> consumer-3
-
-    factory.setConcurrency(3);
+    factory.setConcurrency(1);
 
     factory.setCommonErrorHandler(errorHandler);
 

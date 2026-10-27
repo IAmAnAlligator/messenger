@@ -2,25 +2,24 @@ package com.jeannimi.messenger.adapter.in.websocket.controller;
 
 import com.jeannimi.messenger.adapter.in.security.websocket.WsUserPrincipal;
 import com.jeannimi.messenger.adapter.in.websocket.dto.DeleteMessageCommand;
+import com.jeannimi.messenger.adapter.in.websocket.dto.PresenceStatus;
 import com.jeannimi.messenger.adapter.in.websocket.dto.ReadMessageCommand;
 import com.jeannimi.messenger.adapter.in.websocket.dto.SendMessageCommand;
+import com.jeannimi.messenger.application.chat.service.ChatService;
 import com.jeannimi.messenger.application.exception.ForbiddenException;
 import com.jeannimi.messenger.application.message.service.MessageService;
+import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.MessageId;
+import com.jeannimi.messenger.domain.user.UserId;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import com.jeannimi.messenger.adapter.in.websocket.dto.PresenceStatus;
-import com.jeannimi.messenger.application.chat.service.ChatService;
-import com.jeannimi.messenger.application.presence.service.UserPresenceService;
-import com.jeannimi.messenger.domain.user.UserId;
-import java.security.Principal;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
 
 @Controller
 @RequiredArgsConstructor
@@ -64,8 +63,7 @@ public class ChatWebSocketController {
 
   @SubscribeMapping("/presence/user/{userId}")
   public PresenceStatus getPresence(
-      @DestinationVariable UUID userId,
-      Authentication authentication) {
+      @DestinationVariable UUID userId, Authentication authentication) {
 
     WsUserPrincipal principal = getPrincipal(authentication);
 
@@ -75,15 +73,12 @@ public class ChatWebSocketController {
       throw new ForbiddenException("Cannot request your own presence");
     }
 
-    if (chatService.findPrivateChat(
-        principal.userId(),
-        targetUserId).isEmpty()) {
+    if (chatService.findPrivateChat(principal.userId(), targetUserId).isEmpty()) {
       throw new ForbiddenException("Access denied");
     }
 
     return new PresenceStatus(
-        targetUserId.value().toString(),
-        userPresenceService.isOnline(targetUserId));
+        targetUserId.value().toString(), userPresenceService.isOnline(targetUserId));
   }
 
   private WsUserPrincipal getPrincipal(Authentication authentication) {

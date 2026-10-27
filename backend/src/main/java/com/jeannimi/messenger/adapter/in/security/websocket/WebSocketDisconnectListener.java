@@ -20,8 +20,7 @@ public class WebSocketDisconnectListener {
   @EventListener
   public void handleDisconnect(SessionDisconnectEvent event) {
 
-    StompHeaderAccessor accessor =
-        StompHeaderAccessor.wrap(event.getMessage());
+    StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
     String sessionId = accessor.getSessionId();
 
@@ -29,14 +28,14 @@ public class WebSocketDisconnectListener {
       return;
     }
 
-    userPresenceService.removeSession(sessionId)
-        .ifPresent(userId -> {
-          presenceBroadcaster.publish(userId, false);
+    userPresenceService
+        .removeSession(sessionId)
+        .ifPresent(
+            userId -> {
+              presenceBroadcaster.publish(userId, false);
 
-          log.info(
-              "WS USER OFFLINE userId={}",
-              userId);
-        });
+              log.info("WS USER OFFLINE userId={}", userId);
+            });
 
     log.info("WS DISCONNECTED sessionId={}", sessionId);
   }

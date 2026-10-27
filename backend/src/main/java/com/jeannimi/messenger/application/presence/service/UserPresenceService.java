@@ -11,30 +11,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserPresenceService {
 
-  private final ConcurrentMap<String, SessionPresence> sessions =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, SessionPresence> sessions = new ConcurrentHashMap<>();
 
-  public synchronized boolean registerSession(
-      String sessionId,
-      UserId userId) {
+  public synchronized boolean registerSession(String sessionId, UserId userId) {
 
     Objects.requireNonNull(sessionId, "sessionId");
     Objects.requireNonNull(userId, "userId");
 
     boolean wasOnline = isOnline(userId);
 
-    sessions.put(
-        sessionId,
-        new SessionPresence(userId, null, false));
+    sessions.put(sessionId, new SessionPresence(userId, null, false));
 
     return !wasOnline;
   }
 
   public synchronized void updatePresence(
-      String sessionId,
-      UserId userId,
-      ChatId chatId,
-      boolean visible) {
+      String sessionId, UserId userId, ChatId chatId, boolean visible) {
 
     Objects.requireNonNull(sessionId, "sessionId");
     Objects.requireNonNull(userId, "userId");
@@ -42,29 +34,22 @@ public class UserPresenceService {
     SessionPresence current = sessions.get(sessionId);
 
     if (current == null) {
-      throw new IllegalStateException(
-          "WebSocket session is not registered");
+      throw new IllegalStateException("WebSocket session is not registered");
     }
 
     if (!current.userId().equals(userId)) {
-      throw new IllegalStateException(
-          "Session user does not match authenticated user");
+      throw new IllegalStateException("Session user does not match authenticated user");
     }
 
     sessions.put(
         sessionId,
         new SessionPresence(
             userId,
-            visible
-                ? Objects.requireNonNull(
-                chatId,
-                "Chat ID is required when visible")
-                : null,
+            visible ? Objects.requireNonNull(chatId, "Chat ID is required when visible") : null,
             visible));
   }
 
-  public synchronized Optional<UserId> removeSession(
-      String sessionId) {
+  public synchronized Optional<UserId> removeSession(String sessionId) {
 
     if (sessionId == null) {
       return Optional.empty();
@@ -88,28 +73,21 @@ public class UserPresenceService {
   public synchronized boolean isOnline(UserId userId) {
     Objects.requireNonNull(userId, "userId");
 
-    return sessions.values().stream()
-        .anyMatch(session ->
-            session.userId().equals(userId));
+    return sessions.values().stream().anyMatch(session -> session.userId().equals(userId));
   }
 
-  public synchronized boolean isViewingChat(
-      UserId userId,
-      ChatId chatId) {
+  public synchronized boolean isViewingChat(UserId userId, ChatId chatId) {
 
     Objects.requireNonNull(userId, "userId");
     Objects.requireNonNull(chatId, "chatId");
 
     return sessions.values().stream()
-        .anyMatch(session ->
-            session.userId().equals(userId)
-                && session.visible()
-                && chatId.equals(session.chatId()));
+        .anyMatch(
+            session ->
+                session.userId().equals(userId)
+                    && session.visible()
+                    && chatId.equals(session.chatId()));
   }
 
-  private record SessionPresence(
-      UserId userId,
-      ChatId chatId,
-      boolean visible) {
-  }
+  private record SessionPresence(UserId userId, ChatId chatId, boolean visible) {}
 }

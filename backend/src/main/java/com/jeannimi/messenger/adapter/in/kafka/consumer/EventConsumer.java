@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -47,19 +46,21 @@ public class EventConsumer {
 
   @PostConstruct
   private void init() {
-
     handlerMap =
         handlers.stream()
             .collect(Collectors.toMap(ChatEventHandler::supports, Function.identity()));
   }
 
   /*
-   =========================
-       CHAT MESSAGES
-   =========================
-  */
+   * =========================
+   * CHAT MESSAGES
+   * =========================
+   */
 
-  @KafkaListener(topics = KafkaTopics.CHAT_MESSAGES, groupId = "chat-ws-group")
+  @KafkaListener(
+      topics = KafkaTopics.CHAT_MESSAGES,
+      groupId = "chat-ws-group",
+      containerFactory = "chatMessagesKafkaListenerContainerFactory")
   public void consumeMessage(String payload, Acknowledgment ack) {
 
     process(
@@ -74,12 +75,15 @@ public class EventConsumer {
   }
 
   /*
-   =========================
-       READ EVENTS
-   =========================
-  */
+   * =========================
+   * READ EVENTS
+   * =========================
+   */
 
-  @KafkaListener(topics = KafkaTopics.CHAT_READ, groupId = "chat-ws-group")
+  @KafkaListener(
+      topics = KafkaTopics.CHAT_READ,
+      groupId = "chat-ws-group",
+      containerFactory = "chatReadKafkaListenerContainerFactory")
   public void consumeRead(String payload, Acknowledgment ack) {
 
     process(
@@ -90,12 +94,15 @@ public class EventConsumer {
   }
 
   /*
-   =========================
-       MESSAGE DELETE
-   =========================
-  */
+   * =========================
+   * MESSAGE DELETE
+   * =========================
+   */
 
-  @KafkaListener(topics = KafkaTopics.CHAT_MESSAGE_DELETED, groupId = "chat-ws-group")
+  @KafkaListener(
+      topics = KafkaTopics.CHAT_MESSAGE_DELETED,
+      groupId = "chat-ws-group",
+      containerFactory = "chatMessagesKafkaListenerContainerFactory")
   public void consumeDelete(String payload, Acknowledgment ack) {
 
     process(
@@ -106,12 +113,15 @@ public class EventConsumer {
   }
 
   /*
-   =========================
-       CHAT EVENTS
-   =========================
-  */
+   * =========================
+   * CHAT EVENTS
+   * =========================
+   */
 
-  @KafkaListener(topics = KafkaTopics.CHAT_EVENTS, groupId = "chat-ws-group")
+  @KafkaListener(
+      topics = KafkaTopics.CHAT_EVENTS,
+      groupId = "chat-ws-group",
+      containerFactory = "chatEventsKafkaListenerContainerFactory")
   public void consumeChatEvents(String payload, Acknowledgment ack) {
 
     processEnvelope(
@@ -123,9 +133,7 @@ public class EventConsumer {
           ChatEventHandler handler = handlerMap.get(eventType);
 
           if (handler == null) {
-
             log.warn("No handler found for event {}", eventType);
-
             return;
           }
 
@@ -134,43 +142,53 @@ public class EventConsumer {
   }
 
   /*
-   =========================
-       COMMON PROCESSOR
-   =========================
-  */
+   * =========================
+   * COMMON PROCESSOR
+   * =========================
+   */
 
   private void processEnvelope(
       String payload, Acknowledgment ack, Consumer<KafkaEventEnvelope> consumer) {
 
     try {
-
       KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
       UUID eventIdValue = envelope.eventId();
-      EventId eventId = new EventId(eventIdValue);
 
-      if (eventId == null) {
+      if (eventIdValue == null) {
         throw new IllegalArgumentException("Kafka eventId must not be null");
       }
 
-      consumer.accept(envelope);
+      EventId eventId = new EventId(eventIdValue);
 
-      try {
+      /*
+       * Ignore events that have already been processed.
+       */
+      if (processedEventService.existsByEventId(eventId)) {
+        log.debug("Skipping already processed event: eventId={}", eventId);
 
-        processedEventService.register(eventId);
-
-      } catch (DataIntegrityViolationException e) {
-
-        log.info("Event was already processed: eventId={}", eventId);
+        ack.acknowledge();
+        return;
       }
 
+      /*
+       * Process the event first.
+       */
+      consumer.accept(envelope);
+
+      /*
+       * Register the event only after successful processing.
+       */
+      processedEventService.register(eventId);
+
+      /*
+       * Acknowledge Kafka only after processing and registration.
+       */
       ack.acknowledge();
 
     } catch (Exception e) {
-
       log.error("Kafka processing failed", e);
-
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to process Kafka event", e);
     }
   }
 
@@ -183,7 +201,9 @@ public class EventConsumer {
         envelope -> {
           try {
             T event = objectMapper.treeToValue(envelope.payload(), type);
+
             handler.handle(event);
+
           } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to deserialize Kafka event", e);
           }

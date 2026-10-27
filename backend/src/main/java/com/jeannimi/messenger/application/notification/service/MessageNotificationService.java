@@ -31,10 +31,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     Objects.requireNonNull(notification, "notification");
 
     if (notificationEventRepository.exists(notification.eventId())) {
-      log.debug(
-          "Notification event already processed: {}",
-          notification.eventId()
-      );
+      log.debug("Notification event already processed: {}", notification.eventId());
       return;
     }
 
@@ -43,12 +40,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
             .filter(userId -> !userId.equals(notification.senderId()))
             .filter(this::isWebPushEnabled)
             .filter(userPresenceService::isOnline)
-            .filter(userId ->
-                !userPresenceService.isViewingChat(
-                    userId,
-                    notification.chatId()
-                )
-            )
+            .filter(userId -> !userPresenceService.isViewingChat(userId, notification.chatId()))
             .toList();
 
     if (!eligibleRecipients.isEmpty()) {
@@ -59,21 +51,16 @@ public class MessageNotificationService implements MessageNotificationUseCase {
               notification.chatId(),
               notification.senderId(),
               notification.senderUsername(),
-              eligibleRecipients
-          );
+              eligibleRecipients);
 
       log.debug(
           "Sending Web Push to {} of {} recipients",
           eligibleRecipients.size(),
-          notification.recipientUserIds().size()
-      );
+          notification.recipientUserIds().size());
 
       webPushNotificationPort.send(pushNotification);
     } else {
-      log.debug(
-          "No eligible Web Push recipients for event {}",
-          notification.eventId()
-      );
+      log.debug("No eligible Web Push recipients for event {}", notification.eventId());
     }
 
     notificationEventRepository.save(notification.eventId());

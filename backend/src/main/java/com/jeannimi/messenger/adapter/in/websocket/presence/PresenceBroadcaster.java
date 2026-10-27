@@ -11,19 +11,14 @@ public class PresenceBroadcaster {
 
   private final SimpMessagingTemplate messagingTemplate;
 
-  public PresenceBroadcaster(
-      @Lazy SimpMessagingTemplate messagingTemplate) {
+  public PresenceBroadcaster(@Lazy SimpMessagingTemplate messagingTemplate) {
     this.messagingTemplate = messagingTemplate;
   }
 
   public void publish(UserId userId, boolean online) {
 
-    PresenceStatus status = new PresenceStatus(
-        userId.value().toString(),
-        online);
+    PresenceStatus status = new PresenceStatus(userId.value().toString(), online);
 
-    messagingTemplate.convertAndSend(
-        "/topic/presence/user/" + userId.value(),
-        status);
+    messagingTemplate.convertAndSend("/topic/presence/user/" + userId.value(), status);
   }
 }

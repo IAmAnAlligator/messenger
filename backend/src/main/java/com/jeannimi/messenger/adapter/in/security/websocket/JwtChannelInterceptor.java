@@ -118,17 +118,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
       throw new IllegalStateException("WebSocket session ID must not be null");
     }
 
-    boolean becameOnline =
-        userPresenceService.registerSession(sessionId, userId);
+    boolean becameOnline = userPresenceService.registerSession(sessionId, userId);
 
     if (becameOnline) {
       presenceBroadcaster.publish(userId, true);
     }
 
-    log.info(
-        "WS CONNECTED userId={} sessionId={}",
-        userId,
-        sessionId);
+    log.info("WS CONNECTED userId={} sessionId={}", userId, sessionId);
   }
 
   private boolean handleSubscribe(StompHeaderAccessor accessor) {
@@ -177,9 +173,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         || destination.startsWith("/app/presence/user/");
   }
 
-  private boolean isPresenceSubscriptionAllowed(
-      String destination,
-      WsUserPrincipal principal) {
+  private boolean isPresenceSubscriptionAllowed(String destination, WsUserPrincipal principal) {
 
     String[] parts = destination.split("/");
 
@@ -206,9 +200,8 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
       return false;
     }
 
-    boolean hasPrivateChat = chatService
-        .findPrivateChat(principal.userId(), targetUserId)
-        .isPresent();
+    boolean hasPrivateChat =
+        chatService.findPrivateChat(principal.userId(), targetUserId).isPresent();
 
     log.info(
         "WS PRESENCE SUBSCRIBE userId={} targetUserId={} allowed={}",
