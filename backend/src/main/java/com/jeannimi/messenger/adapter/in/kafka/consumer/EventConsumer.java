@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.adapter.in.kafka.exception.InvalidKafkaEventException;
 import com.jeannimi.messenger.adapter.in.kafka.handler.ChatEventHandler;
 import com.jeannimi.messenger.adapter.in.kafka.mapper.KafkaEventToApplicationEventMapper;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
@@ -33,13 +34,9 @@ import org.springframework.stereotype.Service;
 public class EventConsumer {
 
   private final ObjectMapper objectMapper;
-
   private final KafkaEventToApplicationEventMapper eventMapper;
-
   private final RealtimeEventPublisherPort realtimeEventPublisher;
-
   private final ProcessedEventService processedEventService;
-
   private final List<ChatEventHandler> handlers;
 
   private Map<EventType, ChatEventHandler> handlerMap;
@@ -51,11 +48,9 @@ public class EventConsumer {
             .collect(Collectors.toMap(ChatEventHandler::supports, Function.identity()));
   }
 
-  /*
-   * =========================
-   * CHAT MESSAGES
-   * =========================
-   */
+  // =========================
+  // CHAT MESSAGES
+  // =========================
 
   @KafkaListener(
       topics = KafkaTopics.CHAT_MESSAGES,
@@ -74,11 +69,9 @@ public class EventConsumer {
         });
   }
 
-  /*
-   * =========================
-   * READ EVENTS
-   * =========================
-   */
+  // =========================
+  // READ EVENTS
+  // =========================
 
   @KafkaListener(
       topics = KafkaTopics.CHAT_READ,
@@ -93,11 +86,9 @@ public class EventConsumer {
         event -> realtimeEventPublisher.publish(EventType.MESSAGE_READ, event));
   }
 
-  /*
-   * =========================
-   * MESSAGE DELETE
-   * =========================
-   */
+  // =========================
+  // MESSAGE DELETE
+  // =========================
 
   @KafkaListener(
       topics = KafkaTopics.CHAT_MESSAGE_DELETED,
@@ -112,11 +103,9 @@ public class EventConsumer {
         event -> realtimeEventPublisher.publish(EventType.MESSAGE_DELETED, event));
   }
 
-  /*
-   * =========================
-   * CHAT EVENTS
-   * =========================
-   */
+  // =========================
+  // CHAT EVENTS
+  // =========================
 
   @KafkaListener(
       topics = KafkaTopics.CHAT_EVENTS,
@@ -128,68 +117,50 @@ public class EventConsumer {
         payload,
         ack,
         envelope -> {
-          EventType eventType = EventType.valueOf(envelope.eventType());
+          EventType eventType = parseEventType(envelope.eventType());
 
           ChatEventHandler handler = handlerMap.get(eventType);
 
           if (handler == null) {
-            log.warn("No handler found for event {}", eventType);
-            return;
+            throw new InvalidKafkaEventException("No handler found for event type: " + eventType);
           }
 
           handler.handle(envelope.payload());
         });
   }
 
-  /*
-   * =========================
-   * COMMON PROCESSOR
-   * =========================
-   */
+  // =========================
+  // COMMON PROCESSOR
+  // =========================
 
   private void processEnvelope(
       String payload, Acknowledgment ack, Consumer<KafkaEventEnvelope> consumer) {
 
-    try {
-      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
+    KafkaEventEnvelope envelope = deserializeEnvelope(payload);
 
-      UUID eventIdValue = envelope.eventId();
+    UUID eventIdValue = envelope.eventId();
 
-      if (eventIdValue == null) {
-        throw new IllegalArgumentException("Kafka eventId must not be null");
-      }
-
-      EventId eventId = new EventId(eventIdValue);
-
-      /*
-       * Ignore events that have already been processed.
-       */
-      if (processedEventService.existsByEventId(eventId)) {
-        log.debug("Skipping already processed event: eventId={}", eventId);
-
-        ack.acknowledge();
-        return;
-      }
-
-      /*
-       * Process the event first.
-       */
-      consumer.accept(envelope);
-
-      /*
-       * Register the event only after successful processing.
-       */
-      processedEventService.register(eventId);
-
-      /*
-       * Acknowledge Kafka only after processing and registration.
-       */
-      ack.acknowledge();
-
-    } catch (Exception e) {
-      log.error("Kafka processing failed", e);
-      throw new RuntimeException("Failed to process Kafka event", e);
+    if (eventIdValue == null) {
+      throw new InvalidKafkaEventException("Kafka eventId must not be null");
     }
+
+    EventId eventId = new EventId(eventIdValue);
+
+    if (processedEventService.existsByEventId(eventId)) {
+      log.debug("Skipping already processed event: eventId={}", eventId);
+
+      ack.acknowledge();
+      return;
+    }
+
+    // Process the event first.
+    consumer.accept(envelope);
+
+    // Register only after successful processing.
+    processedEventService.register(eventId);
+
+    // Acknowledge only after processing and registration.
+    ack.acknowledge();
   }
 
   private <T> void process(
@@ -199,15 +170,67 @@ public class EventConsumer {
         payload,
         ack,
         envelope -> {
-          try {
-            T event = objectMapper.treeToValue(envelope.payload(), type);
+          T event = deserializeEvent(envelope, type);
 
-            handler.handle(event);
-
-          } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize Kafka event", e);
-          }
+          handler.handle(event);
         });
+  }
+
+  // =========================
+  // DESERIALIZATION
+  // =========================
+
+  private KafkaEventEnvelope deserializeEnvelope(String payload) {
+
+    if (payload == null || payload.isBlank()) {
+      throw new InvalidKafkaEventException("Kafka event payload must not be empty");
+    }
+
+    try {
+      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
+
+      if (envelope == null) {
+        throw new InvalidKafkaEventException("Kafka event envelope must not be null");
+      }
+
+      if (envelope.payload() == null || envelope.payload().isNull()) {
+        throw new InvalidKafkaEventException("Kafka event payload must not be null");
+      }
+
+      return envelope;
+
+    } catch (JsonProcessingException e) {
+      throw new InvalidKafkaEventException("Failed to deserialize Kafka event envelope", e);
+    }
+  }
+
+  private <T> T deserializeEvent(KafkaEventEnvelope envelope, Class<T> type) {
+
+    try {
+      T event = objectMapper.treeToValue(envelope.payload(), type);
+
+      if (event == null) {
+        throw new InvalidKafkaEventException("Kafka event must not be null");
+      }
+
+      return event;
+
+    } catch (JsonProcessingException e) {
+      throw new InvalidKafkaEventException("Failed to deserialize Kafka event", e);
+    }
+  }
+
+  private EventType parseEventType(String rawEventType) {
+
+    if (rawEventType == null || rawEventType.isBlank()) {
+      throw new InvalidKafkaEventException("Kafka event type must not be empty");
+    }
+
+    try {
+      return EventType.valueOf(rawEventType);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidKafkaEventException("Unknown Kafka event type: " + rawEventType, e);
+    }
   }
 
   @FunctionalInterface

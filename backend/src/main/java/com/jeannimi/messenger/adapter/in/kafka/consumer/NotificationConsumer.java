@@ -1,6 +1,8 @@
 package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.adapter.in.kafka.exception.InvalidKafkaEventException;
 import com.jeannimi.messenger.adapter.in.kafka.mapper.KafkaEventToApplicationEventMapper;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.kafka.event.MessageSentEvent;
@@ -26,36 +28,88 @@ public class NotificationConsumer {
   private final KafkaEventToApplicationEventMapper eventMapper;
   private final MessageNotificationUseCase messageNotificationUseCase;
 
-  @KafkaListener(topics = KafkaTopics.CHAT_MESSAGES, groupId = "notification-group")
+  @KafkaListener(
+      topics = KafkaTopics.CHAT_MESSAGES,
+      groupId = "notification-group",
+      containerFactory = "chatMessagesKafkaListenerContainerFactory")
   public void consumeMessage(String payload, Acknowledgment ack) {
+
+    KafkaEventEnvelope envelope = deserializeEnvelope(payload);
+
+    if (envelope.eventId() == null) {
+      throw new InvalidKafkaEventException("Notification event must contain eventId");
+    }
+
+    MessageSentEvent event = deserializeEvent(envelope);
+
+    MessageCreatedEvent applicationEvent = eventMapper.toApplicationEvent(event);
+
+    if (applicationEvent == null
+        || applicationEvent.message() == null
+        || applicationEvent.message().sender() == null
+        || applicationEvent.message().sender().id() == null) {
+      throw new InvalidKafkaEventException(
+          "Notification event must contain message and sender information");
+    }
+
+    UserId senderId = applicationEvent.message().sender().id();
+
+    MessageNotification notification =
+        new MessageNotification(
+            new EventId(envelope.eventId()),
+            applicationEvent.message().id(),
+            applicationEvent.message().chatId(),
+            senderId,
+            applicationEvent.message().sender().username(),
+            applicationEvent.recipientUserIds().stream()
+                .filter(Objects::nonNull)
+                .filter(userId -> !userId.equals(senderId))
+                .toList());
+
+    messageNotificationUseCase.notifyMessageReceived(notification);
+
+    ack.acknowledge();
+
+    log.debug("Notification event processed successfully: eventId={}", envelope.eventId());
+  }
+
+  private KafkaEventEnvelope deserializeEnvelope(String payload) {
+
+    if (payload == null || payload.isBlank()) {
+      throw new InvalidKafkaEventException("Notification event payload must not be empty");
+    }
+
     try {
       KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
 
-      Objects.requireNonNull(envelope.eventId(), "Kafka eventId must not be null");
+      if (envelope == null) {
+        throw new InvalidKafkaEventException("Notification event envelope must not be null");
+      }
 
+      if (envelope.payload() == null || envelope.payload().isNull()) {
+        throw new InvalidKafkaEventException("Notification event payload must not be null");
+      }
+
+      return envelope;
+
+    } catch (JsonProcessingException e) {
+      throw new InvalidKafkaEventException("Failed to deserialize notification event envelope", e);
+    }
+  }
+
+  private MessageSentEvent deserializeEvent(KafkaEventEnvelope envelope) {
+
+    try {
       MessageSentEvent event = objectMapper.treeToValue(envelope.payload(), MessageSentEvent.class);
 
-      MessageCreatedEvent applicationEvent = eventMapper.toApplicationEvent(event);
+      if (event == null) {
+        throw new InvalidKafkaEventException("Notification event must not be null");
+      }
 
-      UserId senderId = applicationEvent.message().sender().id();
+      return event;
 
-      MessageNotification notification =
-          new MessageNotification(
-              new EventId(envelope.eventId()),
-              applicationEvent.message().id(),
-              applicationEvent.message().chatId(),
-              senderId,
-              applicationEvent.message().sender().username(),
-              applicationEvent.recipientUserIds().stream()
-                  .filter(userId -> !userId.equals(senderId))
-                  .toList());
-
-      messageNotificationUseCase.notifyMessageReceived(notification);
-
-      ack.acknowledge();
-    } catch (Exception e) {
-      log.error("Notification event processing failed", e);
-      throw new RuntimeException("Notification event processing failed", e);
+    } catch (JsonProcessingException e) {
+      throw new InvalidKafkaEventException("Failed to deserialize notification event", e);
     }
   }
 }

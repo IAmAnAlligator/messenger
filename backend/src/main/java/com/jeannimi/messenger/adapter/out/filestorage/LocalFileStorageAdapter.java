@@ -68,12 +68,14 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   @Override
   public void delete(String storageFileName) {
-
     Path path = rootLocation.resolve(storageFileName).normalize();
+
+    if (!path.startsWith(rootLocation)) {
+      throw new FileStorageException("Invalid storage path");
+    }
 
     try {
       Files.deleteIfExists(path);
-
     } catch (IOException e) {
       throw new FileStorageException("Failed to delete file: " + storageFileName, e);
     }

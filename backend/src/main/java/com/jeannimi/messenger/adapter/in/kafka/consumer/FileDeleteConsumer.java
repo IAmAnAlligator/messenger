@@ -2,6 +2,7 @@ package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.adapter.in.kafka.exception.InvalidKafkaEventException;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
@@ -11,7 +12,6 @@ import com.jeannimi.messenger.domain.event.EventId;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -25,77 +25,85 @@ public class FileDeleteConsumer {
   private final FileStoragePort fileStoragePort;
   private final ProcessedEventService processedEventService;
 
-  @KafkaListener(topics = KafkaTopics.FILE_DELETE, groupId = "file-storage-group")
+  @KafkaListener(
+      topics = KafkaTopics.FILE_DELETE,
+      groupId = "file-storage-group",
+      containerFactory = "fileDeleteKafkaListenerContainerFactory")
   public void consume(String payload, Acknowledgment ack) {
 
+    KafkaEventEnvelope envelope = deserializeEnvelope(payload);
+
+    UUID eventUuid = envelope.eventId();
+
+    if (eventUuid == null) {
+      throw new InvalidKafkaEventException("File deletion event must contain eventId");
+    }
+
+    EventId eventId = new EventId(eventUuid);
+
+    FileDeletionRequestedEvent event = deserializeEvent(envelope);
+
+    String storageFileName = event.storageFileName();
+
+    if (storageFileName == null || storageFileName.isBlank()) {
+      throw new InvalidKafkaEventException("File deletion event must contain storageFileName");
+    }
+
+    if (processedEventService.existsByEventId(eventId)) {
+      log.info("Duplicate file deletion event skipped: {}", eventId);
+
+      ack.acknowledge();
+      return;
+    }
+
+    // Delete the file before registering the event.
+    fileStoragePort.delete(storageFileName);
+
+    processedEventService.register(eventId);
+
+    log.info("[FILE DELETE] Successfully processed eventId={}, file={}", eventId, storageFileName);
+
+    ack.acknowledge();
+  }
+
+  private KafkaEventEnvelope deserializeEnvelope(String rawMessage) {
+
+    if (rawMessage == null || rawMessage.isBlank()) {
+      throw new InvalidKafkaEventException("File deletion message must not be empty");
+    }
+
     try {
+      KafkaEventEnvelope envelope = objectMapper.readValue(rawMessage, KafkaEventEnvelope.class);
 
-      KafkaEventEnvelope envelope = objectMapper.readValue(payload, KafkaEventEnvelope.class);
+      if (envelope == null) {
+        throw new InvalidKafkaEventException("File deletion envelope must not be null");
+      }
 
-      UUID eventUuid = envelope.eventId();
-      EventId eventId = new EventId(eventUuid);
+      if (envelope.payload() == null || envelope.payload().isNull()) {
+        throw new InvalidKafkaEventException("File deletion event payload must not be null");
+      }
 
+      return envelope;
+
+    } catch (JsonProcessingException e) {
+      throw new InvalidKafkaEventException("Failed to deserialize file deletion envelope", e);
+    }
+  }
+
+  private FileDeletionRequestedEvent deserializeEvent(KafkaEventEnvelope envelope) {
+
+    try {
       FileDeletionRequestedEvent event =
           objectMapper.treeToValue(envelope.payload(), FileDeletionRequestedEvent.class);
 
-      /*
-       * Проверяем duplicate ДО удаления.
-       *
-       * Но ProcessedMessage создаём ПОСЛЕ успешного удаления.
-       */
-      if (processedEventService.existsByEventId(eventId)) {
-        log.info("Duplicate file deletion event skipped: {}", eventId);
-
-        ack.acknowledge();
-        return;
+      if (event == null) {
+        throw new InvalidKafkaEventException("File deletion event must not be null");
       }
 
-      /*
-       * delete должен быть idempotent.
-       *
-       * Если файла уже нет — это успешный результат.
-       */
-      fileStoragePort.delete(event.storageFileName());
-
-      log.info("[FILE DELETE] deleted file={}", event.storageFileName());
-
-      /*
-       * Только после успешного удаления
-       * фиксируем event как обработанный.
-       */
-      try {
-
-        processedEventService.register(eventId);
-
-      } catch (DataIntegrityViolationException e) {
-
-        /*
-         * Другой consumer/thread мог успеть
-         * обработать тот же event.
-         *
-         * Само удаление уже выполнено,
-         * поэтому это не ошибка.
-         */
-        log.info("File deletion event already processed: {}", eventId);
-      }
-
-      ack.acknowledge();
+      return event;
 
     } catch (JsonProcessingException e) {
-
-      log.error("Failed to deserialize file deletion event", e);
-
-      throw new RuntimeException(e);
-
-    } catch (Exception e) {
-
-      log.error("File deletion failed", e);
-
-      /*
-       * ACK не вызываем.
-       * Kafka сможет повторить сообщение.
-       */
-      throw new RuntimeException(e);
+      throw new InvalidKafkaEventException("Failed to deserialize file deletion event", e);
     }
   }
 }

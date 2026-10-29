@@ -1,14 +1,20 @@
 package com.jeannimi.messenger.adapter.in.kafka.consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeannimi.messenger.adapter.in.kafka.exception.InvalidKafkaEventException;
 import com.jeannimi.messenger.adapter.in.kafka.handler.ChatEventHandler;
 import com.jeannimi.messenger.adapter.in.kafka.mapper.KafkaEventToApplicationEventMapper;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
@@ -62,8 +68,7 @@ class EventConsumerTest {
         new EventConsumer(
             objectMapper, eventMapper, realtimeEventPublisher, processedEventService, List.of());
 
-    // Имитируем вызов @PostConstruct, который Spring выполняет
-    // автоматически при создании bean.
+    // Имитируем вызов @PostConstruct, выполняемый Spring.
     ReflectionTestUtils.invokeMethod(consumer, "init");
   }
 
@@ -73,6 +78,7 @@ class EventConsumerTest {
 
   @Test
   void consumeMessage_shouldPublishCreatedEventAndAcknowledge() throws Exception {
+
     MessageSentEvent messageSentEvent = mock(MessageSentEvent.class);
     MessageCreatedEvent applicationEvent = mock(MessageCreatedEvent.class);
 
@@ -105,6 +111,7 @@ class EventConsumerTest {
 
   @Test
   void consumeRead_shouldPublishReadEventAndAcknowledge() throws Exception {
+
     MessageReadEvent readEvent = mock(MessageReadEvent.class);
 
     prepareEnvelope();
@@ -115,11 +122,13 @@ class EventConsumerTest {
 
     consumer.consumeRead(PAYLOAD, acknowledgment);
 
-    verify(realtimeEventPublisher).publish(EventType.MESSAGE_READ, readEvent);
+    InOrder inOrder = inOrder(realtimeEventPublisher, processedEventService, acknowledgment);
 
-    verify(processedEventService).register(EVENT_ID);
+    inOrder.verify(realtimeEventPublisher).publish(EventType.MESSAGE_READ, readEvent);
 
-    verify(acknowledgment).acknowledge();
+    inOrder.verify(processedEventService).register(EVENT_ID);
+
+    inOrder.verify(acknowledgment).acknowledge();
   }
 
   // --------------------------------------------------
@@ -139,11 +148,13 @@ class EventConsumerTest {
 
     consumer.consumeDelete(PAYLOAD, acknowledgment);
 
-    verify(realtimeEventPublisher).publish(EventType.MESSAGE_DELETED, deletedEvent);
+    InOrder inOrder = inOrder(realtimeEventPublisher, processedEventService, acknowledgment);
 
-    verify(processedEventService).register(EVENT_ID);
+    inOrder.verify(realtimeEventPublisher).publish(EventType.MESSAGE_DELETED, deletedEvent);
 
-    verify(acknowledgment).acknowledge();
+    inOrder.verify(processedEventService).register(EVENT_ID);
+
+    inOrder.verify(acknowledgment).acknowledge();
   }
 
   // --------------------------------------------------
@@ -152,9 +163,11 @@ class EventConsumerTest {
 
   @Test
   void consumeMessage_shouldSkipAlreadyProcessedEvent() throws Exception {
+
     when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenReturn(envelope);
 
     when(envelope.eventId()).thenReturn(EVENT_UUID);
+    when(envelope.payload()).thenReturn(payloadNode); // Добавить
 
     when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(true);
 
@@ -176,6 +189,7 @@ class EventConsumerTest {
 
   @Test
   void consumeChatEvents_shouldCallMatchingHandler() throws Exception {
+
     ChatEventHandler handler = mock(ChatEventHandler.class);
 
     when(handler.supports()).thenReturn(EventType.MESSAGE_CREATED);
@@ -190,39 +204,46 @@ class EventConsumerTest {
 
     ReflectionTestUtils.invokeMethod(consumerWithHandler, "init");
 
-    when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenReturn(envelope);
+    prepareEnvelope();
 
-    when(envelope.eventId()).thenReturn(EVENT_UUID);
     when(envelope.eventType()).thenReturn(EventType.MESSAGE_CREATED.name());
-    when(envelope.payload()).thenReturn(payloadNode);
 
     when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(false);
 
     consumerWithHandler.consumeChatEvents(PAYLOAD, acknowledgment);
 
-    verify(handler).handle(payloadNode);
-    verify(processedEventService).register(EVENT_ID);
-    verify(acknowledgment).acknowledge();
+    InOrder inOrder = inOrder(handler, processedEventService, acknowledgment);
+
+    inOrder.verify(handler).handle(payloadNode);
+    inOrder.verify(processedEventService).register(EVENT_ID);
+    inOrder.verify(acknowledgment).acknowledge();
+
+    verifyNoInteractions(realtimeEventPublisher);
   }
 
   @Test
-  void consumeChatEvents_shouldSkipEventWithoutHandler() throws Exception {
+  void consumeChatEvents_shouldFailWhenNoHandlerExists() throws Exception {
 
-    when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenReturn(envelope);
-
-    when(envelope.eventId()).thenReturn(EVENT_UUID);
+    prepareEnvelope();
 
     when(envelope.eventType()).thenReturn(EventType.MESSAGE_CREATED.name());
 
     when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(false);
 
-    consumer.consumeChatEvents(PAYLOAD, acknowledgment);
+    InvalidKafkaEventException exception =
+        assertThrows(
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeChatEvents(PAYLOAD, acknowledgment));
 
-    verify(processedEventService).register(EVENT_ID);
+    assertEquals("No handler found for event type: MESSAGE_CREATED", exception.getMessage());
 
-    verify(acknowledgment).acknowledge();
+    verify(processedEventService).existsByEventId(EVENT_ID);
+
+    verify(processedEventService, never()).register(any(EventId.class));
 
     verifyNoInteractions(realtimeEventPublisher);
+
+    verify(acknowledgment, never()).acknowledge();
   }
 
   // --------------------------------------------------
@@ -244,11 +265,17 @@ class EventConsumerTest {
 
     when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(false);
 
-    doThrow(new RuntimeException("Publishing failed"))
+    RuntimeException cause = new RuntimeException("Publishing failed");
+
+    doThrow(cause)
         .when(realtimeEventPublisher)
         .publish(EventType.MESSAGE_CREATED, applicationEvent);
 
-    assertThrows(RuntimeException.class, () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class, () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+
+    assertEquals(cause, exception);
 
     verify(processedEventService, never()).register(any(EventId.class));
 
@@ -257,25 +284,43 @@ class EventConsumerTest {
 
   @Test
   void consumeMessage_shouldFailWhenEventIdIsNull() throws Exception {
+
     when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenReturn(envelope);
 
     when(envelope.eventId()).thenReturn(null);
+    when(envelope.payload()).thenReturn(payloadNode);
 
-    assertThrows(RuntimeException.class, () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+    InvalidKafkaEventException exception =
+        assertThrows(
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+
+    assertEquals("Kafka eventId must not be null", exception.getMessage());
 
     verify(processedEventService, never()).existsByEventId(any(EventId.class));
 
     verify(processedEventService, never()).register(any(EventId.class));
+
+    verifyNoInteractions(realtimeEventPublisher);
 
     verify(acknowledgment, never()).acknowledge();
   }
 
   @Test
   void consumeMessage_shouldFailWhenJsonIsInvalid() throws Exception {
-    when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class))
-        .thenThrow(new JsonProcessingException("Invalid JSON") {});
 
-    assertThrows(RuntimeException.class, () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+    JsonProcessingException cause = new JsonProcessingException("Invalid JSON") {};
+
+    when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenThrow(cause);
+
+    InvalidKafkaEventException exception =
+        assertThrows(
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+
+    assertEquals("Failed to deserialize Kafka event envelope", exception.getMessage());
+
+    assertEquals(cause, exception.getCause());
 
     verifyNoInteractions(processedEventService);
     verifyNoInteractions(realtimeEventPublisher);
@@ -290,18 +335,18 @@ class EventConsumerTest {
 
     when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(false);
 
-    when(objectMapper.treeToValue(payloadNode, MessageSentEvent.class))
-        .thenThrow(new JsonProcessingException("Invalid event payload") {});
+    JsonProcessingException cause = new JsonProcessingException("Invalid event payload") {};
 
-    RuntimeException exception =
+    when(objectMapper.treeToValue(payloadNode, MessageSentEvent.class)).thenThrow(cause);
+
+    InvalidKafkaEventException exception =
         assertThrows(
-            RuntimeException.class, () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
 
-    assertEquals("Failed to process Kafka event", exception.getMessage());
+    assertEquals("Failed to deserialize Kafka event", exception.getMessage());
 
-    assertInstanceOf(RuntimeException.class, exception.getCause());
-
-    assertEquals("Failed to deserialize Kafka event", exception.getCause().getMessage());
+    assertEquals(cause, exception.getCause());
 
     verify(processedEventService).existsByEventId(EVENT_ID);
 
@@ -310,6 +355,50 @@ class EventConsumerTest {
     verifyNoInteractions(realtimeEventPublisher);
 
     verify(acknowledgment, never()).acknowledge();
+  }
+
+  @Test
+  void consumeChatEvents_shouldFailWhenEventTypeIsUnknown() throws Exception {
+
+    prepareEnvelope();
+
+    when(envelope.eventType()).thenReturn("UNKNOWN_EVENT");
+
+    when(processedEventService.existsByEventId(EVENT_ID)).thenReturn(false);
+
+    InvalidKafkaEventException exception =
+        assertThrows(
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeChatEvents(PAYLOAD, acknowledgment));
+
+    assertEquals("Unknown Kafka event type: UNKNOWN_EVENT", exception.getMessage());
+
+    verify(processedEventService).existsByEventId(EVENT_ID);
+
+    verify(processedEventService, never()).register(any(EventId.class));
+
+    verifyNoInteractions(realtimeEventPublisher);
+
+    verify(acknowledgment, never()).acknowledge();
+  }
+
+  @Test
+  void consumeMessage_shouldFailWhenEnvelopeIsNull() throws Exception {
+    when(objectMapper.readValue(PAYLOAD, KafkaEventEnvelope.class)).thenReturn(null);
+
+    InvalidKafkaEventException exception =
+        assertThrows(
+            InvalidKafkaEventException.class,
+            () -> consumer.consumeMessage(PAYLOAD, acknowledgment));
+
+    assertEquals("Kafka event envelope must not be null", exception.getMessage());
+
+    verify(objectMapper).readValue(PAYLOAD, KafkaEventEnvelope.class);
+
+    verifyNoInteractions(processedEventService);
+    verifyNoInteractions(eventMapper);
+    verifyNoInteractions(realtimeEventPublisher);
+    verifyNoInteractions(acknowledgment);
   }
 
   // --------------------------------------------------
