@@ -34,17 +34,29 @@ public class UserNotificationSettingsController {
   @PatchMapping
   public ResponseEntity<UserNotificationSettingsResponse> updateSettings(
       @AuthenticationPrincipal CustomUserDetails user,
-      @Valid @RequestBody UpdateNotificationSettingsRequest request) {
+      @RequestBody UpdateNotificationSettingsRequest request) {
+
+    if (request.isEmpty()) {
+      throw new IllegalArgumentException(
+          "At least one notification setting must be provided");
+    }
 
     UserNotificationSettingsResult result =
-        settingsUseCase.updateWebPushEnabled(user.id(), request.webPushEnabled());
+        settingsUseCase.updateSettings(
+            user.id(),
+            request.webPushEnabled(),
+            request.emailEnabled());
 
     return ResponseEntity.ok(toResponse(result));
   }
 
-  private UserNotificationSettingsResponse toResponse(UserNotificationSettingsResult result) {
+  private UserNotificationSettingsResponse toResponse(
+      UserNotificationSettingsResult result) {
 
     return new UserNotificationSettingsResponse(
-        result.webPushEnabled(), result.createdAt(), result.updatedAt());
+        result.webPushEnabled(),
+        result.emailEnabled(),
+        result.createdAt(),
+        result.updatedAt());
   }
 }

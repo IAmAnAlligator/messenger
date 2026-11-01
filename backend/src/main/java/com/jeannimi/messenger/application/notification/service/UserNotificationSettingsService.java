@@ -31,25 +31,38 @@ public class UserNotificationSettingsService implements UserNotificationSettings
 
   @Override
   @Transactional
-  public UserNotificationSettingsResult updateWebPushEnabled(UserId userId, boolean enabled) {
+  public UserNotificationSettingsResult updateSettings(
+      UserId userId,
+      Boolean webPushEnabled,
+      Boolean emailEnabled) {
 
     Objects.requireNonNull(userId, "userId");
 
-    UserNotificationSettings current =
+    if (webPushEnabled == null && emailEnabled == null) {
+      throw new IllegalArgumentException("At least one notification setting must be provided");
+    }
+
+    UserNotificationSettings settings =
         settingsRepository
             .findByUserId(userId)
             .orElseGet(() -> UserNotificationSettings.create(userId));
 
-    UserNotificationSettings updated = current.withWebPushEnabled(enabled);
+    if (webPushEnabled != null) {
+      settings = settings.withWebPushEnabled(webPushEnabled);
+    }
 
-    UserNotificationSettings settings = settingsRepository.save(updated);
+    if (emailEnabled != null) {
+      settings = settings.withEmailEnabled(emailEnabled);
+    }
 
-    return toResult(settings);
+    return toResult(settingsRepository.save(settings));
   }
 
   private UserNotificationSettingsResult toResult(UserNotificationSettings settings) {
-
     return new UserNotificationSettingsResult(
-        settings.isWebPushEnabled(), settings.getCreatedAt(), settings.getUpdatedAt());
+        settings.isWebPushEnabled(),
+        settings.isEmailEnabled(),
+        settings.getCreatedAt(),
+        settings.getUpdatedAt());
   }
 }

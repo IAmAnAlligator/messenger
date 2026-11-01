@@ -23,6 +23,9 @@ public class UserNotificationSettingsJpaEntity {
   @Column(name = "web_push_enabled", nullable = false)
   private boolean webPushEnabled;
 
+  @Column(name = "email_enabled", nullable = false)
+  private boolean emailEnabled;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
@@ -30,10 +33,15 @@ public class UserNotificationSettingsJpaEntity {
   private Instant updatedAt;
 
   public UserNotificationSettingsJpaEntity(
-      UUID userId, boolean webPushEnabled, Instant createdAt, Instant updatedAt) {
+      UUID userId,
+      boolean webPushEnabled,
+      boolean emailEnabled,
+      Instant createdAt,
+      Instant updatedAt) {
 
     this.userId = userId;
     this.webPushEnabled = webPushEnabled;
+    this.emailEnabled = emailEnabled;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }

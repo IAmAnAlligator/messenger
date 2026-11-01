@@ -7,5 +7,8 @@ public interface UserNotificationSettingsUseCase {
 
   UserNotificationSettingsResult getSettings(UserId userId);
 
-  UserNotificationSettingsResult updateWebPushEnabled(UserId userId, boolean enabled);
+  UserNotificationSettingsResult updateSettings(
+      UserId userId,
+      Boolean webPushEnabled,
+      Boolean emailEnabled);
 }

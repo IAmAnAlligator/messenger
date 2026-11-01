@@ -29,10 +29,6 @@ public class NotificationEventPersistenceAdapter implements NotificationEventRep
   public void save(EventId eventId) {
     Objects.requireNonNull(eventId, "eventId");
 
-    if (repository.existsById(eventId.value())) {
-      return;
-    }
-
     repository.save(new NotificationEventJpaEntity(eventId.value(), Instant.now()));
   }
 }

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>New group message</title>
+</head>
+<body>
+<h2>New message in group chat</h2>
+
+<p>
+  <strong th:text="${senderUsername}">Username</strong>
+  sent a new message in
+  <strong th:text="${chatName}">Group name</strong>.
+</p>
+
+<p>
+  Open Messenger to join the conversation.
+</p>
+</body>
+</html>

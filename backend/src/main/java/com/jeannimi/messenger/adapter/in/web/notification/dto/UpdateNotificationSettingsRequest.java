@@ -1,5 +1,10 @@
 package com.jeannimi.messenger.adapter.in.web.notification.dto;
 
-import jakarta.validation.constraints.NotNull;
+public record UpdateNotificationSettingsRequest(
+    Boolean webPushEnabled,
+    Boolean emailEnabled) {
 
-public record UpdateNotificationSettingsRequest(@NotNull Boolean webPushEnabled) {}
+  public boolean isEmpty() {
+    return webPushEnabled == null && emailEnabled == null;
+  }
+}

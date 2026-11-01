@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>New message</title>
+</head>
+<body>
+<h2>You have a new message</h2>
+
+<p>Hello,</p>
+
+<p>
+  <strong th:text="${senderUsername}">Sender</strong>
+  sent you a new message.
+</p>
+
+<p>Open Messenger to read the message.</p>
+</body>
+</html>

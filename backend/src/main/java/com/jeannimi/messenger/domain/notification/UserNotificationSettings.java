@@ -10,14 +10,20 @@ public final class UserNotificationSettings {
 
   private final UserId userId;
   private final boolean webPushEnabled;
+  private final boolean emailEnabled;
   private final Instant createdAt;
   private final Instant updatedAt;
 
   private UserNotificationSettings(
-      UserId userId, boolean webPushEnabled, Instant createdAt, Instant updatedAt) {
+      UserId userId,
+      boolean webPushEnabled,
+      boolean emailEnabled,
+      Instant createdAt,
+      Instant updatedAt) {
 
     this.userId = Objects.requireNonNull(userId, "userId");
     this.webPushEnabled = webPushEnabled;
+    this.emailEnabled = emailEnabled;
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
     this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
   }
@@ -25,17 +31,28 @@ public final class UserNotificationSettings {
   public static UserNotificationSettings create(UserId userId) {
     Instant now = Instant.now();
 
-    return new UserNotificationSettings(userId, false, now, now);
+    return new UserNotificationSettings(userId, false, false, now, now);
   }
 
   public static UserNotificationSettings reconstitute(
-      UserId userId, boolean webPushEnabled, Instant createdAt, Instant updatedAt) {
+      UserId userId,
+      boolean webPushEnabled,
+      boolean emailEnabled,
+      Instant createdAt,
+      Instant updatedAt) {
 
-    return new UserNotificationSettings(userId, webPushEnabled, createdAt, updatedAt);
+    return new UserNotificationSettings(
+        userId, webPushEnabled, emailEnabled, createdAt, updatedAt);
   }
 
   public UserNotificationSettings withWebPushEnabled(boolean enabled) {
-    return new UserNotificationSettings(userId, enabled, createdAt, Instant.now());
+    return new UserNotificationSettings(
+        userId, enabled, emailEnabled, createdAt, Instant.now());
+  }
+
+  public UserNotificationSettings withEmailEnabled(boolean enabled) {
+    return new UserNotificationSettings(
+        userId, webPushEnabled, enabled, createdAt, Instant.now());
   }
 
   @Override

@@ -45,32 +45,46 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
     byte[] payload;
 
     try {
-      payload =
-          objectMapper.writeValueAsBytes(
-              new PushPayload(
-                  notification.senderUsername(),
-                  "New message",
-                  new PushData(
-                      notification.chatId().value().toString(),
-                      notification.messageId().value().toString())));
+      payload = objectMapper.writeValueAsBytes(
+          new PushPayload(
+              notification.senderUsername(),
+              "New message",
+              new PushData(
+                  notification.chatId().value().toString(),
+                  notification.messageId().value().toString())));
     } catch (JsonProcessingException exception) {
       throw new IllegalStateException("Failed to serialize Web Push payload", exception);
     }
 
+    RuntimeException deliveryFailure = null;
+
     for (WebPushSubscription subscription : subscriptions) {
-      sendToSubscription(subscription, payload);
+      try {
+        sendToSubscription(subscription, payload);
+      } catch (RuntimeException exception) {
+        if (deliveryFailure == null) {
+          deliveryFailure = new IllegalStateException(
+              "Failed to deliver Web Push notification to all subscriptions");
+        }
+
+        deliveryFailure.addSuppressed(exception);
+      }
+    }
+
+    if (deliveryFailure != null) {
+      throw deliveryFailure;
     }
   }
 
+
   private void sendToSubscription(WebPushSubscription subscription, byte[] payload) {
     try {
-      Notification pushNotification =
-          new Notification(
-              subscription.getEndpoint(),
-              subscription.getP256dh(),
-              subscription.getAuth(),
-              payload,
-              TTL_SECONDS);
+      Notification pushNotification = new Notification(
+          subscription.getEndpoint(),
+          subscription.getP256dh(),
+          subscription.getAuth(),
+          payload,
+          TTL_SECONDS);
 
       HttpResponse response = pushService.send(pushNotification);
       int status = response.getStatusLine().getStatusCode();
@@ -83,21 +97,13 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
       if (status < 200 || status >= 300) {
         String responseBody = "";
 
-        try {
-          if (response.getEntity() != null) {
-            responseBody = org.apache.http.util.EntityUtils.toString(response.getEntity());
-          }
-        } catch (Exception exception) {
-          log.warn("Failed to read Web Push error response", exception);
+        if (response.getEntity() != null) {
+          responseBody = org.apache.http.util.EntityUtils.toString(response.getEntity());
         }
 
-        log.warn(
-            "Web Push failed: status={}, subscriptionId={}, responseBody={}",
-            status,
-            subscription.getId().value(),
-            responseBody);
-
-        return;
+        throw new IllegalStateException(
+            "Web Push failed: status=" + status
+                + ", responseBody=" + responseBody);
       }
 
       log.debug(
@@ -106,24 +112,19 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
           subscription.getId().value());
 
     } catch (Exception exception) {
-      log.warn(
-          "Web Push delivery failed for subscription {}", subscription.getId().value(), exception);
+      throw new IllegalStateException(
+          "Web Push delivery failed for subscription "
+              + subscription.getId().value(),
+          exception);
     }
   }
 
   private void deleteInvalidSubscription(WebPushSubscription subscription) {
-    try {
-      subscriptionRepository.deleteByUserIdAndEndpoint(
-          subscription.getUserId(), subscription.getEndpoint());
+    subscriptionRepository.deleteByUserIdAndEndpoint(
+        subscription.getUserId(),
+        subscription.getEndpoint());
 
-      log.info("Deleted invalid Web Push subscription {}", subscription.getId().value());
-
-    } catch (Exception exception) {
-      log.error(
-          "Failed to delete invalid Web Push subscription {}",
-          subscription.getId().value(),
-          exception);
-    }
+    log.info("Deleted invalid Web Push subscription {}", subscription.getId().value());
   }
 
   private record PushPayload(String title, String body, PushData data) {}

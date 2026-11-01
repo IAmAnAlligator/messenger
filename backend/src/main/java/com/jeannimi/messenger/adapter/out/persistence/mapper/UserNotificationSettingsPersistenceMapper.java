@@ -16,6 +16,7 @@ public class UserNotificationSettingsPersistenceMapper {
     return UserNotificationSettings.reconstitute(
         new UserId(entity.getUserId()),
         entity.isWebPushEnabled(),
+        entity.isEmailEnabled(),
         entity.getCreatedAt(),
         entity.getUpdatedAt());
   }
@@ -29,6 +30,7 @@ public class UserNotificationSettingsPersistenceMapper {
     return new UserNotificationSettingsJpaEntity(
         settings.getUserId().value(),
         settings.isWebPushEnabled(),
+        settings.isEmailEnabled(),
         settings.getCreatedAt(),
         settings.getUpdatedAt());
   }
