@@ -9,21 +9,33 @@ import lombok.Getter;
 public final class UserNotificationSettings {
 
   private final UserId userId;
-  private final boolean webPushEnabled;
-  private final boolean emailEnabled;
+
+  private boolean webPushPrivateChatsEnabled;
+  private boolean webPushGroupChatsEnabled;
+
+  private boolean emailPrivateChatsEnabled;
+  private boolean emailGroupChatsEnabled;
+
   private final Instant createdAt;
-  private final Instant updatedAt;
+  private Instant updatedAt;
 
   private UserNotificationSettings(
       UserId userId,
-      boolean webPushEnabled,
-      boolean emailEnabled,
+      boolean webPushPrivateChatsEnabled,
+      boolean webPushGroupChatsEnabled,
+      boolean emailPrivateChatsEnabled,
+      boolean emailGroupChatsEnabled,
       Instant createdAt,
       Instant updatedAt) {
 
     this.userId = Objects.requireNonNull(userId, "userId");
-    this.webPushEnabled = webPushEnabled;
-    this.emailEnabled = emailEnabled;
+
+    this.webPushPrivateChatsEnabled = webPushPrivateChatsEnabled;
+    this.webPushGroupChatsEnabled = webPushGroupChatsEnabled;
+
+    this.emailPrivateChatsEnabled = emailPrivateChatsEnabled;
+    this.emailGroupChatsEnabled = emailGroupChatsEnabled;
+
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
     this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
   }
@@ -31,28 +43,73 @@ public final class UserNotificationSettings {
   public static UserNotificationSettings create(UserId userId) {
     Instant now = Instant.now();
 
-    return new UserNotificationSettings(userId, false, false, now, now);
+    return new UserNotificationSettings(
+        userId,
+        false,
+        false,
+        false,
+        false,
+        now,
+        now);
   }
 
   public static UserNotificationSettings reconstitute(
       UserId userId,
-      boolean webPushEnabled,
-      boolean emailEnabled,
+      boolean webPushPrivateChatsEnabled,
+      boolean webPushGroupChatsEnabled,
+      boolean emailPrivateChatsEnabled,
+      boolean emailGroupChatsEnabled,
       Instant createdAt,
       Instant updatedAt) {
 
     return new UserNotificationSettings(
-        userId, webPushEnabled, emailEnabled, createdAt, updatedAt);
+        userId,
+        webPushPrivateChatsEnabled,
+        webPushGroupChatsEnabled,
+        emailPrivateChatsEnabled,
+        emailGroupChatsEnabled,
+        createdAt,
+        updatedAt);
   }
 
-  public UserNotificationSettings withWebPushEnabled(boolean enabled) {
-    return new UserNotificationSettings(
-        userId, enabled, emailEnabled, createdAt, Instant.now());
+  public void enableWebPushPrivateChats(boolean enabled) {
+    if (webPushPrivateChatsEnabled == enabled) {
+      return;
+    }
+
+    this.webPushPrivateChatsEnabled = enabled;
+    updateTimestamp();
   }
 
-  public UserNotificationSettings withEmailEnabled(boolean enabled) {
-    return new UserNotificationSettings(
-        userId, webPushEnabled, enabled, createdAt, Instant.now());
+  public void enableWebPushGroupChats(boolean enabled) {
+    if (webPushGroupChatsEnabled == enabled) {
+      return;
+    }
+
+    this.webPushGroupChatsEnabled = enabled;
+    updateTimestamp();
+  }
+
+  public void enableEmailPrivateChats(boolean enabled) {
+    if (emailPrivateChatsEnabled == enabled) {
+      return;
+    }
+
+    this.emailPrivateChatsEnabled = enabled;
+    updateTimestamp();
+  }
+
+  public void enableEmailGroupChats(boolean enabled) {
+    if (emailGroupChatsEnabled == enabled) {
+      return;
+    }
+
+    this.emailGroupChatsEnabled = enabled;
+    updateTimestamp();
+  }
+
+  private void updateTimestamp() {
+    this.updatedAt = Instant.now();
   }
 
   @Override

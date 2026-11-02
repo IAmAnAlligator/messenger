@@ -9,6 +9,8 @@ public interface UserNotificationSettingsUseCase {
 
   UserNotificationSettingsResult updateSettings(
       UserId userId,
-      Boolean webPushEnabled,
-      Boolean emailEnabled);
+      Boolean webPushPrivateChatsEnabled,
+      Boolean webPushGroupChatsEnabled,
+      Boolean emailPrivateChatsEnabled,
+      Boolean emailGroupChatsEnabled);
 }

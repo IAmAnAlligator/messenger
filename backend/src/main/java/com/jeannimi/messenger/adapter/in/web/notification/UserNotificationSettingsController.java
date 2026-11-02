@@ -5,7 +5,6 @@ import com.jeannimi.messenger.adapter.in.web.notification.dto.UpdateNotification
 import com.jeannimi.messenger.adapter.in.web.notification.dto.UserNotificationSettingsResponse;
 import com.jeannimi.messenger.application.notification.dto.UserNotificationSettingsResult;
 import com.jeannimi.messenger.application.port.in.UserNotificationSettingsUseCase;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,7 +35,7 @@ public class UserNotificationSettingsController {
       @AuthenticationPrincipal CustomUserDetails user,
       @RequestBody UpdateNotificationSettingsRequest request) {
 
-    if (request.isEmpty()) {
+    if (request == null || request.isEmpty()) {
       throw new IllegalArgumentException(
           "At least one notification setting must be provided");
     }
@@ -44,8 +43,10 @@ public class UserNotificationSettingsController {
     UserNotificationSettingsResult result =
         settingsUseCase.updateSettings(
             user.id(),
-            request.webPushEnabled(),
-            request.emailEnabled());
+            request.webPushPrivateChatsEnabled(),
+            request.webPushGroupChatsEnabled(),
+            request.emailPrivateChatsEnabled(),
+            request.emailGroupChatsEnabled());
 
     return ResponseEntity.ok(toResponse(result));
   }
@@ -54,8 +55,10 @@ public class UserNotificationSettingsController {
       UserNotificationSettingsResult result) {
 
     return new UserNotificationSettingsResponse(
-        result.webPushEnabled(),
-        result.emailEnabled(),
+        result.webPushPrivateChatsEnabled(),
+        result.webPushGroupChatsEnabled(),
+        result.emailPrivateChatsEnabled(),
+        result.emailGroupChatsEnabled(),
         result.createdAt(),
         result.updatedAt());
   }

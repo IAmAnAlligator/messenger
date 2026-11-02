@@ -5,6 +5,7 @@ import com.jeannimi.messenger.application.port.in.MessageNotificationUseCase;
 import com.jeannimi.messenger.application.port.out.NotificationEventRepositoryPort;
 import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.application.presence.service.UserPresenceService;
+import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
 import com.jeannimi.messenger.domain.user.UserId;
@@ -34,8 +35,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     if (notificationEventRepository.exists(notification.eventId())) {
       log.debug(
           "Notification event already processed: {}",
-          notification.eventId()
-      );
+          notification.eventId());
       return;
     }
 
@@ -57,15 +57,13 @@ public class MessageNotificationService implements MessageNotificationUseCase {
           boolean online = userPresenceService.isOnline(userId);
 
           if (online) {
-            boolean viewingChat = userPresenceService.isViewingChat(
-                userId,
-                notification.chatId()
-            );
+            boolean viewingChat =
+                userPresenceService.isViewingChat(userId, notification.chatId());
 
-            if (!viewingChat && settings.isWebPushEnabled()) {
+            if (!viewingChat && isWebPushEnabled(settings, notification.chatType())) {
               webPushRecipients.add(userId);
             }
-          } else if (settings.isEmailEnabled()) {
+          } else if (isEmailEnabled(settings, notification.chatType())) {
             emailRecipients.add(userId);
           }
         });
@@ -73,25 +71,21 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     if (!webPushRecipients.isEmpty()) {
       notificationOutboxService.enqueue(
           createNotification(notification, webPushRecipients),
-          NotificationChannel.WEB_PUSH
-      );
+          NotificationChannel.WEB_PUSH);
 
       log.debug(
           "Enqueued Web Push notifications for {} recipients",
-          webPushRecipients.size()
-      );
+          webPushRecipients.size());
     }
 
     if (!emailRecipients.isEmpty()) {
       notificationOutboxService.enqueue(
           createNotification(notification, emailRecipients),
-          NotificationChannel.EMAIL
-      );
+          NotificationChannel.EMAIL);
 
       log.debug(
           "Enqueued Email notifications for {} recipients",
-          emailRecipients.size()
-      );
+          emailRecipients.size());
     }
 
     notificationEventRepository.save(notification.eventId());
@@ -100,14 +94,33 @@ public class MessageNotificationService implements MessageNotificationUseCase {
         "Notification event processed: eventId={}, webPushRecipients={}, emailRecipients={}",
         notification.eventId(),
         webPushRecipients.size(),
-        emailRecipients.size()
-    );
+        emailRecipients.size());
+  }
+
+  private boolean isWebPushEnabled(
+      UserNotificationSettings settings,
+      ChatType chatType) {
+
+    return switch (chatType) {
+      case PRIVATE -> settings.isWebPushPrivateChatsEnabled();
+      case GROUP -> settings.isWebPushGroupChatsEnabled();
+    };
+  }
+
+  private boolean isEmailEnabled(
+      UserNotificationSettings settings,
+      ChatType chatType) {
+
+    return switch (chatType) {
+      case PRIVATE -> settings.isEmailPrivateChatsEnabled();
+      case GROUP -> settings.isEmailGroupChatsEnabled();
+    };
   }
 
   private MessageNotification createNotification(
       MessageNotification original,
-      List<UserId> recipients
-  ) {
+      List<UserId> recipients) {
+
     return new MessageNotification(
         original.eventId(),
         original.messageId(),
@@ -116,7 +129,6 @@ public class MessageNotificationService implements MessageNotificationUseCase {
         original.chatName(),
         original.senderId(),
         original.senderUsername(),
-        recipients
-    );
+        recipients);
   }
 }

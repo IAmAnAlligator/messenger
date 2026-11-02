@@ -20,11 +20,17 @@ public class UserNotificationSettingsJpaEntity {
   @Column(name = "user_id", nullable = false, updatable = false)
   private UUID userId;
 
-  @Column(name = "web_push_enabled", nullable = false)
-  private boolean webPushEnabled;
+  @Column(name = "web_push_private_chats_enabled", nullable = false)
+  private boolean webPushPrivateChatsEnabled;
 
-  @Column(name = "email_enabled", nullable = false)
-  private boolean emailEnabled;
+  @Column(name = "web_push_group_chats_enabled", nullable = false)
+  private boolean webPushGroupChatsEnabled;
+
+  @Column(name = "email_private_chats_enabled", nullable = false)
+  private boolean emailPrivateChatsEnabled;
+
+  @Column(name = "email_group_chats_enabled", nullable = false)
+  private boolean emailGroupChatsEnabled;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
@@ -34,14 +40,21 @@ public class UserNotificationSettingsJpaEntity {
 
   public UserNotificationSettingsJpaEntity(
       UUID userId,
-      boolean webPushEnabled,
-      boolean emailEnabled,
+      boolean webPushPrivateChatsEnabled,
+      boolean webPushGroupChatsEnabled,
+      boolean emailPrivateChatsEnabled,
+      boolean emailGroupChatsEnabled,
       Instant createdAt,
       Instant updatedAt) {
 
     this.userId = userId;
-    this.webPushEnabled = webPushEnabled;
-    this.emailEnabled = emailEnabled;
+
+    this.webPushPrivateChatsEnabled = webPushPrivateChatsEnabled;
+    this.webPushGroupChatsEnabled = webPushGroupChatsEnabled;
+
+    this.emailPrivateChatsEnabled = emailPrivateChatsEnabled;
+    this.emailGroupChatsEnabled = emailGroupChatsEnabled;
+
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }

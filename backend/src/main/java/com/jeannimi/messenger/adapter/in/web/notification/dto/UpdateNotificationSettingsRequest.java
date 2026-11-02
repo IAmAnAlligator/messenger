@@ -1,10 +1,15 @@
 package com.jeannimi.messenger.adapter.in.web.notification.dto;
 
 public record UpdateNotificationSettingsRequest(
-    Boolean webPushEnabled,
-    Boolean emailEnabled) {
+    Boolean webPushPrivateChatsEnabled,
+    Boolean webPushGroupChatsEnabled,
+    Boolean emailPrivateChatsEnabled,
+    Boolean emailGroupChatsEnabled) {
 
   public boolean isEmpty() {
-    return webPushEnabled == null && emailEnabled == null;
+    return webPushPrivateChatsEnabled == null
+        && webPushGroupChatsEnabled == null
+        && emailPrivateChatsEnabled == null
+        && emailGroupChatsEnabled == null;
   }
 }

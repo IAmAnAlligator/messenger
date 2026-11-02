@@ -33,13 +33,19 @@ public class UserNotificationSettingsService implements UserNotificationSettings
   @Transactional
   public UserNotificationSettingsResult updateSettings(
       UserId userId,
-      Boolean webPushEnabled,
-      Boolean emailEnabled) {
+      Boolean webPushPrivateChatsEnabled,
+      Boolean webPushGroupChatsEnabled,
+      Boolean emailPrivateChatsEnabled,
+      Boolean emailGroupChatsEnabled) {
 
     Objects.requireNonNull(userId, "userId");
 
-    if (webPushEnabled == null && emailEnabled == null) {
-      throw new IllegalArgumentException("At least one notification setting must be provided");
+    if (webPushPrivateChatsEnabled == null
+        && webPushGroupChatsEnabled == null
+        && emailPrivateChatsEnabled == null
+        && emailGroupChatsEnabled == null) {
+      throw new IllegalArgumentException(
+          "At least one notification setting must be provided");
     }
 
     UserNotificationSettings settings =
@@ -47,12 +53,20 @@ public class UserNotificationSettingsService implements UserNotificationSettings
             .findByUserId(userId)
             .orElseGet(() -> UserNotificationSettings.create(userId));
 
-    if (webPushEnabled != null) {
-      settings = settings.withWebPushEnabled(webPushEnabled);
+    if (webPushPrivateChatsEnabled != null) {
+      settings.enableWebPushPrivateChats(webPushPrivateChatsEnabled);
     }
 
-    if (emailEnabled != null) {
-      settings = settings.withEmailEnabled(emailEnabled);
+    if (webPushGroupChatsEnabled != null) {
+      settings.enableWebPushGroupChats(webPushGroupChatsEnabled);
+    }
+
+    if (emailPrivateChatsEnabled != null) {
+      settings.enableEmailPrivateChats(emailPrivateChatsEnabled);
+    }
+
+    if (emailGroupChatsEnabled != null) {
+      settings.enableEmailGroupChats(emailGroupChatsEnabled);
     }
 
     return toResult(settingsRepository.save(settings));
@@ -60,8 +74,10 @@ public class UserNotificationSettingsService implements UserNotificationSettings
 
   private UserNotificationSettingsResult toResult(UserNotificationSettings settings) {
     return new UserNotificationSettingsResult(
-        settings.isWebPushEnabled(),
-        settings.isEmailEnabled(),
+        settings.isWebPushPrivateChatsEnabled(),
+        settings.isWebPushGroupChatsEnabled(),
+        settings.isEmailPrivateChatsEnabled(),
+        settings.isEmailGroupChatsEnabled(),
         settings.getCreatedAt(),
         settings.getUpdatedAt());
   }
