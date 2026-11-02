@@ -28,7 +28,7 @@ public class ChatJpaEntity {
   @Column(name = "id", nullable = false, updatable = false)
   private UUID id;
 
-  @Column(name = "name", nullable = false, length = 100)
+  @Column(name = "name", length = 100)
   private String name;
 
   @Enumerated(EnumType.STRING)
