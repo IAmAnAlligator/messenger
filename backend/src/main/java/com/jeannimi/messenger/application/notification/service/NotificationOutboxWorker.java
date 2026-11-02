@@ -122,6 +122,8 @@ public class NotificationOutboxWorker {
         task.getEventId(),
         task.getMessageId(),
         task.getChatId(),
+        task.getChatType(),
+        task.getChatName(),
         task.getSenderUserId(),
         task.getSenderUsername(),
         List.of(task.getRecipientUserId())

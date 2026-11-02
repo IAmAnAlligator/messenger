@@ -107,6 +107,8 @@ public class NotificationOutboxService {
         notification.eventId(),
         notification.messageId(),
         notification.chatId(),
+        notification.chatType(),
+        notification.chatName(),
         recipientUserId,
         notification.senderId(),
         notification.senderUsername(),

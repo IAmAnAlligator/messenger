@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.domain.notification;
 
 import com.jeannimi.messenger.domain.chat.ChatId;
+import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.event.EventId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.UserId;
@@ -15,6 +16,8 @@ public final class NotificationOutbox {
   private final EventId eventId;
   private final MessageId messageId;
   private final ChatId chatId;
+  private final ChatType chatType;
+  private final String chatName;
   private final UserId recipientUserId;
   private final UserId senderUserId;
   private final String senderUsername;
@@ -32,6 +35,8 @@ public final class NotificationOutbox {
       EventId eventId,
       MessageId messageId,
       ChatId chatId,
+      ChatType chatType,
+      String chatName,
       UserId recipientUserId,
       UserId senderUserId,
       String senderUsername,
@@ -48,6 +53,8 @@ public final class NotificationOutbox {
     this.eventId = Objects.requireNonNull(eventId, "eventId");
     this.messageId = Objects.requireNonNull(messageId, "messageId");
     this.chatId = Objects.requireNonNull(chatId, "chatId");
+    this.chatType = Objects.requireNonNull(chatType, "chatType");
+    this.chatName = chatName;
     this.recipientUserId = Objects.requireNonNull(recipientUserId, "recipientUserId");
     this.senderUserId = Objects.requireNonNull(senderUserId, "senderUserId");
     this.senderUsername = Objects.requireNonNull(senderUsername, "senderUsername");
@@ -71,6 +78,8 @@ public final class NotificationOutbox {
       EventId eventId,
       MessageId messageId,
       ChatId chatId,
+      ChatType chatType,
+      String chatName,
       UserId recipientUserId,
       UserId senderUserId,
       String senderUsername,
@@ -84,6 +93,8 @@ public final class NotificationOutbox {
         eventId,
         messageId,
         chatId,
+        chatType,
+        chatName,
         recipientUserId,
         senderUserId,
         senderUsername,
@@ -103,6 +114,8 @@ public final class NotificationOutbox {
       EventId eventId,
       MessageId messageId,
       ChatId chatId,
+      ChatType chatType,
+      String chatName,
       UserId recipientUserId,
       UserId senderUserId,
       String senderUsername,
@@ -120,6 +133,8 @@ public final class NotificationOutbox {
         eventId,
         messageId,
         chatId,
+        chatType,
+        chatName,
         recipientUserId,
         senderUserId,
         senderUsername,

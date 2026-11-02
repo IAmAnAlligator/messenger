@@ -159,7 +159,7 @@ public class MessageServiceImpl implements MessageService {
               .map(ChatMember::getUserId)
               .toList();
 
-      publishMessageCreated(result, recipientUserIds);
+      publishMessageCreated(chat, result, recipientUserIds);
 
       return result;
 
@@ -246,7 +246,7 @@ public class MessageServiceImpl implements MessageService {
             .map(ChatMember::getUserId)
             .toList();
 
-    publishMessageCreated(result, recipientUserIds);
+    publishMessageCreated(chat, result, recipientUserIds);
 
     return result;
   }
@@ -454,9 +454,10 @@ public class MessageServiceImpl implements MessageService {
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
-  private void publishMessageCreated(MessageResult result, List<UserId> recipientUserIds) {
+  private void publishMessageCreated(Chat chat, MessageResult result, List<UserId> recipientUserIds) {
 
-    MessageCreatedEvent event = new MessageCreatedEvent(result, recipientUserIds);
+    MessageCreatedEvent event = new MessageCreatedEvent(result, chat.getType(),
+        chat.getName(), recipientUserIds);
 
     eventPublisher.publish(
         EventType.MESSAGE_CREATED, new AggregateId(result.chatId().value()), event);

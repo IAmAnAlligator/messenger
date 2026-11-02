@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 public class KafkaEventMapper {
 
   public MessageSentEvent toKafkaEvent(MessageCreatedEvent event) {
-
-    return MessageSentEvent.from(event.message(), event.recipientUserIds());
+    return MessageSentEvent.from(event);
   }
 }

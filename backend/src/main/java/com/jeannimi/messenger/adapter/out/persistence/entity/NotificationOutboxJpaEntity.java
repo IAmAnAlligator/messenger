@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.adapter.out.persistence.entity;
 
+import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.NotificationOutboxStatus;
 import jakarta.persistence.Column;
@@ -32,6 +33,13 @@ public class NotificationOutboxJpaEntity {
 
   @Column(name = "chat_id", nullable = false, updatable = false)
   private UUID chatId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "chat_type", nullable = false, length = 20, updatable = false)
+  private ChatType chatType;
+
+  @Column(name = "chat_name", length = 255, updatable = false)
+  private String chatName;
 
   @Column(name = "recipient_user_id", nullable = false, updatable = false)
   private UUID recipientUserId;
@@ -73,6 +81,8 @@ public class NotificationOutboxJpaEntity {
       UUID eventId,
       UUID messageId,
       UUID chatId,
+      ChatType chatType,
+      String chatName,
       UUID recipientUserId,
       UUID senderUserId,
       String senderUsername,
@@ -83,6 +93,8 @@ public class NotificationOutboxJpaEntity {
     this.eventId = eventId;
     this.messageId = messageId;
     this.chatId = chatId;
+    this.chatType = chatType;
+    this.chatName = chatName;
     this.recipientUserId = recipientUserId;
     this.senderUserId = senderUserId;
     this.senderUsername = senderUsername;

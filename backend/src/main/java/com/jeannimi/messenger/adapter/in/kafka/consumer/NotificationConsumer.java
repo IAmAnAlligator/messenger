@@ -59,12 +59,15 @@ public class NotificationConsumer {
             new EventId(envelope.eventId()),
             applicationEvent.message().id(),
             applicationEvent.message().chatId(),
+            applicationEvent.chatType(),
+            applicationEvent.chatName(),
             senderId,
             applicationEvent.message().sender().username(),
             applicationEvent.recipientUserIds().stream()
                 .filter(Objects::nonNull)
                 .filter(userId -> !userId.equals(senderId))
-                .toList());
+                .toList()
+        );
 
     messageNotificationUseCase.notifyMessageReceived(notification);
 

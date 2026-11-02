@@ -112,6 +112,8 @@ public class MessageNotificationService implements MessageNotificationUseCase {
         original.eventId(),
         original.messageId(),
         original.chatId(),
+        original.chatType(),
+        original.chatName(),
         original.senderId(),
         original.senderUsername(),
         recipients
