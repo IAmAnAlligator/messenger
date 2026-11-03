@@ -7,9 +7,23 @@ interface WebPushSubscriptionRequest {
     auth: string;
 }
 
-export interface WebPushSettings {
-    webPushEnabled: boolean;
+export interface NotificationSettings {
+    webPushPrivateChatsEnabled: boolean;
+    webPushGroupChatsEnabled: boolean;
+    emailPrivateChatsEnabled: boolean;
+    emailGroupChatsEnabled: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
+
+export type UpdateNotificationSettingsRequest =
+    Partial<Pick<
+        NotificationSettings,
+        | "webPushPrivateChatsEnabled"
+        | "webPushGroupChatsEnabled"
+        | "emailPrivateChatsEnabled"
+        | "emailGroupChatsEnabled"
+    >>;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -34,7 +48,9 @@ function getSubscriptionRequest(
     const auth = json.keys?.auth;
 
     if (!p256dh || !auth) {
-        throw new Error("The browser did not provide Web Push encryption keys.");
+        throw new Error(
+            "The browser did not provide Web Push encryption keys."
+        );
     }
 
     return {
@@ -44,9 +60,20 @@ function getSubscriptionRequest(
     };
 }
 
-export async function getWebPushSettings(): Promise<WebPushSettings> {
-    const response = await api.get<WebPushSettings>(
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+    const response = await api.get<NotificationSettings>(
         "/notifications/settings"
+    );
+
+    return response.data;
+}
+
+export async function updateNotificationSettings(
+    settings: UpdateNotificationSettingsRequest
+): Promise<NotificationSettings> {
+    const response = await api.patch<NotificationSettings>(
+        "/notifications/settings",
+        settings
     );
 
     return response.data;
@@ -84,45 +111,28 @@ export async function subscribeToWebPush(): Promise<void> {
         });
     }
 
-    // Save the browser subscription for the authenticated user.
     await api.post(
         "/notifications/push/subscriptions",
         getSubscriptionRequest(subscription)
     );
-
-    // Enable notifications for the current user.
-    await api.patch("/notifications/settings", {
-        webPushEnabled: true,
-    });
 }
 
 export async function unsubscribeFromWebPush(): Promise<void> {
     if (!("serviceWorker" in navigator)) {
-        throw new Error("Your browser does not support Service Workers.");
+        return;
     }
 
     const registration = await navigator.serviceWorker.getRegistration("/");
 
     if (!registration) {
-        await api.patch("/notifications/settings", {
-            webPushEnabled: false,
-        });
         return;
     }
 
     const subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-        await api.patch("/notifications/settings", {
-            webPushEnabled: false,
-        });
         return;
     }
-
-    // Disable notifications for the current user first.
-    await api.patch("/notifications/settings", {
-        webPushEnabled: false,
-    });
 
     await api.delete("/notifications/push/subscriptions", {
         params: {
@@ -139,17 +149,17 @@ export async function syncWebPushSubscription(): Promise<void> {
         return;
     }
 
-    if (!("Notification" in window)) {
+    if (!("Notification" in window) || Notification.permission !== "granted") {
         return;
     }
 
-    if (Notification.permission !== "granted") {
-        return;
-    }
+    const settings = await getNotificationSettings();
 
-    const settings = await getWebPushSettings();
+    const webPushEnabled =
+        settings.webPushPrivateChatsEnabled ||
+        settings.webPushGroupChatsEnabled;
 
-    if (!settings.webPushEnabled) {
+    if (!webPushEnabled) {
         return;
     }
 

@@ -4,20 +4,41 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 import {
-    getWebPushSettings,
+    getNotificationSettings,
+    updateNotificationSettings,
     subscribeToWebPush,
     unsubscribeFromWebPush,
+    type NotificationSettings,
 } from "../../notifications/webPush";
 
 import "../styles/settingsPage.css";
+
+type SettingKey = keyof Pick<
+    NotificationSettings,
+    | "webPushPrivateChatsEnabled"
+    | "webPushGroupChatsEnabled"
+    | "emailPrivateChatsEnabled"
+    | "emailGroupChatsEnabled"
+>;
+
+const initialSettings: NotificationSettings = {
+    webPushPrivateChatsEnabled: false,
+    webPushGroupChatsEnabled: false,
+    emailPrivateChatsEnabled: false,
+    emailGroupChatsEnabled: false,
+    createdAt: "",
+    updatedAt: "",
+};
 
 export default function NotificationSettingsPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const [enabled, setEnabled] = useState(false);
+    const [settings, setSettings] =
+        useState<NotificationSettings>(initialSettings);
+
     const [loading, setLoading] = useState(true);
-    const [updating, setUpdating] = useState(false);
+    const [updating, setUpdating] = useState<SettingKey | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -25,7 +46,7 @@ export default function NotificationSettingsPage() {
 
         async function loadSettings() {
             if (!user?.id) {
-                setEnabled(false);
+                setSettings(initialSettings);
                 setLoading(false);
                 return;
             }
@@ -34,10 +55,10 @@ export default function NotificationSettingsPage() {
             setError(null);
 
             try {
-                const settings = await getWebPushSettings();
+                const result = await getNotificationSettings();
 
                 if (!cancelled) {
-                    setEnabled(settings.webPushEnabled);
+                    setSettings(result);
                 }
             } catch (exception) {
                 if (!cancelled) {
@@ -61,21 +82,38 @@ export default function NotificationSettingsPage() {
         };
     }, [user?.id]);
 
-    async function handleToggle() {
-        if (updating || loading) {
+    async function handleToggle(key: SettingKey) {
+        if (updating !== null || loading) {
             return;
         }
 
-        setUpdating(true);
+        const newValue = !settings[key];
+
+        const isWebPushSetting =
+            key === "webPushPrivateChatsEnabled" ||
+            key === "webPushGroupChatsEnabled";
+
+        const otherWebPushEnabled =
+            key === "webPushPrivateChatsEnabled"
+                ? settings.webPushGroupChatsEnabled
+                : settings.webPushPrivateChatsEnabled;
+
+        setUpdating(key);
         setError(null);
 
         try {
-            if (enabled) {
-                await unsubscribeFromWebPush();
-                setEnabled(false);
-            } else {
+            if (isWebPushSetting && newValue) {
                 await subscribeToWebPush();
-                setEnabled(true);
+            }
+
+            const updatedSettings = await updateNotificationSettings({
+                [key]: newValue,
+            });
+
+            setSettings(updatedSettings);
+
+            if (isWebPushSetting && !newValue && !otherWebPushEnabled) {
+                await unsubscribeFromWebPush();
             }
         } catch (exception) {
             setError(
@@ -84,8 +122,50 @@ export default function NotificationSettingsPage() {
                     : "Failed to update notification settings."
             );
         } finally {
-            setUpdating(false);
+            setUpdating(null);
         }
+    }
+
+    function renderToggle(
+        key: SettingKey,
+        label: string,
+        description: string
+    ) {
+        const enabled = settings[key];
+
+        return (
+            <div className="notification-toggle-row" key={key}>
+                <div className="notification-toggle-info">
+                    <span className="notification-toggle-label">
+                        {label}
+                    </span>
+
+                    <p>{description}</p>
+                </div>
+
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={label}
+                    className={`notification-toggle ${
+                        enabled ? "is-enabled" : ""
+                    }`}
+                    onClick={() => void handleToggle(key)}
+                    disabled={loading || updating !== null}
+                >
+                    <span className="notification-toggle-thumb" />
+
+                    <span className="notification-toggle-text">
+                        {updating === key
+                            ? "..."
+                            : enabled
+                                ? "ON"
+                                : "OFF"}
+                    </span>
+                </button>
+            </div>
+        );
     }
 
     if (!user) {
@@ -117,9 +197,13 @@ export default function NotificationSettingsPage() {
                 <h1>Notification Settings</h1>
             </header>
 
+            {loading && (
+                <p>Loading notification settings...</p>
+            )}
+
             <section className="notification-settings-card">
                 <div className="notification-settings-description">
-                    <h2>Message Notifications</h2>
+                    <h2>Web Push Notifications</h2>
 
                     <p>
                         Allow your browser to show notifications about new
@@ -127,55 +211,59 @@ export default function NotificationSettingsPage() {
                     </p>
                 </div>
 
-                <div className="notification-toggle-row">
-                    <span className="notification-toggle-label">
-                        {loading
-                            ? "Loading settings..."
-                            : enabled
-                                ? "Notifications are enabled"
-                                : "Notifications are disabled"}
-                    </span>
-
-                    <button
-                        type="button"
-                        role="switch"
-                        aria-checked={enabled}
-                        aria-label="Message notifications"
-                        className={`notification-toggle ${enabled ? "is-enabled" : ""}`}
-                        onClick={handleToggle}
-                        disabled={loading || updating}
-                    >
-                        <span className="notification-toggle-thumb" />
-
-                        <span className="notification-toggle-text">
-                            {updating
-                                ? "..."
-                                : enabled
-                                    ? "ON"
-                                    : "OFF"}
-                        </span>
-                    </button>
-                </div>
-
-                {error && (
-                    <p
-                        className="notification-settings-error"
-                        role="alert"
-                    >
-                        {error}
-                    </p>
+                {renderToggle(
+                    "webPushPrivateChatsEnabled",
+                    "Private Chats",
+                    "Receive browser notifications about messages in private chats."
                 )}
 
-                {!loading &&
-                    "Notification" in window &&
-                    Notification.permission === "denied" && (
-                        <p className="notification-settings-hint">
-                            Notifications are blocked by your browser.
-                            Allow notifications for this website in your
-                            browser settings to receive Web Push messages.
-                        </p>
-                    )}
+                {renderToggle(
+                    "webPushGroupChatsEnabled",
+                    "Group Chats",
+                    "Receive browser notifications about messages in group chats."
+                )}
             </section>
+
+            <section className="notification-settings-card">
+                <div className="notification-settings-description">
+                    <h2>Email Notifications</h2>
+
+                    <p>
+                        Receive email notifications about new messages.
+                    </p>
+                </div>
+
+                {renderToggle(
+                    "emailPrivateChatsEnabled",
+                    "Private Chats",
+                    "Receive email notifications about messages in private chats."
+                )}
+
+                {renderToggle(
+                    "emailGroupChatsEnabled",
+                    "Group Chats",
+                    "Receive email notifications about messages in group chats."
+                )}
+            </section>
+
+            {error && (
+                <p
+                    className="notification-settings-error"
+                    role="alert"
+                >
+                    {error}
+                </p>
+            )}
+
+            {!loading &&
+                "Notification" in window &&
+                Notification.permission === "denied" && (
+                    <p className="notification-settings-hint">
+                        Notifications are blocked by your browser.
+                        Allow notifications for this website in your
+                        browser settings to receive Web Push messages.
+                    </p>
+                )}
         </main>
     );
 }

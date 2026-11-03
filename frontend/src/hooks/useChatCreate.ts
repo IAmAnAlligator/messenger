@@ -1,3 +1,4 @@
+
 import {
     useEffect,
     useState
@@ -43,42 +44,28 @@ export function useChatCreate() {
 
     useEffect(() => {
 
-        const timer =
-            setTimeout(() => {
+        const query = search.trim();
 
-                const q =
-                    search.trim();
+        if (!query) {
 
+            setUsers([]);
+            setSearchLoading(false);
 
-                if (q) {
+            return;
 
-                    searchUsers(q);
-
-                } else {
-
-                    setUsers([]);
-
-                }
-
-            }, 300);
+        }
 
 
-        return () =>
-            clearTimeout(timer);
-
-    }, [search]);
+        let cancelled = false;
 
 
-    async function searchUsers(
-        query: string
-    ) {
+        const timer = setTimeout(async () => {
 
-        try {
+            try {
 
-            setSearchLoading(true);
+                setSearchLoading(true);
 
-            const res =
-                await api.get(
+                const res = await api.get(
                     "/users/search",
                     {
                         params: {
@@ -88,43 +75,74 @@ export function useChatCreate() {
                 );
 
 
-            setUsers(
-                Array.isArray(res.data)
-                    ? res.data
-                    : []
-            );
+                if (!cancelled) {
 
-        } catch {
+                    setUsers(
+                        Array.isArray(res.data)
+                            ? res.data
+                            : []
+                    );
 
-            setUsers([]);
+                }
 
-        } finally {
+            } catch {
 
-            setSearchLoading(false);
+                if (!cancelled) {
 
-        }
+                    setUsers([]);
 
-    }
+                }
+
+            } finally {
+
+                if (!cancelled) {
+
+                    setSearchLoading(false);
+
+                }
+
+            }
+
+        }, 300);
 
 
-    function addUser(
-        user: UserDto
-    ) {
+        return () => {
+
+            cancelled = true;
+
+            clearTimeout(timer);
+
+        };
+
+    }, [search]);
+
+
+    // Исключаем пользователей,
+    // которых уже добавили в группу.
+    const availableUsers = users.filter(
+        user =>
+            !selectedUsers.some(
+                selectedUser =>
+                    selectedUser.id === user.id
+            )
+    );
+
+
+    function addUser(user: UserDto) {
 
         setSelectedUsers(prev => {
 
             if (type === "PRIVATE") {
 
-                return [
-                    user
-                ];
+                return [user];
 
             }
 
 
             if (
                 prev.some(
-                    u => u.id === user.id
+                    selectedUser =>
+                        selectedUser.id === user.id
                 )
             ) {
 
@@ -148,13 +166,11 @@ export function useChatCreate() {
     }
 
 
-    function removeUser(
-        id: string
-    ) {
+    function removeUser(id: string) {
 
         setSelectedUsers(prev =>
             prev.filter(
-                u => u.id !== id
+                user => user.id !== id
             )
         );
 
@@ -162,6 +178,23 @@ export function useChatCreate() {
 
 
     async function createChat() {
+
+        if (type === "GROUP") {
+
+            if (!name.trim()) {
+                throw new Error(
+                    "Group name is required"
+                );
+            }
+
+            if (selectedUsers.length === 0) {
+                throw new Error(
+                    "Select at least one member"
+                );
+            }
+
+        }
+
 
         await api.post(
             "/chats",
@@ -171,12 +204,12 @@ export function useChatCreate() {
 
                 name:
                     type === "GROUP"
-                        ? name
+                        ? name.trim()
                         : null,
 
                 memberIds:
                     selectedUsers.map(
-                        u => u.id
+                        user => user.id
                     )
 
             }
@@ -196,7 +229,7 @@ export function useChatCreate() {
         search,
         setSearch,
 
-        users,
+        users: availableUsers,
 
         selectedUsers,
 

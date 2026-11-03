@@ -10,7 +10,10 @@ import { useAuth } from "../../contexts/AuthContext.tsx";
 import AuthLayout from "../layouts/AuthLayout.tsx";
 import AuthForm from "../components/auth/AuthForm.tsx";
 
-import { subscribeToWebPush } from "../../notifications/webPush";
+import {
+    subscribeToWebPush,
+    updateNotificationSettings,
+} from "../../notifications/webPush";
 
 import "../styles/auth.css";
 
@@ -66,7 +69,17 @@ export default function AuthPage() {
         setNotificationError(null);
 
         try {
+            // Request browser permission and save the Web Push subscription.
             await subscribeToWebPush();
+
+            // Enable Web Push for both private and group chats.
+            // Email notifications remain disabled.
+            await updateNotificationSettings({
+                webPushPrivateChatsEnabled: true,
+                webPushGroupChatsEnabled: true,
+                emailPrivateChatsEnabled: false,
+                emailGroupChatsEnabled: false,
+            });
 
             setShowNotificationPrompt(false);
             navigate("/chats", { replace: true });
@@ -112,8 +125,9 @@ export default function AuthPage() {
                         </h2>
 
                         <p>
-                            Get notified when you receive new messages,
-                            even when the messenger is closed.
+                            Get browser notifications about new messages
+                            in private and group chats, even when the
+                            messenger is closed.
                         </p>
 
                         {notificationError && (

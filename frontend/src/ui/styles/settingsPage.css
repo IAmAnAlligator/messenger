@@ -50,3 +50,13 @@
     left: 8px;
     color: #fff;
 }
+
+.notification-toggle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-toggle-info p {
+    margin: 0;
+}
