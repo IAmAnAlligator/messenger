@@ -21,4 +21,13 @@ public interface ChatMemberRepositoryPort {
   List<ChatId> findFirstPageIds(UserId userId, int limit);
 
   List<ChatId> findNextPageIds(UserId userId, Instant cursorTime, ChatId cursorId, int limit);
+
+  //  int updateLastReadMessageIdByChatIdAndCurrentMessageId(
+  //      ChatId chatId,
+  //      MessageId currentMessageId,
+  //      MessageId newMessageId
+  //  );
+
+  int replaceLastReadMessageIdForDeletedMessage(
+      ChatId chatId, MessageId currentMessageId, MessageId newMessageId);
 }

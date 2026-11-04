@@ -47,8 +47,7 @@ public final class NotificationOutbox {
       Instant lockedUntil,
       Instant createdAt,
       Instant sentAt,
-      String lastError
-  ) {
+      String lastError) {
     this.id = Objects.requireNonNull(id, "id");
     this.eventId = Objects.requireNonNull(eventId, "eventId");
     this.messageId = Objects.requireNonNull(messageId, "messageId");
@@ -84,8 +83,7 @@ public final class NotificationOutbox {
       UserId senderUserId,
       String senderUsername,
       NotificationChannel channel,
-      Instant now
-  ) {
+      Instant now) {
     Objects.requireNonNull(now, "now");
 
     return new NotificationOutbox(
@@ -105,8 +103,7 @@ public final class NotificationOutbox {
         null,
         now,
         null,
-        null
-    );
+        null);
   }
 
   public static NotificationOutbox reconstitute(
@@ -126,8 +123,7 @@ public final class NotificationOutbox {
       Instant lockedUntil,
       Instant createdAt,
       Instant sentAt,
-      String lastError
-  ) {
+      String lastError) {
     return new NotificationOutbox(
         id,
         eventId,
@@ -145,8 +141,7 @@ public final class NotificationOutbox {
         lockedUntil,
         createdAt,
         sentAt,
-        lastError
-    );
+        lastError);
   }
 
   @Override

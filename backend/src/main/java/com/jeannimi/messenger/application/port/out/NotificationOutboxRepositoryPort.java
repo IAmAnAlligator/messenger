@@ -9,19 +9,11 @@ public interface NotificationOutboxRepositoryPort {
 
   void saveAll(List<NotificationOutbox> tasks);
 
-
   List<NotificationOutbox> claimBatch(int batchSize);
 
   void markAsSent(NotificationOutboxId id);
 
-  void scheduleRetry(
-      NotificationOutboxId id,
-      Instant nextAttemptAt,
-      String error
-  );
+  void scheduleRetry(NotificationOutboxId id, Instant nextAttemptAt, String error);
 
-  void markAsDead(
-      NotificationOutboxId id,
-      String error
-  );
+  void markAsDead(NotificationOutboxId id, String error);
 }

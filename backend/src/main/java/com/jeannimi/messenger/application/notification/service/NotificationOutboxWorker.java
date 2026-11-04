@@ -26,8 +26,7 @@ public class NotificationOutboxWorker {
   private final EmailNotificationPort emailNotificationPort;
 
   public void processPendingNotifications() {
-    List<NotificationOutbox> tasks =
-        notificationOutboxService.claimBatch(BATCH_SIZE);
+    List<NotificationOutbox> tasks = notificationOutboxService.claimBatch(BATCH_SIZE);
 
     for (NotificationOutbox task : tasks) {
       processTask(task);
@@ -35,16 +34,14 @@ public class NotificationOutboxWorker {
   }
 
   private void processTask(NotificationOutbox task) {
-    int maxAttempts = switch (task.getChannel()) {
-      case WEB_PUSH -> WEB_PUSH_MAX_ATTEMPTS;
-      case EMAIL -> EMAIL_MAX_ATTEMPTS;
-    };
+    int maxAttempts =
+        switch (task.getChannel()) {
+          case WEB_PUSH -> WEB_PUSH_MAX_ATTEMPTS;
+          case EMAIL -> EMAIL_MAX_ATTEMPTS;
+        };
 
     if (task.getAttempts() > maxAttempts) {
-      notificationOutboxService.markAsDead(
-          task.getId(),
-          "Maximum delivery attempts exceeded"
-      );
+      notificationOutboxService.markAsDead(task.getId(), "Maximum delivery attempts exceeded");
       return;
     }
 
@@ -67,43 +64,31 @@ public class NotificationOutboxWorker {
         "Notification delivered: id={}, channel={}, attempt={}",
         task.getId().value(),
         task.getChannel(),
-        task.getAttempts()
-    );
+        task.getAttempts());
   }
 
-  private void handleFailure(
-      NotificationOutbox task,
-      Exception exception
-  ) {
-    String error = exception.getMessage() == null
-        ? exception.getClass().getSimpleName()
-        : exception.getMessage();
+  private void handleFailure(NotificationOutbox task, Exception exception) {
+    String error =
+        exception.getMessage() == null
+            ? exception.getClass().getSimpleName()
+            : exception.getMessage();
 
     log.warn(
         "Notification delivery failed: id={}, channel={}, attempt={}",
         task.getId().value(),
         task.getChannel(),
         task.getAttempts(),
-        exception
-    );
+        exception);
 
     if (task.getChannel() == NotificationChannel.WEB_PUSH
         && task.getAttempts() < WEB_PUSH_MAX_ATTEMPTS) {
 
-      Instant nextAttemptAt =
-          Instant.now().plusSeconds(WEB_PUSH_RETRY_DELAY_SECONDS);
+      Instant nextAttemptAt = Instant.now().plusSeconds(WEB_PUSH_RETRY_DELAY_SECONDS);
 
-      notificationOutboxService.scheduleRetry(
-          task.getId(),
-          nextAttemptAt,
-          error
-      );
+      notificationOutboxService.scheduleRetry(task.getId(), nextAttemptAt, error);
 
       log.info(
-          "Web Push retry scheduled: id={}, nextAttemptAt={}",
-          task.getId().value(),
-          nextAttemptAt
-      );
+          "Web Push retry scheduled: id={}, nextAttemptAt={}", task.getId().value(), nextAttemptAt);
 
       return;
     }
@@ -113,8 +98,7 @@ public class NotificationOutboxWorker {
     log.error(
         "Notification outbox task marked as DEAD: id={}, channel={}",
         task.getId().value(),
-        task.getChannel()
-    );
+        task.getChannel());
   }
 
   private MessageNotification toNotification(NotificationOutbox task) {
@@ -126,7 +110,6 @@ public class NotificationOutboxWorker {
         task.getChatName(),
         task.getSenderUserId(),
         task.getSenderUsername(),
-        List.of(task.getRecipientUserId())
-    );
+        List.of(task.getRecipientUserId()));
   }
 }

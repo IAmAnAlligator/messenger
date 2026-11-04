@@ -177,4 +177,18 @@ public class MessagePersistenceAdapter implements MessageRepositoryPort {
 
     messageJpaRepository.deleteById(message.getId().value());
   }
+
+  @Override
+  public Optional<MessageId> findPreviousMessageId(
+      ChatId chatId, Instant createdAt, MessageId messageId) {
+    Objects.requireNonNull(chatId, "chatId");
+    Objects.requireNonNull(createdAt, "createdAt");
+    Objects.requireNonNull(messageId, "messageId");
+
+    return messageJpaRepository
+        .findPreviousMessageIds(chatId.value(), createdAt, messageId.value(), PageRequest.of(0, 1))
+        .stream()
+        .findFirst()
+        .map(MessageId::new);
+  }
 }

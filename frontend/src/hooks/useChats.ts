@@ -151,6 +151,12 @@ export function useChats() {
                             }
                         );
 
+                        console.log(
+    "[CHATS] API response",
+    response.status,
+    response.data.content
+);
+
 
                     setChats(
                         response.data.content
@@ -167,6 +173,11 @@ export function useChats() {
                     );
 
                 } catch (error) {
+
+                    console.error(
+    "[CHATS] Failed to reload chat list",
+    error
+);
 
                     console.error(
                         "Failed to load chats:",
@@ -270,19 +281,22 @@ export function useChats() {
             ]
         );
 
+useEffect(
+    () => {
 
-    useEffect(
-        () => {
-
-            void loadChats();
-
-        },
-        [
-            loadChats,
+        console.log(
+            "[CHATS] Reloading chat list",
             chatEventsVersion
-        ]
-    );
+        );
 
+        void loadChats();
+
+    },
+    [
+        loadChats,
+        chatEventsVersion
+    ]
+);
 
     return {
 

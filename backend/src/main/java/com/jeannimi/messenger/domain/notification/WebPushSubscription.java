@@ -14,7 +14,7 @@ public final class WebPushSubscription {
   private final String p256dh;
   private final String auth;
   private final Instant createdAt;
-  private final Instant lastUsedAt;
+  private Instant lastUsedAt;
 
   private WebPushSubscription(
       WebPushSubscriptionId id,
@@ -50,6 +50,10 @@ public final class WebPushSubscription {
       Instant lastUsedAt) {
 
     return new WebPushSubscription(id, userId, endpoint, p256dh, auth, createdAt, lastUsedAt);
+  }
+
+  public void markAsUsed(Instant usedAt) {
+    this.lastUsedAt = Objects.requireNonNull(usedAt, "usedAt");
   }
 
   private static String requireNotBlank(String value, String field) {

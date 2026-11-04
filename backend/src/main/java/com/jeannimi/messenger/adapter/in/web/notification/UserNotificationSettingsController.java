@@ -36,8 +36,7 @@ public class UserNotificationSettingsController {
       @RequestBody UpdateNotificationSettingsRequest request) {
 
     if (request == null || request.isEmpty()) {
-      throw new IllegalArgumentException(
-          "At least one notification setting must be provided");
+      throw new IllegalArgumentException("At least one notification setting must be provided");
     }
 
     UserNotificationSettingsResult result =
@@ -51,8 +50,7 @@ public class UserNotificationSettingsController {
     return ResponseEntity.ok(toResponse(result));
   }
 
-  private UserNotificationSettingsResponse toResponse(
-      UserNotificationSettingsResult result) {
+  private UserNotificationSettingsResponse toResponse(UserNotificationSettingsResult result) {
 
     return new UserNotificationSettingsResponse(
         result.webPushPrivateChatsEnabled(),

@@ -20,8 +20,7 @@ public record MessageSentEvent(
     String content,
     Instant createdAt,
     FileAttachmentResult attachment,
-    List<UserId> recipientUserIds
-) {
+    List<UserId> recipientUserIds) {
 
   public static MessageSentEvent from(MessageCreatedEvent event) {
     MessageResult result = event.message();
@@ -35,18 +34,10 @@ public record MessageSentEvent(
         result.content(),
         result.createdAt(),
         result.attachment(),
-        event.recipientUserIds()
-    );
+        event.recipientUserIds());
   }
 
   public MessageResult toResult() {
-    return new MessageResult(
-        messageId,
-        chatId,
-        sender,
-        content,
-        createdAt,
-        attachment
-    );
+    return new MessageResult(messageId, chatId, sender, content, createdAt, attachment);
   }
 }

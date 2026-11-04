@@ -105,8 +105,11 @@ class ChatTest {
 
   @Test
   void createGroup_shouldThrowChatException_whenNameIsNull() {
-    assertThrows(
-        NullPointerException.class, () -> Chat.createGroup(chatId, null, List.of(admin, member)));
+    ChatException exception =
+        assertThrows(
+            ChatException.class, () -> Chat.createGroup(chatId, null, List.of(admin, member)));
+
+    assertEquals(ChatError.CHAT_NAME_EMPTY, exception.getError());
   }
 
   @Test
@@ -176,14 +179,10 @@ class ChatTest {
   }
 
   @Test
-  void createPrivate_shouldCreateNameFromUsernames() {
+  void createPrivate_shouldHaveNullName() {
     Chat chat = Chat.createPrivate(chatId, admin, member);
 
-    assertEquals(
-        user.getUsername().getValue()
-            + ChatConstants.SEPARATOR
-            + anotherUser.getUsername().getValue(),
-        chat.getName());
+    assertNull(chat.getName());
   }
 
   @Test
@@ -260,13 +259,7 @@ class ChatTest {
         ChatException.class,
         () ->
             Chat.reconstitute(
-                chatId,
-                CHAT_NAME,
-                ChatType.PRIVATE,
-                Set.of(admin),
-                CREATED_AT,
-                null,
-                "private-key"));
+                chatId, null, ChatType.PRIVATE, Set.of(admin), CREATED_AT, null, "private-key"));
   }
 
   @Test
@@ -275,13 +268,7 @@ class ChatTest {
         ChatException.class,
         () ->
             Chat.reconstitute(
-                chatId,
-                CHAT_NAME,
-                ChatType.PRIVATE,
-                Set.of(admin, member),
-                CREATED_AT,
-                null,
-                null));
+                chatId, null, ChatType.PRIVATE, Set.of(admin, member), CREATED_AT, null, null));
   }
 
   @Test
@@ -291,7 +278,7 @@ class ChatTest {
         () ->
             Chat.reconstitute(
                 chatId,
-                CHAT_NAME,
+                null,
                 ChatType.PRIVATE,
                 Set.of(admin, member),
                 CREATED_AT,
@@ -613,10 +600,13 @@ class ChatTest {
   }
 
   @Test
-  void renameChat_shouldThrowNullPointerException_whenNameIsNull() {
+  void renameChat_shouldThrowChatException_whenNameIsNull() {
     Chat chat = Chat.createGroup(chatId, CHAT_NAME, List.of(admin, member));
 
-    assertThrows(NullPointerException.class, () -> chat.renameChat(user.getId(), null));
+    ChatException exception =
+        assertThrows(ChatException.class, () -> chat.renameChat(user.getId(), null));
+
+    assertEquals(ChatError.CHAT_NAME_EMPTY, exception.getError());
   }
 
   @Test
@@ -900,13 +890,7 @@ class ChatTest {
             ChatException.class,
             () ->
                 Chat.reconstitute(
-                    chatId,
-                    CHAT_NAME,
-                    ChatType.PRIVATE,
-                    Set.of(admin, member),
-                    CREATED_AT,
-                    null,
-                    null));
+                    chatId, null, ChatType.PRIVATE, Set.of(admin, member), CREATED_AT, null, null));
 
     assertEquals(ChatError.PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY, exception.getError());
   }
@@ -919,7 +903,7 @@ class ChatTest {
             () ->
                 Chat.reconstitute(
                     chatId,
-                    CHAT_NAME,
+                    null,
                     ChatType.PRIVATE,
                     Set.of(admin, member),
                     CREATED_AT,
@@ -943,7 +927,7 @@ class ChatTest {
             () ->
                 Chat.reconstitute(
                     chatId,
-                    CHAT_NAME,
+                    null,
                     ChatType.PRIVATE,
                     Set.of(firstMember, secondMember),
                     CREATED_AT,
@@ -967,7 +951,7 @@ class ChatTest {
             () ->
                 Chat.reconstitute(
                     chatId,
-                    CHAT_NAME,
+                    null,
                     ChatType.PRIVATE,
                     Set.of(firstAdmin, secondAdmin),
                     CREATED_AT,
@@ -975,6 +959,170 @@ class ChatTest {
                     privateKey));
 
     assertEquals(ChatError.PRIVATE_CHAT_MUST_HAVE_ONE_ADMIN, exception.getError());
+  }
+
+  @Test
+  void reconstitute_shouldThrowChatException_whenPrivateChatHasName() {
+    ChatException exception =
+        assertThrows(
+            ChatException.class,
+            () ->
+                Chat.reconstitute(
+                    chatId,
+                    CHAT_NAME,
+                    ChatType.PRIVATE,
+                    Set.of(admin, member),
+                    CREATED_AT,
+                    null,
+                    Chat.buildPrivateKey(user.getId(), anotherUser.getId())));
+
+    assertEquals(ChatError.PRIVATE_CHAT_CANNOT_HAVE_NAME, exception.getError());
+  }
+
+  @Test
+  void reconstitute_shouldThrowChatException_whenMembersContainDuplicateUsers() {
+    ChatMember duplicateMember =
+        createMember(
+            UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789023"), anotherUser, ChatRole.MEMBER);
+
+    ChatException exception =
+        assertThrows(
+            ChatException.class,
+            () ->
+                Chat.reconstitute(
+                    chatId,
+                    CHAT_NAME,
+                    ChatType.GROUP,
+                    Set.of(admin, member, duplicateMember),
+                    CREATED_AT,
+                    null,
+                    null));
+
+    assertEquals(ChatError.USER_ALREADY_IN_CHAT, exception.getError());
+  }
+
+  @Test
+  void markMessageAdded_shouldNotUpdateLastMessageAt_whenNewTimestampIsEarlier() {
+    Chat chat =
+        Chat.reconstitute(
+            chatId,
+            CHAT_NAME,
+            ChatType.GROUP,
+            Set.of(admin, member),
+            CREATED_AT,
+            MESSAGE_CREATED_AT,
+            null);
+
+    Instant earlierTimestamp = Instant.parse("2026-10-15T09:00:00Z");
+
+    chat.markMessageAdded(earlierTimestamp);
+
+    assertEquals(MESSAGE_CREATED_AT, chat.getLastMessageAt());
+  }
+
+  @Test
+  void markMessageAdded_shouldUpdateLastMessageAt_whenNewTimestampIsLater() {
+    Chat chat =
+        Chat.reconstitute(
+            chatId,
+            CHAT_NAME,
+            ChatType.GROUP,
+            Set.of(admin, member),
+            CREATED_AT,
+            MESSAGE_CREATED_AT,
+            null);
+
+    Instant laterTimestamp = Instant.parse("2026-10-15T12:00:00Z");
+
+    chat.markMessageAdded(laterTimestamp);
+
+    assertEquals(laterTimestamp, chat.getLastMessageAt());
+  }
+
+  @Test
+  void getMembers_shouldReflectInternalChanges_withoutAllowingExternalModification() {
+    Chat chat = Chat.createGroup(chatId, CHAT_NAME, List.of(admin, member));
+
+    Set<ChatMember> members = chat.getMembers();
+
+    User thirdUser =
+        createUser(
+            UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789015"),
+            "mno7890",
+            "Peter",
+            "peter@mail.com");
+
+    ChatMember thirdMember =
+        createMember(
+            UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789025"), thirdUser, ChatRole.MEMBER);
+
+    chat.addMember(thirdMember, user.getId());
+
+    assertEquals(3, members.size());
+    assertTrue(members.contains(thirdMember));
+
+    assertThrows(UnsupportedOperationException.class, () -> members.add(thirdMember));
+  }
+
+  @Test
+  void reconstitute_shouldThrowChatException_whenGroupNameIsNull() {
+    ChatException exception =
+        assertThrows(
+            ChatException.class,
+            () ->
+                Chat.reconstitute(
+                    chatId, null, ChatType.GROUP, Set.of(admin, member), CREATED_AT, null, null));
+
+    assertEquals(ChatError.CHAT_NAME_EMPTY, exception.getError());
+  }
+
+  @Test
+  void reconstitute_shouldThrowChatException_whenGroupNameIsBlank() {
+    ChatException exception =
+        assertThrows(
+            ChatException.class,
+            () ->
+                Chat.reconstitute(
+                    chatId, "   ", ChatType.GROUP, Set.of(admin, member), CREATED_AT, null, null));
+
+    assertEquals(ChatError.CHAT_NAME_EMPTY, exception.getError());
+  }
+
+  @Test
+  void reconstitute_shouldThrowChatException_whenGroupNameIsTooLong() {
+    String longName = "a".repeat(ChatConstants.MAX_CHAT_NAME_LENGTH + 1);
+
+    ChatException exception =
+        assertThrows(
+            ChatException.class,
+            () ->
+                Chat.reconstitute(
+                    chatId,
+                    longName,
+                    ChatType.GROUP,
+                    Set.of(admin, member),
+                    CREATED_AT,
+                    null,
+                    null));
+
+    assertEquals(ChatError.CHAT_NAME_TOO_LONG, exception.getError());
+  }
+
+  @Test
+  void removeMember_shouldThrowChatException_whenMemberIsNotInChat() {
+    Chat chat = Chat.createGroup(chatId, CHAT_NAME, List.of(admin, member));
+
+    User outsider =
+        createUser(
+            UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789014"),
+            "jkl3456",
+            "Outsider",
+            "outsider@mail.com");
+
+    ChatException exception =
+        assertThrows(ChatException.class, () -> chat.removeMember(outsider.getId(), user.getId()));
+
+    assertEquals(ChatError.NOT_CHAT_MEMBER, exception.getError());
   }
 
   // Helpers

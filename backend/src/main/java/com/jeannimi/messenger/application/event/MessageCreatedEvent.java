@@ -6,8 +6,5 @@ import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;
 
 public record MessageCreatedEvent(
-    MessageResult message,
-    ChatType chatType,
-    String chatName,
-    List<UserId> recipientUserIds
-) implements ApplicationEvent {}
+    MessageResult message, ChatType chatType, String chatName, List<UserId> recipientUserIds)
+    implements ApplicationEvent {}

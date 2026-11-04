@@ -9,6 +9,7 @@ import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -69,5 +70,17 @@ public class ChatMemberPersistenceAdapter implements ChatMemberRepositoryPort {
         .stream()
         .map(ChatId::new)
         .toList();
+  }
+
+  @Override
+  public int replaceLastReadMessageIdForDeletedMessage(
+      ChatId chatId, MessageId currentMessageId, MessageId newMessageId) {
+    Objects.requireNonNull(chatId, "chatId");
+    Objects.requireNonNull(currentMessageId, "currentMessageId");
+
+    return chatMemberJpaRepository.replaceLastReadMessageIdForDeletedMessage(
+        chatId.value(),
+        currentMessageId.value(),
+        newMessageId != null ? newMessageId.value() : null);
   }
 }

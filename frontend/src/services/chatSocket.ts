@@ -234,14 +234,14 @@ export async function connectSocket() {
 
             connectHeaders: {},
 
-            debug: message => {
+            // debug: message => {
 
-                console.log(
-                    "[STOMP]",
-                    message
-                );
+            //     console.log(
+            //         "[STOMP]",
+            //         message
+            //     );
 
-            },
+            // },
 
             beforeConnect: async () => {
 

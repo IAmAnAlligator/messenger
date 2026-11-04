@@ -44,8 +44,7 @@ public class UserNotificationSettingsService implements UserNotificationSettings
         && webPushGroupChatsEnabled == null
         && emailPrivateChatsEnabled == null
         && emailGroupChatsEnabled == null) {
-      throw new IllegalArgumentException(
-          "At least one notification setting must be provided");
+      throw new IllegalArgumentException("At least one notification setting must be provided");
     }
 
     UserNotificationSettings settings =

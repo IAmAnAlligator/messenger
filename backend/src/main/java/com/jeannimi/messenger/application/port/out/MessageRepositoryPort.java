@@ -29,4 +29,6 @@ public interface MessageRepositoryPort {
   Message save(Message message);
 
   void delete(Message message);
+
+  Optional<MessageId> findPreviousMessageId(ChatId chatId, Instant createdAt, MessageId messageId);
 }

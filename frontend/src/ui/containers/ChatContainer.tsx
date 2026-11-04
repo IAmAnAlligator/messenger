@@ -1,8 +1,12 @@
-
 import {
+    useCallback,
     useEffect,
     useState
 } from "react";
+
+import type {
+    MessageId
+} from "../../types/ids";
 
 import {
     useNavigate
@@ -51,18 +55,22 @@ export default function ChatContainer(
     const navigate =
         useNavigate();
 
+
     const { user } =
         useAuth();
+
 
     const [
         text,
         setText
     ] = useState("");
 
+
     const [
         isOnline,
         setIsOnline
     ] = useState(false);
+
 
     const {
         chat,
@@ -75,10 +83,12 @@ export default function ChatContainer(
         removeMessage,
         updateMessageStatus,
         markCurrentUserRead,
+        reloadChat,
         reloadMessages,
         loadMoreMessages,
         sendFile
     } = useChat(chatId);
+
 
     const otherUserId =
         chat?.type === "PRIVATE"
@@ -88,17 +98,57 @@ export default function ChatContainer(
             )?.user.id ?? null
             : null;
 
+
+    const handleDeleteMessage =
+        useCallback(
+            async (
+                messageId: MessageId
+            ) => {
+
+                // Сразу удаляем сообщение из интерфейса.
+                removeMessage(
+                    messageId
+                );
+
+
+                // Обновляем данные с backend.
+                await Promise.all([
+
+                    reloadMessages(),
+
+                    reloadChat()
+
+                ]);
+
+            },
+            [
+                removeMessage,
+                reloadMessages,
+                reloadChat
+            ]
+        );
+
+
     const {
         error,
         sendMessage,
         deleteMessage,
         sendReadUpTo
     } = useChatSocket({
+
         chatId,
-        onMessage: addMessage,
-        onDelete: removeMessage,
-        onRead: updateMessageStatus,
+
+        onMessage:
+            addMessage,
+
+        onDelete:
+            handleDeleteMessage,
+
+        onRead:
+            updateMessageStatus,
+
         reloadMessages
+
     });
 
 
@@ -116,17 +166,21 @@ export default function ChatContainer(
 
         }
 
+
         publishCurrentPresence();
+
 
         const unsubscribeConnection =
             onSocketConnected(
                 publishCurrentPresence
             );
 
+
         document.addEventListener(
             "visibilitychange",
             publishCurrentPresence
         );
+
 
         return () => {
 
@@ -135,7 +189,9 @@ export default function ChatContainer(
                 publishCurrentPresence
             );
 
+
             unsubscribeConnection();
+
 
             updatePresence(
                 null,
@@ -144,16 +200,20 @@ export default function ChatContainer(
 
         };
 
-    }, [chatId]);
+    }, [
+        chatId
+    ]);
 
 
     useEffect(() => {
 
         setIsOnline(false);
 
+
         if (!otherUserId) {
             return;
         }
+
 
         const handlePresence = (
             message: { body: string }
@@ -165,6 +225,7 @@ export default function ChatContainer(
                     JSON.parse(
                         message.body
                     ) as PresenceStatus;
+
 
                 if (
                     presence.userId === otherUserId
@@ -187,21 +248,26 @@ export default function ChatContainer(
 
         };
 
+
         const liveDestination =
             `/topic/presence/user/${otherUserId}`;
 
+
         const initialDestination =
             `/app/presence/user/${otherUserId}`;
+
 
         subscribe(
             liveDestination,
             handlePresence
         );
 
+
         subscribe(
             initialDestination,
             handlePresence
         );
+
 
         return () => {
 
@@ -210,6 +276,7 @@ export default function ChatContainer(
                 handlePresence
             );
 
+
             unsubscribe(
                 initialDestination,
                 handlePresence
@@ -217,7 +284,9 @@ export default function ChatContainer(
 
         };
 
-    }, [otherUserId]);
+    }, [
+        otherUserId
+    ]);
 
 
     function handleReadUpTo(
@@ -227,6 +296,7 @@ export default function ChatContainer(
         sendReadUpTo(
             messageId
         );
+
 
         markCurrentUserRead(
             messageId
@@ -273,13 +343,16 @@ export default function ChatContainer(
         const content =
             text.trim();
 
+
         if (!content) {
             return;
         }
 
+
         sendMessage(
             content
         );
+
 
         setText("");
 

@@ -12,7 +12,9 @@ import org.springframework.data.repository.query.Param;
 public interface NotificationOutboxJpaRepository
     extends JpaRepository<NotificationOutboxJpaEntity, UUID> {
 
-  @Query(value = """
+  @Query(
+      value =
+          """
             SELECT *
             FROM notification_outbox
             WHERE
@@ -28,23 +30,28 @@ public interface NotificationOutboxJpaRepository
             ORDER BY created_at, id
             LIMIT :batchSize
             FOR UPDATE SKIP LOCKED
-            """, nativeQuery = true)
-  List<NotificationOutboxJpaEntity> findAvailableBatch(
-      @Param("batchSize") int batchSize);
+            """,
+      nativeQuery = true)
+  List<NotificationOutboxJpaEntity> findAvailableBatch(@Param("batchSize") int batchSize);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
-  @Query(value = """
+  @Query(
+      value =
+          """
             UPDATE notification_outbox
             SET
                 status = 'PROCESSING',
                 attempts = attempts + 1,
                 locked_until = CURRENT_TIMESTAMP + INTERVAL '2 minutes'
             WHERE id IN (:ids)
-            """, nativeQuery = true)
+            """,
+      nativeQuery = true)
   int markBatchAsProcessing(@Param("ids") List<UUID> ids);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
-  @Query(value = """
+  @Query(
+      value =
+          """
     UPDATE notification_outbox
     SET status = 'SENT',
         sent_at = CURRENT_TIMESTAMP,
@@ -52,11 +59,14 @@ public interface NotificationOutboxJpaRepository
         last_error = NULL
     WHERE id = :id
       AND status = 'PROCESSING'
-    """, nativeQuery = true)
+    """,
+      nativeQuery = true)
   int markAsSent(@Param("id") UUID id);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
-  @Query(value = """
+  @Query(
+      value =
+          """
     UPDATE notification_outbox
     SET status = 'RETRY',
         next_attempt_at = :nextAttemptAt,
@@ -64,24 +74,24 @@ public interface NotificationOutboxJpaRepository
         last_error = :error
     WHERE id = :id
       AND status = 'PROCESSING'
-    """, nativeQuery = true)
+    """,
+      nativeQuery = true)
   int scheduleRetry(
       @Param("id") UUID id,
       @Param("nextAttemptAt") Instant nextAttemptAt,
-      @Param("error") String error
-  );
+      @Param("error") String error);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
-  @Query(value = """
+  @Query(
+      value =
+          """
     UPDATE notification_outbox
     SET status = 'DEAD',
         locked_until = NULL,
         last_error = :error
     WHERE id = :id
       AND status = 'PROCESSING'
-    """, nativeQuery = true)
-  int markAsDead(
-      @Param("id") UUID id,
-      @Param("error") String error
-  );
+    """,
+      nativeQuery = true)
+  int markAsDead(@Param("id") UUID id, @Param("error") String error);
 }

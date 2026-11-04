@@ -173,4 +173,24 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
       nativeQuery = true)
   List<LastMessageStatusProjection> findLastMessageStatuses(
       @Param("userId") UUID userId, @Param("chatIds") List<UUID> chatIds);
+
+  @Query(
+      """
+    SELECT m.id
+    FROM MessageJpaEntity m
+    WHERE m.chat.id = :chatId
+      AND (
+          m.createdAt < :createdAt
+          OR (
+              m.createdAt = :createdAt
+              AND m.id < :messageId
+          )
+      )
+    ORDER BY m.createdAt DESC, m.id DESC
+    """)
+  List<UUID> findPreviousMessageIds(
+      @Param("chatId") UUID chatId,
+      @Param("createdAt") Instant createdAt,
+      @Param("messageId") UUID messageId,
+      Pageable pageable);
 }

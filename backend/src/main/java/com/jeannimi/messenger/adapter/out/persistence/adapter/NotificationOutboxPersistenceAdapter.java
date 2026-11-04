@@ -20,17 +20,13 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class NotificationOutboxPersistenceAdapter
-    implements NotificationOutboxRepositoryPort {
+public class NotificationOutboxPersistenceAdapter implements NotificationOutboxRepositoryPort {
 
   private final NotificationOutboxJpaRepository repository;
 
   @Override
   public void saveAll(List<NotificationOutbox> tasks) {
-    List<NotificationOutboxJpaEntity> entities =
-        tasks.stream()
-            .map(this::toEntity)
-            .toList();
+    List<NotificationOutboxJpaEntity> entities = tasks.stream().map(this::toEntity).toList();
 
     if (entities.isEmpty()) {
       return;
@@ -41,36 +37,27 @@ public class NotificationOutboxPersistenceAdapter
 
   @Override
   public List<NotificationOutbox> claimBatch(int batchSize) {
-    List<NotificationOutboxJpaEntity> entities =
-        repository.findAvailableBatch(batchSize);
+    List<NotificationOutboxJpaEntity> entities = repository.findAvailableBatch(batchSize);
 
     if (entities.isEmpty()) {
       return List.of();
     }
 
-    List<UUID> ids = entities.stream()
-        .map(NotificationOutboxJpaEntity::getId)
-        .toList();
+    List<UUID> ids = entities.stream().map(NotificationOutboxJpaEntity::getId).toList();
 
     int updatedCount = repository.markBatchAsProcessing(ids);
 
     if (updatedCount != ids.size()) {
-      throw new IllegalStateException(
-          "Not all notification outbox tasks were claimed");
+      throw new IllegalStateException("Not all notification outbox tasks were claimed");
     }
 
     // После clearAutomatically сущности нужно загрузить заново.
     Map<UUID, NotificationOutboxJpaEntity> updatedEntities =
         repository.findAllById(ids).stream()
-            .collect(Collectors.toMap(
-                NotificationOutboxJpaEntity::getId,
-                Function.identity()));
+            .collect(Collectors.toMap(NotificationOutboxJpaEntity::getId, Function.identity()));
 
     // Сохраняем исходный порядок выборки.
-    return ids.stream()
-        .map(updatedEntities::get)
-        .map(this::toDomain)
-        .toList();
+    return ids.stream().map(updatedEntities::get).map(this::toDomain).toList();
   }
 
   @Override
@@ -84,22 +71,12 @@ public class NotificationOutboxPersistenceAdapter
   }
 
   @Override
-  public void scheduleRetry(
-      NotificationOutboxId id,
-      Instant nextAttemptAt,
-      String error
-  ) {
-    int updatedCount = repository.scheduleRetry(
-        id.value(),
-        nextAttemptAt,
-        error
-    );
+  public void scheduleRetry(NotificationOutboxId id, Instant nextAttemptAt, String error) {
+    int updatedCount = repository.scheduleRetry(id.value(), nextAttemptAt, error);
 
     if (updatedCount != 1) {
       throw new IllegalStateException(
-          "Notification outbox task could not be scheduled for retry: "
-              + id.value()
-      );
+          "Notification outbox task could not be scheduled for retry: " + id.value());
     }
   }
 
@@ -109,9 +86,7 @@ public class NotificationOutboxPersistenceAdapter
 
     if (updatedCount != 1) {
       throw new IllegalStateException(
-          "Notification outbox task could not be marked as dead: "
-              + id.value()
-      );
+          "Notification outbox task could not be marked as dead: " + id.value());
     }
   }
 
@@ -127,8 +102,7 @@ public class NotificationOutboxPersistenceAdapter
         task.getSenderUserId().value(),
         task.getSenderUsername(),
         task.getChannel(),
-        task.getCreatedAt()
-    );
+        task.getCreatedAt());
   }
 
   private NotificationOutbox toDomain(NotificationOutboxJpaEntity entity) {

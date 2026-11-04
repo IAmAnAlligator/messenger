@@ -33,9 +33,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     Objects.requireNonNull(notification, "notification");
 
     if (notificationEventRepository.exists(notification.eventId())) {
-      log.debug(
-          "Notification event already processed: {}",
-          notification.eventId());
+      log.debug("Notification event already processed: {}", notification.eventId());
       return;
     }
 
@@ -46,46 +44,41 @@ public class MessageNotificationService implements MessageNotificationUseCase {
         .filter(Objects::nonNull)
         .filter(userId -> !userId.equals(notification.senderId()))
         .distinct()
-        .forEach(userId -> {
-          UserNotificationSettings settings =
-              settingsRepository.findByUserId(userId).orElse(null);
+        .forEach(
+            userId -> {
+              UserNotificationSettings settings =
+                  settingsRepository.findByUserId(userId).orElse(null);
 
-          if (settings == null) {
-            return;
-          }
+              if (settings == null) {
+                return;
+              }
 
-          boolean online = userPresenceService.isOnline(userId);
+              boolean online = userPresenceService.isOnline(userId);
 
-          if (online) {
-            boolean viewingChat =
-                userPresenceService.isViewingChat(userId, notification.chatId());
+              if (online) {
+                boolean viewingChat =
+                    userPresenceService.isViewingChat(userId, notification.chatId());
 
-            if (!viewingChat && isWebPushEnabled(settings, notification.chatType())) {
-              webPushRecipients.add(userId);
-            }
-          } else if (isEmailEnabled(settings, notification.chatType())) {
-            emailRecipients.add(userId);
-          }
-        });
+                if (!viewingChat && isWebPushEnabled(settings, notification.chatType())) {
+                  webPushRecipients.add(userId);
+                }
+              } else if (isEmailEnabled(settings, notification.chatType())) {
+                emailRecipients.add(userId);
+              }
+            });
 
     if (!webPushRecipients.isEmpty()) {
       notificationOutboxService.enqueue(
-          createNotification(notification, webPushRecipients),
-          NotificationChannel.WEB_PUSH);
+          createNotification(notification, webPushRecipients), NotificationChannel.WEB_PUSH);
 
-      log.debug(
-          "Enqueued Web Push notifications for {} recipients",
-          webPushRecipients.size());
+      log.debug("Enqueued Web Push notifications for {} recipients", webPushRecipients.size());
     }
 
     if (!emailRecipients.isEmpty()) {
       notificationOutboxService.enqueue(
-          createNotification(notification, emailRecipients),
-          NotificationChannel.EMAIL);
+          createNotification(notification, emailRecipients), NotificationChannel.EMAIL);
 
-      log.debug(
-          "Enqueued Email notifications for {} recipients",
-          emailRecipients.size());
+      log.debug("Enqueued Email notifications for {} recipients", emailRecipients.size());
     }
 
     notificationEventRepository.save(notification.eventId());
@@ -97,9 +90,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
         emailRecipients.size());
   }
 
-  private boolean isWebPushEnabled(
-      UserNotificationSettings settings,
-      ChatType chatType) {
+  private boolean isWebPushEnabled(UserNotificationSettings settings, ChatType chatType) {
 
     return switch (chatType) {
       case PRIVATE -> settings.isWebPushPrivateChatsEnabled();
@@ -107,9 +98,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     };
   }
 
-  private boolean isEmailEnabled(
-      UserNotificationSettings settings,
-      ChatType chatType) {
+  private boolean isEmailEnabled(UserNotificationSettings settings, ChatType chatType) {
 
     return switch (chatType) {
       case PRIVATE -> settings.isEmailPrivateChatsEnabled();
@@ -118,8 +107,7 @@ public class MessageNotificationService implements MessageNotificationUseCase {
   }
 
   private MessageNotification createNotification(
-      MessageNotification original,
-      List<UserId> recipients) {
+      MessageNotification original, List<UserId> recipients) {
 
     return new MessageNotification(
         original.eventId(),

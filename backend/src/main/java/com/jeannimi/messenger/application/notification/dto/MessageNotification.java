@@ -15,5 +15,4 @@ public record MessageNotification(
     String chatName,
     UserId senderId,
     String senderUsername,
-    List<UserId> recipientUserIds
-) {}
+    List<UserId> recipientUserIds) {}

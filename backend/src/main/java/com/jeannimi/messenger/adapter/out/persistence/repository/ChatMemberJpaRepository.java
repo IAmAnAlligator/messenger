@@ -91,4 +91,19 @@ public interface ChatMemberJpaRepository extends JpaRepository<ChatMemberJpaEnti
       @Param("cursorTime") Instant cursorTime,
       @Param("cursorId") UUID cursorId,
       Pageable pageable);
+
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query(
+      value =
+          """
+        UPDATE chat_members
+        SET last_read_message_id = CAST(:newMessageId AS UUID)
+        WHERE chat_id = :chatId
+          AND last_read_message_id = :currentMessageId
+        """,
+      nativeQuery = true)
+  int replaceLastReadMessageIdForDeletedMessage(
+      @Param("chatId") UUID chatId,
+      @Param("currentMessageId") UUID currentMessageId,
+      @Param("newMessageId") UUID newMessageId);
 }

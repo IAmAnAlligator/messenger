@@ -43,14 +43,7 @@ public final class UserNotificationSettings {
   public static UserNotificationSettings create(UserId userId) {
     Instant now = Instant.now();
 
-    return new UserNotificationSettings(
-        userId,
-        false,
-        false,
-        false,
-        false,
-        now,
-        now);
+    return new UserNotificationSettings(userId, false, false, false, false, now, now);
   }
 
   public static UserNotificationSettings reconstitute(

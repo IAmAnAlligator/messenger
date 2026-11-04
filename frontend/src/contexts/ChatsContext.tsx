@@ -98,18 +98,7 @@ export function ChatsProvider({
             }
 
 
-            const token =
-                localStorage.getItem(
-                    "accessToken"
-                );
-
-
-            if (!token) {
-                return;
-            }
-
-
-            connectSocket(token);
+            connectSocket();
 
 
             const userTopic =
@@ -126,6 +115,11 @@ export function ChatsProvider({
                                 message.body
                             ) as WebSocketEvent<unknown>;
 
+                        console.log(
+                            "[CHATS EVENT]",
+                            event.type,
+                            event.payload
+                        );
 
                         if (
                             !CHAT_LIST_EVENTS.has(
@@ -135,15 +129,6 @@ export function ChatsProvider({
                             return;
                         }
 
-
-                        /*
-                         * WebSocket is only a signal
-                         * that backend data changed.
-                         *
-                         * The actual chat state,
-                         * unreadCount and message status
-                         * are loaded from backend.
-                         */
                         setChatEventsVersion(
                             previous =>
                                 previous + 1

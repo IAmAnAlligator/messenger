@@ -27,10 +27,7 @@ public class NotificationOutboxService {
   }
 
   @Transactional
-  public void enqueue(
-      MessageNotification notification,
-      NotificationChannel channel
-  ) {
+  public void enqueue(MessageNotification notification, NotificationChannel channel) {
     Objects.requireNonNull(notification, "notification");
     Objects.requireNonNull(channel, "channel");
 
@@ -54,8 +51,7 @@ public class NotificationOutboxService {
   @Transactional
   public List<NotificationOutbox> claimBatch(int batchSize) {
     if (batchSize <= 0) {
-      throw new IllegalArgumentException(
-          "batchSize must be greater than zero");
+      throw new IllegalArgumentException("batchSize must be greater than zero");
     }
 
     return notificationOutboxRepository.claimBatch(batchSize);
@@ -69,20 +65,12 @@ public class NotificationOutboxService {
   }
 
   @Transactional
-  public void scheduleRetry(
-      NotificationOutboxId id,
-      Instant nextAttemptAt,
-      String error
-  ) {
+  public void scheduleRetry(NotificationOutboxId id, Instant nextAttemptAt, String error) {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(nextAttemptAt, "nextAttemptAt");
     Objects.requireNonNull(error, "error");
 
-    notificationOutboxRepository.scheduleRetry(
-        id,
-        nextAttemptAt,
-        error
-    );
+    notificationOutboxRepository.scheduleRetry(id, nextAttemptAt, error);
   }
 
   @Transactional
@@ -97,10 +85,8 @@ public class NotificationOutboxService {
       MessageNotification notification,
       UserId recipientUserId,
       NotificationChannel channel,
-      Instant now
-  ) {
-    NotificationOutboxId id =
-        new NotificationOutboxId(idGenerator.generate());
+      Instant now) {
+    NotificationOutboxId id = new NotificationOutboxId(idGenerator.generate());
 
     return NotificationOutbox.create(
         id,
@@ -113,7 +99,6 @@ public class NotificationOutboxService {
         notification.senderId(),
         notification.senderUsername(),
         channel,
-        now
-    );
+        now);
   }
 }

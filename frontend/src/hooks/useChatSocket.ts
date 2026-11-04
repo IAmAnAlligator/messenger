@@ -38,6 +38,10 @@ import type {
     WebSocketErrorResponse
 } from "../types/events";
 
+import type {
+    MessageId
+} from "../types/ids";
+
 
 interface Props {
 
@@ -48,8 +52,8 @@ interface Props {
     ): void;
 
     onDelete(
-        messageId: string
-    ): void;
+        messageId: MessageId
+    ): void | Promise<void>;
 
     onRead(
         event: MessageReadEvent
@@ -233,17 +237,6 @@ export function useChatSocket({
 
                 if (!socket?.connected) {
 
-                    /*
-                     * Для UUID нельзя использовать
-                     * числовое сравнение:
-                     *
-                     * messageId > pending
-                     *
-                     * UUID v7 является строкой.
-                     *
-                     * Поэтому здесь просто сохраняем
-                     * последний полученный ID.
-                     */
                     pendingReadRef.current =
                         messageId;
 
@@ -280,17 +273,6 @@ export function useChatSocket({
 
 
         if (!chatId) {
-            return;
-        }
-
-
-        const token =
-            localStorage.getItem(
-                "accessToken"
-            );
-
-
-        if (!token) {
             return;
         }
 
@@ -342,9 +324,18 @@ export function useChatSocket({
 
                     case "MESSAGE_DELETED": {
 
-                        onDeleteRef.current(
-                            event.payload.messageId
-                        );
+                        void Promise.resolve(
+                            onDeleteRef.current(
+                                event.payload.messageId
+                            )
+                        ).catch(error => {
+
+                            console.error(
+                                "[WS] Failed to handle message deletion",
+                                error
+                            );
+
+                        });
 
                         break;
                     }
@@ -535,9 +526,7 @@ export function useChatSocket({
             });
 
 
-        connectSocket(
-            token
-        );
+        connectSocket();
 
 
         subscribe(

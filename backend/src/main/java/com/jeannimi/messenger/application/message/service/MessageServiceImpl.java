@@ -375,8 +375,19 @@ public class MessageServiceImpl implements MessageService {
 
     Instant deletedAt = Instant.now();
 
+    List<UserId> recipientUserIds =
+        chatMemberRepository.findAllByChatId(chatId).stream().map(ChatMember::getUserId).toList();
+
     MessageDeletedEvent messageDeletedEvent =
-        new MessageDeletedEvent(message.getId(), chatId, userId, deletedAt);
+        new MessageDeletedEvent(message.getId(), chatId, userId, deletedAt, recipientUserIds);
+
+    MessageId previousMessageId =
+        messageRepository
+            .findPreviousMessageId(chatId, message.getCreatedAt(), message.getId())
+            .orElse(null);
+
+    chatMemberRepository.replaceLastReadMessageIdForDeletedMessage(
+        chatId, messageId, previousMessageId);
 
     messageRepository.delete(message);
 
@@ -454,10 +465,11 @@ public class MessageServiceImpl implements MessageService {
         .orElseThrow(() -> new NotFoundException("User not found"));
   }
 
-  private void publishMessageCreated(Chat chat, MessageResult result, List<UserId> recipientUserIds) {
+  private void publishMessageCreated(
+      Chat chat, MessageResult result, List<UserId> recipientUserIds) {
 
-    MessageCreatedEvent event = new MessageCreatedEvent(result, chat.getType(),
-        chat.getName(), recipientUserIds);
+    MessageCreatedEvent event =
+        new MessageCreatedEvent(result, chat.getType(), chat.getName(), recipientUserIds);
 
     eventPublisher.publish(
         EventType.MESSAGE_CREATED, new AggregateId(result.chatId().value()), event);

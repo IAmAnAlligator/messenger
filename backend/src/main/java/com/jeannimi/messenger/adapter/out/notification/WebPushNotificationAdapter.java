@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
 import com.jeannimi.messenger.application.port.out.WebPushNotificationPort;
 import com.jeannimi.messenger.application.port.out.WebPushSubscriptionRepositoryPort;
-import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.notification.WebPushSubscription;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,8 +52,9 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
         sendToSubscription(subscription, payload);
       } catch (RuntimeException exception) {
         if (deliveryFailure == null) {
-          deliveryFailure = new IllegalStateException(
-              "Failed to deliver Web Push notification to all subscriptions");
+          deliveryFailure =
+              new IllegalStateException(
+                  "Failed to deliver Web Push notification to all subscriptions");
         }
 
         deliveryFailure.addSuppressed(exception);
@@ -66,25 +67,22 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
   }
 
   private byte[] createPayload(MessageNotification notification) {
-    PushPayload payload = switch (notification.chatType()) {
-      case PRIVATE -> preparePrivatePayload(notification);
-      case GROUP -> prepareGroupPayload(notification);
-    };
+    PushPayload payload =
+        switch (notification.chatType()) {
+          case PRIVATE -> preparePrivatePayload(notification);
+          case GROUP -> prepareGroupPayload(notification);
+        };
 
     try {
       return objectMapper.writeValueAsBytes(payload);
     } catch (JsonProcessingException exception) {
-      throw new IllegalStateException(
-          "Failed to serialize Web Push payload",
-          exception);
+      throw new IllegalStateException("Failed to serialize Web Push payload", exception);
     }
   }
 
   private PushPayload preparePrivatePayload(MessageNotification notification) {
     return new PushPayload(
-        notification.senderUsername(),
-        "Sent you a new message",
-        createPushData(notification));
+        notification.senderUsername(), "Sent you a new message", createPushData(notification));
   }
 
   private PushPayload prepareGroupPayload(MessageNotification notification) {
@@ -96,21 +94,19 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
 
   private PushData createPushData(MessageNotification notification) {
     return new PushData(
-        notification.chatId().value().toString(),
-        notification.messageId().value().toString());
+        notification.chatId().value().toString(), notification.messageId().value().toString());
   }
 
-  private void sendToSubscription(
-      WebPushSubscription subscription,
-      byte[] payload) {
+  private void sendToSubscription(WebPushSubscription subscription, byte[] payload) {
 
     try {
-      Notification pushNotification = new Notification(
-          subscription.getEndpoint(),
-          subscription.getP256dh(),
-          subscription.getAuth(),
-          payload,
-          TTL_SECONDS);
+      Notification pushNotification =
+          new Notification(
+              subscription.getEndpoint(),
+              subscription.getP256dh(),
+              subscription.getAuth(),
+              payload,
+              TTL_SECONDS);
 
       HttpResponse response = pushService.send(pushNotification);
       int status = response.getStatusLine().getStatusCode();
@@ -124,14 +120,15 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
         String responseBody = "";
 
         if (response.getEntity() != null) {
-          responseBody =
-              org.apache.http.util.EntityUtils.toString(response.getEntity());
+          responseBody = org.apache.http.util.EntityUtils.toString(response.getEntity());
         }
 
         throw new IllegalStateException(
-            "Web Push failed: status=" + status
-                + ", responseBody=" + responseBody);
+            "Web Push failed: status=" + status + ", responseBody=" + responseBody);
       }
+
+      subscription.markAsUsed(Instant.now());
+      subscriptionRepository.save(subscription);
 
       log.debug(
           "Web Push accepted by push service: status={}, subscriptionId={}",
@@ -140,20 +137,15 @@ public class WebPushNotificationAdapter implements WebPushNotificationPort {
 
     } catch (Exception exception) {
       throw new IllegalStateException(
-          "Web Push delivery failed for subscription "
-              + subscription.getId().value(),
-          exception);
+          "Web Push delivery failed for subscription " + subscription.getId().value(), exception);
     }
   }
 
   private void deleteInvalidSubscription(WebPushSubscription subscription) {
     subscriptionRepository.deleteByUserIdAndEndpoint(
-        subscription.getUserId(),
-        subscription.getEndpoint());
+        subscription.getUserId(), subscription.getEndpoint());
 
-    log.info(
-        "Deleted invalid Web Push subscription {}",
-        subscription.getId().value());
+    log.info("Deleted invalid Web Push subscription {}", subscription.getId().value());
   }
 
   private record PushPayload(String title, String body, PushData data) {}

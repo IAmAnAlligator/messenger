@@ -66,8 +66,7 @@ public class NotificationConsumer {
             applicationEvent.recipientUserIds().stream()
                 .filter(Objects::nonNull)
                 .filter(userId -> !userId.equals(senderId))
-                .toList()
-        );
+                .toList());
 
     messageNotificationUseCase.notifyMessageReceived(notification);
 

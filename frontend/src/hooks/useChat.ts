@@ -391,6 +391,79 @@ export function useChat(
     }, [load]);
 
 
+    const reloadChat = useCallback(
+    async () => {
+        if (!chatId) {
+            return;
+        }
+
+        try {
+            const chatData = await getChat(chatId);
+
+            setChat(chatData);
+
+            const currentUserId = user?.id;
+
+            const otherUsersReadMap =
+                new Map<UserId, MessageId>();
+
+            if (currentUserId !== undefined) {
+                for (const member of chatData.members) {
+                    if (
+                        member.user.id === currentUserId
+                    ) {
+                        continue;
+                    }
+
+                    if (member.lastReadMessageId !== null) {
+                        otherUsersReadMap.set(
+                            member.user.id,
+                            member.lastReadMessageId
+                        );
+                    }
+                }
+            }
+
+            setOtherUsersLastReadMessageIds(
+                otherUsersReadMap
+            );
+
+            const currentMember =
+                chatData.members.find(
+                    member =>
+                        member.user.id === currentUserId
+                );
+
+            setCurrentUserLastReadMessageId(
+                currentMember?.lastReadMessageId ?? null
+            );
+
+            const otherMember =
+                chatData.members.length === 2
+                    ? chatData.members.find(
+                        member =>
+                            member.user.id !== currentUserId
+                    )
+                    : undefined;
+
+            setOtherUserLastReadMessageId(
+                otherMember?.lastReadMessageId ?? null
+            );
+
+        } catch (error) {
+            console.error(
+                "Failed to reload chat",
+                error
+            );
+        }
+    },
+    [
+        chatId,
+        user?.id
+    ]
+);
+
+
     const markCurrentUserRead =
         useCallback(
             (
@@ -742,7 +815,9 @@ export function useChat(
 
         sendFile,
 
-        isMessageReadByOtherUser
+        isMessageReadByOtherUser,
+
+        reloadChat
 
     };
 

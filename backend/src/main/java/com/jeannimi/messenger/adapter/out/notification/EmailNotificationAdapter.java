@@ -35,8 +35,7 @@ public class EmailNotificationAdapter implements EmailNotificationPort {
   public void send(MessageNotification notification) {
 
     if (notification.recipientUserIds().size() != 1) {
-      throw new IllegalArgumentException(
-          "Email notification must have exactly one recipient");
+      throw new IllegalArgumentException("Email notification must have exactly one recipient");
     }
 
     UserId recipientId = notification.recipientUserIds().getFirst();
@@ -44,15 +43,12 @@ public class EmailNotificationAdapter implements EmailNotificationPort {
     User recipient =
         userRepositoryPort
             .findById(recipientId)
-            .orElseThrow(
-                () -> new IllegalStateException("Recipient not found: " + recipientId));
+            .orElseThrow(() -> new IllegalStateException("Recipient not found: " + recipientId));
 
     sendEmail(recipient.getEmail().getValue(), notification);
   }
 
-  private void sendEmail(
-      String recipientEmail,
-      MessageNotification notification) {
+  private void sendEmail(String recipientEmail, MessageNotification notification) {
 
     Context context = new Context();
     String subject;
@@ -70,10 +66,7 @@ public class EmailNotificationAdapter implements EmailNotificationPort {
 
     try {
       MimeMessageHelper helper =
-          new MimeMessageHelper(
-              message,
-              true,
-              StandardCharsets.UTF_8.name());
+          new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
 
       helper.setFrom(from);
       helper.setTo(recipientEmail);
@@ -81,9 +74,7 @@ public class EmailNotificationAdapter implements EmailNotificationPort {
       helper.setText(html, true);
 
     } catch (MessagingException exception) {
-      throw new MailPreparationException(
-          "Failed to prepare email notification",
-          exception);
+      throw new MailPreparationException("Failed to prepare email notification", exception);
     }
 
     mailSender.send(message);
@@ -95,18 +86,14 @@ public class EmailNotificationAdapter implements EmailNotificationPort {
         notification.chatType());
   }
 
-  private String preparePrivateEmail(
-      Context context,
-      MessageNotification notification) {
+  private String preparePrivateEmail(Context context, MessageNotification notification) {
 
     context.setVariable("senderUsername", notification.senderUsername());
 
     return "You have a new message";
   }
 
-  private String prepareGroupEmail(
-      Context context,
-      MessageNotification notification) {
+  private String prepareGroupEmail(Context context, MessageNotification notification) {
 
     context.setVariable("senderUsername", notification.senderUsername());
     context.setVariable("chatName", notification.chatName());

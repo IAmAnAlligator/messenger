@@ -87,8 +87,7 @@ public class NotificationOutboxJpaEntity {
       UUID senderUserId,
       String senderUsername,
       NotificationChannel channel,
-      Instant createdAt
-  ) {
+      Instant createdAt) {
     this.id = id;
     this.eventId = eventId;
     this.messageId = messageId;

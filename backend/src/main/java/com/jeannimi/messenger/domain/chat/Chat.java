@@ -61,6 +61,8 @@ public final class Chat {
 
   private void validateState() {
 
+    validateUniqueMembers();
+
     switch (type) {
       case GROUP -> validateGroup();
       case PRIVATE -> validatePrivate();
@@ -70,40 +72,46 @@ public final class Chat {
   private void validateGroup() {
 
     if (name == null || name.isBlank()) {
-      throw new ChatException(
-          ChatError.CHAT_NAME_EMPTY,
-          "Group chat must have a name");
+      throw new ChatException(ChatError.CHAT_NAME_EMPTY, "Group chat must have a name");
     }
 
     if (name.length() > ChatConstants.MAX_CHAT_NAME_LENGTH) {
-      throw new ChatException(
-          ChatError.CHAT_NAME_TOO_LONG,
-          "Chat name is too long");
+      throw new ChatException(ChatError.CHAT_NAME_TOO_LONG, "Chat name is too long");
     }
 
     if (members.isEmpty()) {
       throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_MEMBERS,
-          "Group must have at least one member");
+          ChatError.GROUP_MUST_HAVE_MEMBERS, "Group must have at least one member");
     }
 
     if (members.size() > ChatConstants.MAX_GROUP_MEMBERS) {
       throw new ChatException(
           ChatError.GROUP_MEMBER_LIMIT_EXCEEDED,
-          "Group cannot contain more than "
-              + ChatConstants.MAX_GROUP_MEMBERS + " members");
+          "Group cannot contain more than " + ChatConstants.MAX_GROUP_MEMBERS + " members");
     }
 
     if (countAdmins() == 0) {
       throw new ChatException(
-          ChatError.GROUP_MUST_HAVE_ADMIN,
-          "Group must have at least one admin");
+          ChatError.GROUP_MUST_HAVE_ADMIN, "Group must have at least one admin");
     }
 
     if (privateKey != null) {
       throw new ChatException(
-          ChatError.GROUP_CANNOT_HAVE_PRIVATE_KEY,
-          "Group chat cannot have privateKey");
+          ChatError.GROUP_CANNOT_HAVE_PRIVATE_KEY, "Group chat cannot have privateKey");
+    }
+  }
+
+  private void validateUniqueMembers() {
+
+    Set<UserId> userIds = new HashSet<>();
+
+    for (ChatMember member : members) {
+
+      Objects.requireNonNull(member, "Chat member");
+
+      if (!userIds.add(member.getUserId())) {
+        throw new ChatException(ChatError.USER_ALREADY_IN_CHAT, "Duplicate user in chat");
+      }
     }
   }
 
@@ -188,8 +196,11 @@ public final class Chat {
   }
 
   public void markMessageAdded(Instant messageCreatedAt) {
+    Objects.requireNonNull(messageCreatedAt, "messageCreatedAt");
 
-    this.lastMessageAt = Objects.requireNonNull(messageCreatedAt, "messageCreatedAt");
+    if (lastMessageAt == null || messageCreatedAt.isAfter(lastMessageAt)) {
+      lastMessageAt = messageCreatedAt;
+    }
   }
 
   public boolean isPrivate() {
@@ -273,7 +284,11 @@ public final class Chat {
 
   private static String normalizeName(String name) {
 
-    return Objects.requireNonNull(name, "name").trim();
+    if (name == null) {
+      throw new ChatException(ChatError.CHAT_NAME_EMPTY, "Chat name cannot be null");
+    }
+
+    return name.trim();
   }
 
   private static void validateName(String name) {
@@ -314,26 +329,22 @@ public final class Chat {
 
     if (name != null) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_CANNOT_HAVE_NAME,
-          "Private chat must not have a name");
+          ChatError.PRIVATE_CHAT_CANNOT_HAVE_NAME, "Private chat must not have a name");
     }
 
     if (members.size() != 2) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS,
-          "Private chat must have exactly 2 members");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_TWO_MEMBERS, "Private chat must have exactly 2 members");
     }
 
     if (privateKey == null || privateKey.isBlank()) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY,
-          "Private chat must have privateKey");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_PRIVATE_KEY, "Private chat must have privateKey");
     }
 
     if (countAdmins() != 1) {
       throw new ChatException(
-          ChatError.PRIVATE_CHAT_MUST_HAVE_ONE_ADMIN,
-          "Private chat must have exactly one admin");
+          ChatError.PRIVATE_CHAT_MUST_HAVE_ONE_ADMIN, "Private chat must have exactly one admin");
     }
 
     validatePrivateKey();
