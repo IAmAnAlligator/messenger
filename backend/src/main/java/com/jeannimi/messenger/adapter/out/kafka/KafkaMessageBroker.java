@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.application.port.out.MessageBrokerPort;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.outbox.AggregateId;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

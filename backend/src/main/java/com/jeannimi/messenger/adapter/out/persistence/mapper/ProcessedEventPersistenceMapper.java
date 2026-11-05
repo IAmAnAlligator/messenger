@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.mapper;
 import com.jeannimi.messenger.adapter.out.persistence.entity.ProcessedEventJpaEntity;
 import com.jeannimi.messenger.application.outbox.OutboxCreateData;
 import com.jeannimi.messenger.application.outbox.OutboxEventData;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import com.jeannimi.messenger.domain.outbox.OutboxEvent;
 import org.springframework.stereotype.Component;

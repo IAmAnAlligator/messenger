@@ -2,7 +2,7 @@ package com.jeannimi.messenger.application.notification.dto;
 
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatType;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;

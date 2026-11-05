@@ -1,10 +1,8 @@
 package com.jeannimi.messenger.application.port.out;
 
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 
 public interface NotificationEventRepositoryPort {
 
-  boolean exists(EventId eventId);
-
-  void save(EventId eventId);
+  boolean tryRegister(EventId eventId);
 }

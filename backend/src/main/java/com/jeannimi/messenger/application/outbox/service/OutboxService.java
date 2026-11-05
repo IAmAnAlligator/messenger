@@ -4,7 +4,7 @@ import com.jeannimi.messenger.application.outbox.OutboxCreateData;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
 import com.jeannimi.messenger.domain.common.DomainId;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.outbox.AggregateId;
 import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import lombok.RequiredArgsConstructor;

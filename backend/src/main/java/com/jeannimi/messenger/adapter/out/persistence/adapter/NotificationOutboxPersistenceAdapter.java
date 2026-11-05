@@ -4,7 +4,7 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.NotificationOutboxJ
 import com.jeannimi.messenger.adapter.out.persistence.repository.NotificationOutboxJpaRepository;
 import com.jeannimi.messenger.application.port.out.NotificationOutboxRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.notification.NotificationOutbox;
 import com.jeannimi.messenger.domain.notification.NotificationOutboxId;

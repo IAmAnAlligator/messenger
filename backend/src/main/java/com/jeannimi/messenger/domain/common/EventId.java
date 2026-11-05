@@ -1,6 +1,5 @@
-package com.jeannimi.messenger.domain.event;
+package com.jeannimi.messenger.domain.common;
 
-import com.jeannimi.messenger.domain.common.DomainId;
 import java.util.Objects;
 import java.util.UUID;
 

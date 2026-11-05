@@ -10,7 +10,7 @@ import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
 import com.jeannimi.messenger.application.port.in.MessageNotificationUseCase;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

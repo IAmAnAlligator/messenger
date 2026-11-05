@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.OutboxEventJpaEntity;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.outbox.AggregateId;
 import com.jeannimi.messenger.domain.outbox.OutboxEvent;
 import com.jeannimi.messenger.domain.outbox.OutboxEventId;

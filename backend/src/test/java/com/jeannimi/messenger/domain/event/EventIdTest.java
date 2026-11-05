@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.jeannimi.messenger.domain.common.EventId;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatType;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.time.Instant;

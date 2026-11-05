@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.domain.outbox;
 
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.Getter;

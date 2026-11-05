@@ -1,11 +1,12 @@
 import {
+    useCallback,
     useEffect,
     useLayoutEffect,
-    useRef
+    useRef,
+    useState
 } from "react";
 
-import MessageItem
-    from "./MessageItem";
+import MessageItem from "./MessageItem";
 
 import type {
     MessageDto
@@ -13,594 +14,470 @@ import type {
 
 import "../../../styles/chatPage.css";
 
-
 type Props = {
-
     loading: boolean;
-
     loadingMore: boolean;
-
     hasMore: boolean;
-
     messages: MessageDto[];
-
     currentUserId: string;
-
-    isMessageReadByOtherUser(
-        messageId: string
-    ): boolean;
-
-    onDelete(
-        id: string
-    ): void;
-
-    onUserProfile(
-         userId: string
-    ): void;
-
-    onLoadMore():
-        void | Promise<void>;
-
-    onReadUpTo(
-        messageId: string
-    ): void;
-
+    currentUserLastReadMessageId: string | null;
+    isMessageReadByOtherUser(messageId: string): boolean;
+    onDelete(id: string): void;
+    onUserProfile(userId: string): void;
+    onLoadMore(): void | Promise<void>;
+    onReadUpTo(messageId: string): void;
 };
 
+const BOTTOM_THRESHOLD = 100;
 
 export default function MessageList({
-
     loading,
-
     loadingMore,
-
     hasMore,
-
     messages,
-
     currentUserId,
-
+    currentUserLastReadMessageId,
     isMessageReadByOtherUser,
-
     onDelete,
-
     onUserProfile,
-
     onLoadMore,
-
     onReadUpTo
-
 }: Props) {
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const containerRef =
-        useRef<HTMLDivElement>(null);
+    const initialized = useRef(false);
 
-    const bottomRef =
-        useRef<HTMLDivElement>(null);
+    const previousLastMessageId = useRef<string | null>(null);
 
-    const initialized =
-        useRef(false);
+    const isNearBottomRef = useRef(true);
 
-    const previousLastMessageId =
-        useRef<string | null>(null);
+    const previousScrollHeight = useRef(0);
+    const previousScrollTop = useRef(0);
+    const previousMessagesLength = useRef(0);
 
-    const previousScrollHeight =
-        useRef(0);
+    const loadingMoreRef = useRef(false);
 
-    const previousMessagesLength =
-        useRef(0);
+    const lastSentReadMessageId = useRef<string | null>(
+        currentUserLastReadMessageId
+    );
 
-    const loadingMoreRef =
-        useRef(false);
+    const [newMessagesCount, setNewMessagesCount] = useState(0);
 
-    const lastSentReadMessageId =
-        useRef<string | null>(null);
+    // --------------------------------------------------
+    // Scroll helpers
+    // --------------------------------------------------
 
+    const updateNearBottom = useCallback(() => {
+        const container = containerRef.current;
 
-    function markVisibleMessagesAsRead() {
+        if (!container) return;
 
-        const container =
-            containerRef.current;
+        const distanceFromBottom =
+            container.scrollHeight -
+            container.clientHeight -
+            container.scrollTop;
 
+        isNearBottomRef.current =
+            distanceFromBottom <= BOTTOM_THRESHOLD;
 
-        if (
-            !container ||
-            messages.length === 0
-        ) {
-            return;
+        if (isNearBottomRef.current) {
+            setNewMessagesCount(0);
         }
+    }, []);
 
+    const scrollToBottom = useCallback(
+        (behavior: ScrollBehavior = "smooth") => {
+            const container = containerRef.current;
 
-        const containerRect =
-            container.getBoundingClientRect();
+            if (!container) return;
 
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior
+            });
 
-        const elements =
+            isNearBottomRef.current = true;
+            setNewMessagesCount(0);
+        },
+        []
+    );
+
+    const scrollToMessage = useCallback((messageId: string): boolean => {
+        const container = containerRef.current;
+
+        if (!container) return false;
+
+        const target = Array.from(
             container.querySelectorAll<HTMLElement>(
                 "[data-message-id]"
-            );
+            )
+        ).find(element => element.dataset.messageId === messageId);
 
+        if (!target) return false;
 
-        let lastVisibleIncomingIndex =
-            -1;
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
 
+        container.scrollTop += targetRect.top - containerRect.top;
 
-        elements.forEach(element => {
+        return true;
+    }, []);
 
-            const rect =
-                element.getBoundingClientRect();
+    // --------------------------------------------------
+    // Read messages
+    // --------------------------------------------------
 
+    const markVisibleMessagesAsRead = useCallback(() => {
+        const container = containerRef.current;
 
-            const visible =
-                rect.bottom >
-                    containerRect.top &&
-                rect.top <
-                    containerRect.bottom;
+        if (!container || messages.length === 0) return;
 
+        const containerRect = container.getBoundingClientRect();
 
-            if (!visible) {
-                return;
-            }
-
-
-            const id =
-                element.dataset.messageId;
-
-
-            if (!id) {
-                return;
-            }
-
-
-            const messageIndex =
-                messages.findIndex(
-                    item =>
-                        item.id === id
-                );
-
-
-            if (messageIndex === -1) {
-                return;
-            }
-
-
-            const message =
-                messages[messageIndex];
-
-
-            if (
-                message.sender.id ===
-                currentUserId
-            ) {
-                return;
-            }
-
-
-            /*
-             * Не сравниваем UUID как числа.
-             *
-             * messages уже находятся в порядке,
-             * заданном backend.
-             *
-             * Поэтому выбираем сообщение
-             * с максимальным индексом.
-             */
-
-            if (
-                messageIndex >
-                lastVisibleIncomingIndex
-            ) {
-
-                lastVisibleIncomingIndex =
-                    messageIndex;
-
-            }
-
-        });
-
-
-        const lastVisibleIncomingId =
-            lastVisibleIncomingIndex >= 0
-                ? messages[
-                    lastVisibleIncomingIndex
-                ].id
-                : null;
-
-
-        console.log(
-            "[READ] visible check:",
-            {
-                messages:
-                    messages.map(
-                        message => message.id
-                    ),
-
-                elements:
-                    elements.length,
-
-                lastVisibleIncomingId
-            }
+        const elements = container.querySelectorAll<HTMLElement>(
+            "[data-message-id]"
         );
 
+        const messageIndexes = new Map<string, number>();
 
-        if (
-            lastVisibleIncomingId === null
-        ) {
-            return;
-        }
+        messages.forEach((message, index) => {
+            messageIndexes.set(message.id, index);
+        });
 
+        let lastVisibleIncomingIndex = -1;
 
-        /*
-         * Повторно отправлять тот же read
-         * не нужно.
-         *
-         * Если старый messageId всё ещё
-         * присутствует в текущем массиве,
-         * сравниваем позиции сообщений,
-         * а не UUID.
-         */
+        elements.forEach(element => {
+            const rect = element.getBoundingClientRect();
+
+            const isVisible =
+                rect.bottom > containerRect.top &&
+                rect.top < containerRect.bottom;
+
+            if (!isVisible) return;
+
+            const id = element.dataset.messageId;
+
+            if (!id) return;
+
+            const messageIndex = messageIndexes.get(id);
+
+            if (messageIndex === undefined) return;
+
+            const message = messages[messageIndex];
+
+            if (message.sender.id === currentUserId) return;
+
+            if (messageIndex > lastVisibleIncomingIndex) {
+                lastVisibleIncomingIndex = messageIndex;
+            }
+        });
+
+        if (lastVisibleIncomingIndex === -1) return;
+
+        const lastVisibleIncomingId =
+            messages[lastVisibleIncomingIndex].id;
 
         const lastSentIndex =
             lastSentReadMessageId.current === null
                 ? -1
-                : messages.findIndex(
-                    message =>
-                        message.id ===
-                        lastSentReadMessageId.current
-                );
-
+                : messageIndexes.get(
+                    lastSentReadMessageId.current
+                ) ?? -1;
 
         if (
             lastSentIndex !== -1 &&
-            lastVisibleIncomingIndex <=
-                lastSentIndex
+            lastVisibleIncomingIndex <= lastSentIndex
         ) {
             return;
         }
 
+        lastSentReadMessageId.current = lastVisibleIncomingId;
 
-        lastSentReadMessageId.current =
-            lastVisibleIncomingId;
-
-
-        console.log(
-            "[READ] mark incoming as read:",
-            lastVisibleIncomingId
-        );
-
-
-        onReadUpTo(
-            lastVisibleIncomingId
-        );
-
-    }
-
-
-    useLayoutEffect(() => {
-
-        if (
-            loading ||
-            messages.length === 0
-        ) {
-            return;
-        }
-
-
-        const container =
-            containerRef.current;
-
-
-        if (!container) {
-            return;
-        }
-
-
-        bottomRef.current?.scrollIntoView();
-
-
-        initialized.current = true;
-
-
-        previousLastMessageId.current =
-            messages[
-                messages.length - 1
-            ].id;
-
-
-        requestAnimationFrame(() => {
-
-            markVisibleMessagesAsRead();
-
-        });
-
-    }, [
-        loading,
-        messages
-    ]);
-
-
-    useEffect(() => {
-
-        if (
-            !initialized.current ||
-            messages.length === 0
-        ) {
-            return;
-        }
-
-
-        const lastMessage =
-            messages[
-                messages.length - 1
-            ];
-
-
-        const isNewMessage =
-            previousLastMessageId.current !== null &&
-            lastMessage.id !==
-                previousLastMessageId.current;
-
-
-        if (
-            isNewMessage &&
-            !loadingMoreRef.current
-        ) {
-
-            bottomRef.current?.scrollIntoView({
-                behavior: "smooth"
-            });
-
-
-            if (
-                lastMessage.sender.id !==
-                currentUserId
-            ) {
-
-                requestAnimationFrame(() => {
-
-                    markVisibleMessagesAsRead();
-
-                });
-
-            }
-
-        }
-
-
-        previousLastMessageId.current =
-            lastMessage.id;
-
-
+        onReadUpTo(lastVisibleIncomingId);
     }, [
         messages,
-        currentUserId
+        currentUserId,
+        onReadUpTo
     ]);
 
+    // --------------------------------------------------
+    // Initial positioning and message updates
+    // --------------------------------------------------
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        if (loading) return;
 
-        const container =
-            containerRef.current;
+        const container = containerRef.current;
 
+        if (!container) return;
 
-        if (
-            !container ||
-            !loadingMoreRef.current
-        ) {
-            return;
-        }
+        const lastMessage =
+            messages.length > 0
+                ? messages[messages.length - 1]
+                : null;
 
-
-        const addedMessages =
-            messages.length >
-            previousMessagesLength.current;
+        // Initial positioning.
+        if (!initialized.current) {
 
 
-        if (addedMessages) {
+console.log("Initial chat scroll:", {
+    lastReadMessageId: currentUserLastReadMessageId,
+    firstLoadedMessageId: messages[0]?.id,
+    lastLoadedMessageId: messages[messages.length - 1]?.id,
+    loadedMessagesCount: messages.length,
+    lastReadMessageIndex: messages.findIndex(
+        message => message.id === currentUserLastReadMessageId
+    )
+});
 
-            const newScrollHeight =
-                container.scrollHeight;
+            const lastReadIndex = currentUserLastReadMessageId
+                ? messages.findIndex(
+                    message =>
+                        message.id === currentUserLastReadMessageId
+                )
+                : -1;
 
+            const hasUnreadMessages = currentUserLastReadMessageId
+                ? lastReadIndex === -1
+                    ? messages.some(
+                        message => message.sender.id !== currentUserId
+                    )
+                    : messages
+                        .slice(lastReadIndex + 1)
+                        .some(
+                            message => message.sender.id !== currentUserId
+                        )
+                : messages.some(
+                    message => message.sender.id !== currentUserId
+                );
+
+            if (hasUnreadMessages) {
+                if (lastReadIndex !== -1) {
+                    scrollToMessage(currentUserLastReadMessageId!);
+                } else {
+                    // The read cursor is outside the loaded page.
+                    container.scrollTop = 0;
+                }
+            } else {
+                // No unread incoming messages.
+                container.scrollTop = container.scrollHeight;
+            }
+
+            initialized.current = true;
+
+            previousLastMessageId.current =
+                lastMessage?.id ?? null;
 
             requestAnimationFrame(() => {
-
-                container.scrollTop =
-                    newScrollHeight -
-                    previousScrollHeight.current;
-
-
-                loadingMoreRef.current =
-                    false;
-
+                updateNearBottom();
+                markVisibleMessagesAsRead();
             });
 
-        } else {
-
-            loadingMoreRef.current =
-                false;
-
-        }
-
-    }, [
-        messages
-    ]);
-
-
-    useEffect(() => {
-
-        const container =
-            containerRef.current;
-
-
-        if (!container) {
             return;
         }
 
+        // Preserve position when older messages are loaded.
+        if (
+            loadingMoreRef.current &&
+            messages.length > previousMessagesLength.current
+        ) {
+            const difference =
+                container.scrollHeight - previousScrollHeight.current;
+
+            container.scrollTop =
+                previousScrollTop.current + difference;
+
+            loadingMoreRef.current = false;
+
+            previousLastMessageId.current =
+                lastMessage?.id ?? null;
+
+            requestAnimationFrame(() => {
+                updateNearBottom();
+                markVisibleMessagesAsRead();
+            });
+
+            return;
+        }
+
+        if (!lastMessage) {
+            previousLastMessageId.current = null;
+            return;
+        }
+
+        const previousLastIndex =
+            previousLastMessageId.current === null
+                ? -1
+                : messages.findIndex(
+                    message =>
+                        message.id === previousLastMessageId.current
+                );
+
+        const hasNewMessages =
+            previousLastMessageId.current !== null &&
+            previousLastIndex !== -1 &&
+            previousLastIndex < messages.length - 1;
+
+        if (hasNewMessages) {
+            const appendedMessages = messages.slice(
+                previousLastIndex + 1
+            );
+
+            const incomingMessagesCount = appendedMessages.filter(
+                message => message.sender.id !== currentUserId
+            ).length;
+
+            if (isNearBottomRef.current) {
+                scrollToBottom();
+            } else if (incomingMessagesCount > 0) {
+                setNewMessagesCount(
+                    count => count + incomingMessagesCount
+                );
+            }
+        }
+
+        previousLastMessageId.current = lastMessage.id;
+
+        requestAnimationFrame(() => {
+            markVisibleMessagesAsRead();
+        });
+    }, [
+        loading,
+        messages,
+        currentUserLastReadMessageId,
+        currentUserId,
+        scrollToMessage,
+        scrollToBottom,
+        updateNearBottom,
+        markVisibleMessagesAsRead
+    ]);
+
+    // --------------------------------------------------
+    // Loading older messages
+    // --------------------------------------------------
+
+    useEffect(() => {
+        if (
+            !loadingMore &&
+            loadingMoreRef.current &&
+            messages.length <= previousMessagesLength.current
+        ) {
+            loadingMoreRef.current = false;
+        }
+    }, [
+        loadingMore,
+        messages.length
+    ]);
+
+    // --------------------------------------------------
+    // Scroll event
+    // --------------------------------------------------
+
+    useEffect(() => {
+        const container = containerRef.current;
+
+        if (!container) return;
 
         const handleScroll = () => {
+            updateNearBottom();
 
             if (
                 container.scrollTop <= 20 &&
                 hasMore &&
                 !loadingMore &&
+                !loadingMoreRef.current &&
                 messages.length > 0
             ) {
-
                 previousScrollHeight.current =
                     container.scrollHeight;
+
+                previousScrollTop.current =
+                    container.scrollTop;
 
                 previousMessagesLength.current =
                     messages.length;
 
-                loadingMoreRef.current =
-                    true;
+                loadingMoreRef.current = true;
 
-                onLoadMore();
-
+                void onLoadMore();
             }
 
-
             markVisibleMessagesAsRead();
-
         };
-
 
         container.addEventListener(
             "scroll",
-            handleScroll
+            handleScroll,
+            { passive: true }
         );
 
-
         return () => {
-
             container.removeEventListener(
                 "scroll",
                 handleScroll
             );
-
         };
-
     }, [
         hasMore,
         loadingMore,
+        messages.length,
         onLoadMore,
-        messages,
-        currentUserId
+        updateNearBottom,
+        markVisibleMessagesAsRead
     ]);
 
+    // --------------------------------------------------
+    // Render
+    // --------------------------------------------------
 
     if (loading) {
-
-        return (
-
-            <div className="messages">
-
-                Loading...
-
-            </div>
-
-        );
-
+        return <div className="messages">Loading...</div>;
     }
-
 
     return (
+        <div className="messages" ref={containerRef}>
+            {loadingMore && hasMore && (
+                <div className="messages-loader">
+                    Loading...
+                </div>
+            )}
 
-        <div
-            className="messages"
-            ref={containerRef}
-        >
+            {messages.map(message => {
+                const isOwnMessage =
+                    message.sender.id === currentUserId;
 
-            {
-                loadingMore &&
-                hasMore && (
+                const isRead =
+                    isOwnMessage &&
+                    isMessageReadByOtherUser(message.id);
 
-                    <div className="messages-loader">
-
-                        Loading...
-
+                return (
+                    <div
+                        key={message.id}
+                        data-message-id={message.id}
+                    >
+                        <MessageItem
+                            message={message}
+                            onDelete={onDelete}
+                            onUserProfile={onUserProfile}
+                            isRead={isRead}
+                        />
                     </div>
+                );
+            })}
 
-                )
-            }
-
-
-            {
-                messages.map(
-                    message => {
-
-                        const isOwnMessage =
-                            message.sender.id ===
-                            currentUserId;
-
-
-                        const isRead =
-                            isOwnMessage &&
-                            isMessageReadByOtherUser(
-                                message.id
-                            );
-
-
-                        console.log(
-                            "[READ UI]",
-                            {
-                                messageId:
-                                    message.id,
-
-                                senderId:
-                                    message.sender.id,
-
-                                currentUserId,
-
-                                isOwnMessage,
-
-                                isRead
-                            }
-                        );
-
-
-                        return (
-
-                            <div
-                                key={message.id}
-                                data-message-id={
-                                    message.id
-                                }
-                            >
-
-                                <MessageItem
-
-                                    message={
-                                        message
-                                    }
-
-                                    onDelete={
-                                        onDelete
-                                    }
-
-                                        onUserProfile={
-        onUserProfile
-    }
-
-                                    isRead={
-                                        isRead
-                                    }
-
-                                />
-
-                            </div>
-
-                        );
-
-                    }
-                )
-            }
-
-
-            <div ref={bottomRef} />
-
+            {newMessagesCount > 0 && (
+                <button
+                    type="button"
+                    className="new-messages-button"
+                    onClick={() => scrollToBottom()}
+                >
+                    {newMessagesCount} new{" "}
+                    {newMessagesCount === 1
+                        ? "message"
+                        : "messages"}{" "}
+                    ↓
+                </button>
+            )}
         </div>
-
     );
-
 }

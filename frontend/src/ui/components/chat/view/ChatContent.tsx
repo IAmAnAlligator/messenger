@@ -9,9 +9,11 @@ import type { MessageDto } from "../../../../types/message";
 type Props = {
     chat: ChatDto | null;
     messages: MessageDto[];
+
     loading: boolean;
     loadingMore: boolean;
     hasMore: boolean;
+
     currentUserId: string;
     isOnline: boolean;
 
@@ -31,38 +33,72 @@ type Props = {
     onEdit(): void;
 };
 
-export default function ChatContent(props: Props) {
+export default function ChatContent({
+    chat,
+    messages,
+    loading,
+    loadingMore,
+    hasMore,
+    currentUserId,
+    isOnline,
+    isMessageReadByOtherUser,
+    text,
+    error,
+    onSendFile,
+    onLoadMore,
+    onReadUpTo,
+    onTextChange,
+    onSend,
+    onDelete,
+    onUserProfile,
+    onBack,
+    onEdit,
+}: Props) {
+
+    const lastReadMessageId =
+        chat?.members.find(
+            member => member.user.id === currentUserId
+        )?.lastReadMessageId ?? null;
+
     return (
         <div className="chat-page">
+
             <ChatHeader
-                chat={props.chat}
-                currentUserId={props.currentUserId}
-                isOnline={props.isOnline}
-                onBack={props.onBack}
-                onEdit={props.onEdit}
+                chat={chat}
+                currentUserId={currentUserId}
+                isOnline={isOnline}
+                onBack={onBack}
+                onEdit={onEdit}
             />
 
-            <WsError message={props.error} />
+            <WsError message={error} />
 
-            <MessageList
-                loading={props.loading}
-                loadingMore={props.loadingMore}
-                hasMore={props.hasMore}
-                messages={props.messages}
-                currentUserId={props.currentUserId}
-                isMessageReadByOtherUser={props.isMessageReadByOtherUser}
-                onLoadMore={props.onLoadMore}
-                onReadUpTo={props.onReadUpTo}
-                onDelete={props.onDelete}
-                onUserProfile={props.onUserProfile}
-            />
+            {chat && (
+                <MessageList
+                    key={chat.id}
+                    loading={loading}
+                    loadingMore={loadingMore}
+                    hasMore={hasMore}
+                    messages={messages}
+                    currentUserId={currentUserId}
+                    currentUserLastReadMessageId={lastReadMessageId}
+                    isMessageReadByOtherUser={
+                        isMessageReadByOtherUser
+                    }
+                    onLoadMore={onLoadMore}
+                    onReadUpTo={onReadUpTo}
+                    onDelete={onDelete}
+                    onUserProfile={onUserProfile}
+                />
+            )}
 
             <MessageInput
-                value={props.text}
-                onChange={props.onTextChange}
-                onSend={props.onSend}
-                onSendFile={props.onSendFile}
+                value={text}
+                onChange={onTextChange}
+                onSend={onSend}
+                onSendFile={onSendFile}
             />
+
         </div>
     );
 }

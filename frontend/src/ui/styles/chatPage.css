@@ -1,15 +1,13 @@
 .chat-page {
-
     height: 590px;
+    min-height: 0;
 
     display: flex;
-
     flex-direction: column;
 
     background: #efeae2;
 
     overflow: hidden;
-
 }
 
 
@@ -18,9 +16,9 @@
 */
 
 .messages {
+    position: relative;
 
     flex: 1;
-
     min-height: 0;
 
     overflow-y: auto;
@@ -28,11 +26,11 @@
     padding: 20px;
 
     display: flex;
-
     flex-direction: column;
 
     gap: 8px;
 
+    overscroll-behavior: contain;
 }
 
 
@@ -41,13 +39,22 @@
 */
 
 .messages-loader {
-    position: absolute;
-    top: 10px;
-    left: 0;
-    right: 0;
-    text-align: center;
+    position: sticky;
+    top: 0;
+
+    z-index: 1;
+
+    align-self: center;
+
+    flex-shrink: 0;
+
+    padding: 5px 12px;
+
     color: #777;
     font-size: 14px;
+
+    background: rgba(239, 234, 226, 0.95);
+    border-radius: 12px;
 }
 
 
@@ -56,11 +63,8 @@
 */
 
 .message-row {
-
     display: flex;
-
     justify-content: flex-start;
-
 }
 
 
@@ -69,7 +73,6 @@
 */
 
 .message-bubble {
-
     max-width: 70%;
 
     padding: 10px 14px;
@@ -78,9 +81,7 @@
 
     background: white;
 
-    box-shadow:
-        0 1px 2px rgba(0,0,0,.15);
-
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
 }
 
 
@@ -89,9 +90,7 @@
 */
 
 .mine .message-bubble {
-
     background: #d9fdd3;
-
 }
 
 
@@ -110,11 +109,8 @@
 */
 
 .message-text {
-
     margin-top: 5px;
-
     word-break: break-word;
-
 }
 
 
@@ -123,17 +119,13 @@
 */
 
 .message-footer {
-
     display: flex;
-
     justify-content: flex-end;
-
     align-items: center;
 
     gap: 5px;
 
     margin-top: 4px;
-
 }
 
 
@@ -142,13 +134,9 @@
 */
 
 .message-time {
-
     font-size: 11px;
-
     color: #777;
-
     text-align: right;
-
 }
 
 
@@ -157,11 +145,8 @@
 */
 
 .message-status {
-
     font-size: 12px;
-
     color: red;
-
 }
 
 
@@ -191,11 +176,11 @@
 */
 
 .message-input {
+    flex-shrink: 0;
 
     height: 60px;
 
     display: flex;
-
     gap: 10px;
 
     padding: 10px;
@@ -203,79 +188,93 @@
     background: white;
 
     border-top: 1px solid #ddd;
-
 }
 
 
 .message-input input {
-
     flex: 1;
+    min-width: 0;
 
     border-radius: 20px;
-
     border: 1px solid #ccc;
 
     padding: 10px 15px;
 
     font-size: 16px;
-
 }
 
 
 .message-input button {
-
     width: 45px;
+    flex-shrink: 0;
 
     border-radius: 50%;
-
     border: none;
 
     cursor: pointer;
 
     font-size: 20px;
-
 }
+
+
+/*
+    Изображения в сообщениях
+*/
 
 .message-image-link {
     display: block;
+
     width: fit-content;
+
     max-width: 500px;
     max-height: 500px;
+
     overflow: hidden;
+
     border-radius: 8px;
+
     cursor: pointer;
 }
+
 
 .message-image-preview {
     display: block;
+
     width: auto;
     height: auto;
+
     max-width: 500px;
     max-height: 500px;
+
     object-fit: contain;
 }
 
-.message-sender {
 
+/*
+    Имя отправителя
+*/
+
+.message-sender {
     padding: 0;
 
     border: none;
-
     background: none;
 
     font: inherit;
-
     font-weight: 600;
 
     cursor: pointer;
-
 }
+
 
 .message-sender:hover {
-
     text-decoration: underline;
-
 }
+
+
+/*
+    Информация заголовка чата
+*/
 
 .chat-header-info {
     display: flex;
@@ -283,17 +282,46 @@
     gap: 4px;
 }
 
+
 .online-status {
     display: flex;
     align-items: center;
     gap: 6px;
+
     font-size: 12px;
     color: #22c55e;
 }
 
+
 .online-status-dot {
     width: 8px;
     height: 8px;
+
     border-radius: 50%;
+
     background-color: #22c55e;
+}
+
+.messages {
+    position: relative;
+}
+
+.new-messages-button {
+    position: sticky;
+    bottom: 12px;
+    display: block;
+    margin: 8px auto;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 20px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+}
+
+.new-messages-button:hover {
+    background: #1d4ed8;
 }

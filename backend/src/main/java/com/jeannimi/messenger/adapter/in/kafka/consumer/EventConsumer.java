@@ -14,7 +14,7 @@ import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.application.event.service.ProcessedEventService;
 import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;

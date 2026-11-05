@@ -18,7 +18,7 @@ import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.event.service.ProcessedEventService;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

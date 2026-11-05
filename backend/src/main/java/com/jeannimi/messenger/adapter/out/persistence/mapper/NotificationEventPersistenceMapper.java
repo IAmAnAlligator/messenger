@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.NotificationEventJpaEntity;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import java.time.Instant;
 import java.util.Objects;
 import org.springframework.stereotype.Component;

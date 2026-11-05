@@ -30,9 +30,9 @@ public class MessageNotificationService implements MessageNotificationUseCase {
   @Override
   @Transactional
   public void notifyMessageReceived(MessageNotification notification) {
-    Objects.requireNonNull(notification, "notification");
+    validateNotification(notification);
 
-    if (notificationEventRepository.exists(notification.eventId())) {
+    if (!notificationEventRepository.tryRegister(notification.eventId())) {
       log.debug("Notification event already processed: {}", notification.eventId());
       return;
     }
@@ -40,33 +40,70 @@ public class MessageNotificationService implements MessageNotificationUseCase {
     List<UserId> webPushRecipients = new ArrayList<>();
     List<UserId> emailRecipients = new ArrayList<>();
 
-    notification.recipientUserIds().stream()
-        .filter(Objects::nonNull)
-        .filter(userId -> !userId.equals(notification.senderId()))
-        .distinct()
-        .forEach(
-            userId -> {
-              UserNotificationSettings settings =
-                  settingsRepository.findByUserId(userId).orElse(null);
+    findRecipients(notification, webPushRecipients, emailRecipients);
 
-              if (settings == null) {
-                return;
-              }
+    enqueueNotifications(notification, webPushRecipients, emailRecipients);
 
-              boolean online = userPresenceService.isOnline(userId);
+    log.debug(
+        "Notification event processed: eventId={}, webPushRecipients={}, emailRecipients={}",
+        notification.eventId(),
+        webPushRecipients.size(),
+        emailRecipients.size());
+  }
 
-              if (online) {
-                boolean viewingChat =
-                    userPresenceService.isViewingChat(userId, notification.chatId());
+  private void findRecipients(
+      MessageNotification notification,
+      List<UserId> webPushRecipients,
+      List<UserId> emailRecipients) {
+    List<UserId> recipientUserIds =
+        notification.recipientUserIds().stream()
+            .filter(userId -> !userId.equals(notification.senderId()))
+            .distinct()
+            .toList();
 
-                if (!viewingChat && isWebPushEnabled(settings, notification.chatType())) {
-                  webPushRecipients.add(userId);
-                }
-              } else if (isEmailEnabled(settings, notification.chatType())) {
-                emailRecipients.add(userId);
-              }
-            });
+    if (recipientUserIds.isEmpty()) {
+      return;
+    }
 
+    List<UserNotificationSettings> settingsList =
+        settingsRepository.findAllByUserIds(recipientUserIds);
+
+    for (UserNotificationSettings settings : settingsList) {
+      addRecipientToNotificationLists(settings, notification, webPushRecipients, emailRecipients);
+    }
+  }
+
+  private void addRecipientToNotificationLists(
+      UserNotificationSettings settings,
+      MessageNotification notification,
+      List<UserId> webPushRecipients,
+      List<UserId> emailRecipients) {
+    UserId userId = settings.getUserId();
+
+    boolean webPushEnabled = isWebPushEnabled(settings, notification.chatType());
+
+    boolean emailEnabled = isEmailEnabled(settings, notification.chatType());
+
+    if (!webPushEnabled && !emailEnabled) {
+      return;
+    }
+
+    if (!userPresenceService.isOnline(userId)) {
+      if (emailEnabled) {
+        emailRecipients.add(userId);
+      }
+      return;
+    }
+
+    if (webPushEnabled && !userPresenceService.isViewingChat(userId, notification.chatId())) {
+      webPushRecipients.add(userId);
+    }
+  }
+
+  private void enqueueNotifications(
+      MessageNotification notification,
+      List<UserId> webPushRecipients,
+      List<UserId> emailRecipients) {
     if (!webPushRecipients.isEmpty()) {
       notificationOutboxService.enqueue(
           createNotification(notification, webPushRecipients), NotificationChannel.WEB_PUSH);
@@ -80,18 +117,28 @@ public class MessageNotificationService implements MessageNotificationUseCase {
 
       log.debug("Enqueued Email notifications for {} recipients", emailRecipients.size());
     }
+  }
 
-    notificationEventRepository.save(notification.eventId());
+  private void validateNotification(MessageNotification notification) {
+    Objects.requireNonNull(notification, "notification");
+    Objects.requireNonNull(notification.eventId(), "eventId");
+    Objects.requireNonNull(notification.messageId(), "messageId");
+    Objects.requireNonNull(notification.chatId(), "chatId");
+    Objects.requireNonNull(notification.chatType(), "chatType");
+    Objects.requireNonNull(notification.senderId(), "senderId");
+    Objects.requireNonNull(notification.senderUsername(), "senderUsername");
+    Objects.requireNonNull(notification.recipientUserIds(), "recipientUserIds");
 
-    log.debug(
-        "Notification event processed: eventId={}, webPushRecipients={}, emailRecipients={}",
-        notification.eventId(),
-        webPushRecipients.size(),
-        emailRecipients.size());
+    if (notification.senderUsername().isBlank()) {
+      throw new IllegalArgumentException("senderUsername must not be blank");
+    }
+
+    if (notification.recipientUserIds().stream().anyMatch(Objects::isNull)) {
+      throw new IllegalArgumentException("recipientUserIds must not contain null elements");
+    }
   }
 
   private boolean isWebPushEnabled(UserNotificationSettings settings, ChatType chatType) {
-
     return switch (chatType) {
       case PRIVATE -> settings.isWebPushPrivateChatsEnabled();
       case GROUP -> settings.isWebPushGroupChatsEnabled();
@@ -99,7 +146,6 @@ public class MessageNotificationService implements MessageNotificationUseCase {
   }
 
   private boolean isEmailEnabled(UserNotificationSettings settings, ChatType chatType) {
-
     return switch (chatType) {
       case PRIVATE -> settings.isEmailPrivateChatsEnabled();
       case GROUP -> settings.isEmailGroupChatsEnabled();

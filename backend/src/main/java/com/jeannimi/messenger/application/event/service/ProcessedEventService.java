@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.application.event.service;
 
 import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
-import com.jeannimi.messenger.domain.event.EventId;
+import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

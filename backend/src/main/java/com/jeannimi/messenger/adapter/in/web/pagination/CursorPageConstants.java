@@ -4,5 +4,5 @@ public final class CursorPageConstants {
 
   private CursorPageConstants() {}
 
-  public static final int DEFAULT_PAGE_SIZE = 30;
+  public static final int DEFAULT_PAGE_SIZE = 15;
 }
