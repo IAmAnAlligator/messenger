@@ -1,19 +1,16 @@
 import axios from "axios";
 import { refreshToken } from "../services/refresh";
+import { API_BASE_URL } from "../config/apiConfig";
 
 /**
  * 🔧 Базовый axios-инстанс для всего приложения
  * Все запросы идут через него
  */
 export const api = axios.create({
-    baseURL: "http://localhost:8080/api",
-
-    /**
-     * 🍪 withCredentials = true
-     * позволяет браузеру отправлять cookies (refreshToken HttpOnly cookie)
-     */
+    baseURL: API_BASE_URL,
     withCredentials: true
 });
+
 
 // =======================
 // REQUEST INTERCEPTOR

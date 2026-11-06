@@ -29,6 +29,7 @@ type ConnectionListener =
 
 let client: Client | null = null;
 
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const subscriptions =
     new Map<
@@ -226,8 +227,7 @@ export async function connectSocket() {
     client =
         new Client({
 
-            brokerURL:
-                "ws://localhost:8080/ws",
+brokerURL: `${apiUrl.replace(/^http/, "ws")}/ws`,
 
             reconnectDelay:
                 3000,

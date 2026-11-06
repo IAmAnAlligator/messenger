@@ -104,3 +104,4 @@ app:
       subject: ${WEB_PUSH_VAPID_SUBJECT}
   mail:
     from: ${MAIL_FROM}
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}

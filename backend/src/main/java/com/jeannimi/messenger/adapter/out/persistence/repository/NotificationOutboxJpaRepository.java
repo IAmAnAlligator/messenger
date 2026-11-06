@@ -15,22 +15,27 @@ public interface NotificationOutboxJpaRepository
   @Query(
       value =
           """
-            SELECT *
-            FROM notification_outbox
-            WHERE
-                (
-                    status IN ('NEW', 'RETRY')
-                    AND next_attempt_at <= CURRENT_TIMESTAMP
-                )
-                OR
-                (
-                    status = 'PROCESSING'
-                    AND locked_until <= CURRENT_TIMESTAMP
-                )
-            ORDER BY created_at, id
-            LIMIT :batchSize
-            FOR UPDATE SKIP LOCKED
-            """,
+          SELECT *
+          FROM notification_outbox
+          WHERE
+              (
+                  status = 'NEW'
+                  OR (
+                      status = 'RETRY'
+                      AND next_attempt_at <= CURRENT_TIMESTAMP
+                  )
+                  OR (
+                      status = 'PROCESSING'
+                      AND (
+                          locked_until IS NULL
+                          OR locked_until <= CURRENT_TIMESTAMP
+                      )
+                  )
+              )
+          ORDER BY created_at, id
+          LIMIT :batchSize
+          FOR UPDATE SKIP LOCKED
+          """,
       nativeQuery = true)
   List<NotificationOutboxJpaEntity> findAvailableBatch(@Param("batchSize") int batchSize);
 
@@ -38,13 +43,13 @@ public interface NotificationOutboxJpaRepository
   @Query(
       value =
           """
-            UPDATE notification_outbox
-            SET
-                status = 'PROCESSING',
-                attempts = attempts + 1,
-                locked_until = CURRENT_TIMESTAMP + INTERVAL '2 minutes'
-            WHERE id IN (:ids)
-            """,
+          UPDATE notification_outbox
+          SET
+              status = 'PROCESSING',
+              attempts = attempts + 1,
+              locked_until = CURRENT_TIMESTAMP + INTERVAL '10 minutes'
+          WHERE id IN (:ids)
+          """,
       nativeQuery = true)
   int markBatchAsProcessing(@Param("ids") List<UUID> ids);
 

@@ -7,6 +7,7 @@ import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.NotificationOutbox;
 import com.jeannimi.messenger.domain.notification.NotificationOutboxId;
 import com.jeannimi.messenger.domain.user.UserId;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -20,22 +21,21 @@ public class NotificationOutboxService {
 
   private final IdGenerator idGenerator;
   private final NotificationOutboxRepositoryPort notificationOutboxRepository;
-
-  @Transactional
-  public void enqueue(MessageNotification notification) {
-    enqueue(notification, NotificationChannel.WEB_PUSH);
-  }
+  private final Clock clock;
 
   @Transactional
   public void enqueue(MessageNotification notification, NotificationChannel channel) {
     Objects.requireNonNull(notification, "notification");
     Objects.requireNonNull(channel, "channel");
 
-    Instant now = Instant.now();
+    if (notification.recipientUserIds().stream().anyMatch(Objects::isNull)) {
+      throw new IllegalArgumentException("recipientUserIds must not contain null elements");
+    }
+
+    Instant now = clock.instant();
 
     List<NotificationOutbox> tasks =
         notification.recipientUserIds().stream()
-            .filter(Objects::nonNull)
             .filter(userId -> !userId.equals(notification.senderId()))
             .distinct()
             .map(userId -> createTask(notification, userId, channel, now))
@@ -60,7 +60,6 @@ public class NotificationOutboxService {
   @Transactional
   public void markAsSent(NotificationOutboxId id) {
     Objects.requireNonNull(id, "id");
-
     notificationOutboxRepository.markAsSent(id);
   }
 
@@ -70,6 +69,10 @@ public class NotificationOutboxService {
     Objects.requireNonNull(nextAttemptAt, "nextAttemptAt");
     Objects.requireNonNull(error, "error");
 
+    if (error.isBlank()) {
+      throw new IllegalArgumentException("error must not be blank");
+    }
+
     notificationOutboxRepository.scheduleRetry(id, nextAttemptAt, error);
   }
 
@@ -77,6 +80,10 @@ public class NotificationOutboxService {
   public void markAsDead(NotificationOutboxId id, String error) {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(error, "error");
+
+    if (error.isBlank()) {
+      throw new IllegalArgumentException("error must not be blank");
+    }
 
     notificationOutboxRepository.markAsDead(id, error);
   }

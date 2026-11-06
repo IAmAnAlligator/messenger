@@ -5,6 +5,7 @@ import com.jeannimi.messenger.application.port.out.EmailNotificationPort;
 import com.jeannimi.messenger.application.port.out.WebPushNotificationPort;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.NotificationOutbox;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,16 +21,26 @@ public class NotificationOutboxWorker {
   private static final int WEB_PUSH_MAX_ATTEMPTS = 2;
   private static final int EMAIL_MAX_ATTEMPTS = 1;
   private static final long WEB_PUSH_RETRY_DELAY_SECONDS = 5;
+  private static final int MAX_ERROR_LENGTH = 1000;
 
   private final NotificationOutboxService notificationOutboxService;
   private final WebPushNotificationPort webPushNotificationPort;
   private final EmailNotificationPort emailNotificationPort;
+  private final Clock clock;
 
   public void processPendingNotifications() {
     List<NotificationOutbox> tasks = notificationOutboxService.claimBatch(BATCH_SIZE);
 
     for (NotificationOutbox task : tasks) {
-      processTask(task);
+      try {
+        processTask(task);
+      } catch (Exception exception) {
+        log.error(
+            "Failed to process notification outbox task: id={}, channel={}",
+            task.getId().value(),
+            task.getChannel(),
+            exception);
+      }
     }
   }
 
@@ -68,10 +79,7 @@ public class NotificationOutboxWorker {
   }
 
   private void handleFailure(NotificationOutbox task, Exception exception) {
-    String error =
-        exception.getMessage() == null
-            ? exception.getClass().getSimpleName()
-            : exception.getMessage();
+    String error = getErrorMessage(exception);
 
     log.warn(
         "Notification delivery failed: id={}, channel={}, attempt={}",
@@ -83,7 +91,7 @@ public class NotificationOutboxWorker {
     if (task.getChannel() == NotificationChannel.WEB_PUSH
         && task.getAttempts() < WEB_PUSH_MAX_ATTEMPTS) {
 
-      Instant nextAttemptAt = Instant.now().plusSeconds(WEB_PUSH_RETRY_DELAY_SECONDS);
+      Instant nextAttemptAt = clock.instant().plusSeconds(WEB_PUSH_RETRY_DELAY_SECONDS);
 
       notificationOutboxService.scheduleRetry(task.getId(), nextAttemptAt, error);
 
@@ -99,6 +107,16 @@ public class NotificationOutboxWorker {
         "Notification outbox task marked as DEAD: id={}, channel={}",
         task.getId().value(),
         task.getChannel());
+  }
+
+  private String getErrorMessage(Exception exception) {
+    String message = exception.getMessage();
+
+    if (message == null || message.isBlank()) {
+      message = exception.getClass().getSimpleName();
+    }
+
+    return message.length() > MAX_ERROR_LENGTH ? message.substring(0, MAX_ERROR_LENGTH) : message;
   }
 
   private MessageNotification toNotification(NotificationOutbox task) {
