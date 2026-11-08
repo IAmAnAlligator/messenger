@@ -28,4 +28,6 @@ public interface MessageService {
   void deleteMessage(ChatId chatId, MessageId messageId, UserId userId);
 
   void deleteAllByChat(ChatId chatId);
+
+  FileDownloadResult getThumbnail(ChatId chatId, MessageId messageId, UserId userId);
 }

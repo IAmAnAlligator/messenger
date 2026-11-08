@@ -63,24 +63,22 @@ SELECT m FROM MessageJpaEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId A
   @Query(
       value =
           """
-          SELECT DISTINCT ON (m.chat_id)
-              m.chat_id AS chatId,
-              m.id AS messageId,
-              m.sender_id AS senderId,
-              u.handle AS senderHandle,
-              u.username AS senderUsername,
-              u.role AS senderRole,
-              m.encrypted_content AS encryptedContent,
-              m.created_at AS createdAt
-          FROM messages m
-          JOIN users u
-            ON u.id = m.sender_id
-          WHERE m.chat_id IN (:chatIds)
-          ORDER BY
-              m.chat_id,
-              m.created_at DESC,
-              m.id DESC
-          """,
+        SELECT DISTINCT ON (m.chat_id)
+            m.chat_id AS chatId,
+            m.id AS messageId,
+            m.sender_id AS senderId,
+            u.handle AS senderHandle,
+            u.username AS senderUsername,
+            u.role AS senderRole,
+            m.encrypted_content AS encryptedContent,
+            m.created_at AS createdAt,
+            fa.content_type AS attachmentContentType
+        FROM messages m
+        JOIN users u ON u.id = m.sender_id
+        LEFT JOIN file_attachments fa ON fa.id = m.file_attachment_id
+        WHERE m.chat_id IN (:chatIds)
+        ORDER BY m.chat_id, m.created_at DESC, m.id DESC
+        """,
       nativeQuery = true)
   List<LastMessageProjection> findLastMessagesByChatIds(@Param("chatIds") List<UUID> chatIds);
 

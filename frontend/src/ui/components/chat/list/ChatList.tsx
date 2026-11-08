@@ -6,6 +6,10 @@ import {
     useAuth
 } from "../../../../contexts/AuthContext";
 
+import {
+    getFileIcon
+} from "../../../../utils/fileUtils";
+
 type Props = {
     chats: ChatDto[];
 
@@ -51,9 +55,12 @@ export default function ChatList({
                 ? "you: "
                 : `${chat.lastMessage.sender.username}: `;
 
-        if (chat.lastMessage.content === null) {
-            return `${prefix}📎`;
-        }
+if (chat.lastMessage.content === null) {
+    const contentType =
+        chat.lastMessage.attachment?.contentType ?? "";
+
+    return `${prefix}${getFileIcon(contentType)}`;
+}
 
         const preview =
             chat.lastMessage.content.length > 15

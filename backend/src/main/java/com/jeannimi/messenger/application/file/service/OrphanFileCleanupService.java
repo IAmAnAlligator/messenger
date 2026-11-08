@@ -7,8 +7,10 @@ import com.jeannimi.messenger.application.port.out.StoredFileInfo;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,17 @@ public class OrphanFileCleanupService {
   private final FileStoragePort fileStoragePort;
   private final FileStorageMaintenancePort fileStorageMaintenancePort;
   private final FileAttachmentRepositoryPort fileAttachmentRepositoryPort;
+
+  private static final String THUMBNAIL_SUFFIX = ".thumbnail.jpg";
+
+  private String getOriginalFileName(String fileName) {
+
+    if (fileName.endsWith(THUMBNAIL_SUFFIX)) {
+      return fileName.substring(0, fileName.length() - THUMBNAIL_SUFFIX.length());
+    }
+
+    return fileName;
+  }
 
   public OrphanFileCleanupService(
       FileStoragePort fileStoragePort,
@@ -61,25 +74,71 @@ public class OrphanFileCleanupService {
     Set<String> filesInDatabase =
         new HashSet<>(fileAttachmentRepositoryPort.findAllStorageFileNames());
 
-    int deletedFiles = 0;
+    Map<String, List<StoredFileInfo>> filesByOriginalName = new HashMap<>();
 
     for (StoredFileInfo file : filesInStorage) {
 
-      String storageFileName = file.storageFileName();
+      String originalFileName = getOriginalFileName(file.storageFileName());
 
-      if (filesInDatabase.contains(storageFileName)) {
+      filesByOriginalName
+          .computeIfAbsent(originalFileName, key -> new java.util.ArrayList<>())
+          .add(file);
+    }
 
-        log.debug("File is registered in DB: {}", storageFileName);
+    int deletedFiles = 0;
 
-      } else if (file.lastModified().isBefore(threshold)) {
+    for (Map.Entry<String, List<StoredFileInfo>> entry : filesByOriginalName.entrySet()) {
 
-        if (deletePhysicalFile(storageFileName)) {
+      String originalFileName = entry.getKey();
+      List<StoredFileInfo> relatedFiles = entry.getValue();
+
+      boolean originalExists =
+          relatedFiles.stream().anyMatch(file -> file.storageFileName().equals(originalFileName));
+
+      boolean registeredInDatabase = filesInDatabase.contains(originalFileName);
+
+      // DB attachment exists, but its original file is missing.
+      // Remove the remaining thumbnail as well.
+      if (registeredInDatabase && !originalExists) {
+
+        Instant latestModified =
+            relatedFiles.stream()
+                .map(StoredFileInfo::lastModified)
+                .max(Instant::compareTo)
+                .orElse(Instant.EPOCH);
+
+        if (latestModified.isBefore(threshold)) {
+
+          if (deletePhysicalFile(originalFileName)) {
+            deletedFiles++;
+          }
+
+        } else {
+          log.debug("Thumbnail without original is too young, keeping it: {}", originalFileName);
+        }
+
+        continue;
+      }
+
+      if (registeredInDatabase) {
+        continue;
+      }
+
+      // Use the newest modification time of the original and thumbnail.
+      Instant latestModified =
+          relatedFiles.stream()
+              .map(StoredFileInfo::lastModified)
+              .max(Instant::compareTo)
+              .orElse(Instant.EPOCH);
+
+      if (latestModified.isBefore(threshold)) {
+
+        if (deletePhysicalFile(originalFileName)) {
           deletedFiles++;
         }
 
       } else {
-
-        log.debug("Orphan file is too young, keeping it: {}", storageFileName);
+        log.debug("Orphan file is too young, keeping it: {}", originalFileName);
       }
     }
 

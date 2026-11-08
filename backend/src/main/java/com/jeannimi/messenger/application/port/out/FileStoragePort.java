@@ -11,4 +11,8 @@ public interface FileStoragePort {
   void delete(String storageFileName);
 
   String detectContentType(String storageFileName);
+
+  void storeThumbnail(String originalStorageFileName, byte[] content);
+
+  byte[] loadThumbnail(String originalStorageFileName);
 }

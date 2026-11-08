@@ -19,8 +19,8 @@ import com.jeannimi.messenger.domain.message.MessageId;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/chats/{chatId}/messages")
 @RequiredArgsConstructor
@@ -47,24 +46,34 @@ public class MessageController {
   private final FileUploadMapper fileUploadMapper;
   private final FileDownloadMapper fileDownloadMapper;
 
+  @GetMapping("/{messageId}/file/thumbnail")
+  public ResponseEntity<Resource> getThumbnail(
+      @PathVariable UUID chatId,
+      @PathVariable UUID messageId,
+      @AuthenticationPrincipal CustomUserDetails user) {
+    FileDownloadResult result =
+        messageService.getThumbnail(new ChatId(chatId), new MessageId(messageId), user.id());
+
+    return fileDownloadMapper.toInlineResponse(result);
+  }
+
   @GetMapping("/{messageId}/file")
   public ResponseEntity<InputStreamResource> getFile(
       @PathVariable UUID chatId,
       @PathVariable UUID messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
-
-    FileDownloadResult file =
+    FileDownloadResult result =
         messageService.getFile(new ChatId(chatId), new MessageId(messageId), user.id());
 
-    return fileDownloadMapper.toResponse(file);
+    return fileDownloadMapper.toResponse(result);
   }
 
+  @ResponseStatus(HttpStatus.CREATED)
   @PostMapping("/file")
   public MessageDto sendFile(
       @PathVariable UUID chatId,
       @RequestPart("file") MultipartFile file,
       @AuthenticationPrincipal CustomUserDetails user) {
-
     MessageResult result =
         messageService.sendFile(
             new ChatId(chatId), user.id(), fileUploadMapper.toFileUploadCommand(file));
@@ -72,12 +81,12 @@ public class MessageController {
     return MessageDto.fromResult(result);
   }
 
+  @ResponseStatus(HttpStatus.CREATED)
   @PostMapping
   public MessageDto sendMessage(
       @PathVariable UUID chatId,
-      @RequestBody @Valid MessageSendRequest request,
+      @Valid @RequestBody MessageSendRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
-
     MessageResult result =
         messageService.sendMessage(new ChatId(chatId), user.id(), request.content());
 
@@ -89,7 +98,6 @@ public class MessageController {
       @PathVariable UUID chatId,
       @Valid @ModelAttribute CursorPageRequest request,
       @AuthenticationPrincipal CustomUserDetails user) {
-
     CursorPageQuery<MessageId> query = cursorMapper.toQuery(request, MessageId::new);
 
     CursorPageResult<MessageResult, MessageId> result =
@@ -106,7 +114,6 @@ public class MessageController {
       @PathVariable UUID chatId,
       @PathVariable UUID messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
-
     MessageResult result =
         messageService.getMessage(new ChatId(chatId), new MessageId(messageId), user.id());
 
@@ -119,7 +126,6 @@ public class MessageController {
       @PathVariable UUID chatId,
       @PathVariable UUID messageId,
       @AuthenticationPrincipal CustomUserDetails user) {
-
     messageService.deleteMessage(new ChatId(chatId), new MessageId(messageId), user.id());
   }
 }

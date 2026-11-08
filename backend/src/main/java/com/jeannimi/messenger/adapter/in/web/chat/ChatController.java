@@ -4,6 +4,7 @@ import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatCreateRequest;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.ChatMemberDto;
+import com.jeannimi.messenger.adapter.in.web.chat.dto.LastMessageAttachmentDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.LastMessageDto;
 import com.jeannimi.messenger.adapter.in.web.chat.dto.RenameChatRequest;
 import com.jeannimi.messenger.adapter.in.web.mapper.CursorPaginationMapper;
@@ -197,6 +198,11 @@ public class ChatController {
       return null;
     }
 
+    LastMessageAttachmentDto attachment =
+        result.attachment() == null
+            ? null
+            : new LastMessageAttachmentDto(result.attachment().contentType());
+
     return new LastMessageDto(
         result.id().value(),
         new UserDto(
@@ -205,7 +211,8 @@ public class ChatController {
             result.sender().username(),
             result.sender().role()),
         result.content(),
-        result.createdAt());
+        result.createdAt(),
+        attachment);
   }
 
   private ChatMemberDto toDto(ChatMemberResult result) {

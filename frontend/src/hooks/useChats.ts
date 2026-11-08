@@ -21,6 +21,9 @@ import {
     useChatsContext
 } from "../contexts/ChatsContext";
 
+export type LastMessageAttachmentDto = {
+    contentType: string;
+};
 
 export type LastMessageStatus =
     | "NONE"
@@ -41,7 +44,13 @@ export type ChatMemberDto = {
 
 export type ChatDto = { id: string; name: string; type: "PRIVATE" | "GROUP"; members: ChatMemberDto[]; createdAt: string; lastMessageAt: string | null; lastMessage: LastMessageDto | null; unreadCount: number; lastMessageStatus: LastMessageStatus; };
 
-export type LastMessageDto = { id: string; sender: UserDto; content: string | null; createdAt: string; };
+export type LastMessageDto = {
+    id: string;
+    sender: UserDto;
+    content: string | null;
+    createdAt: string;
+    attachment: LastMessageAttachmentDto | null;
+};
 
 
 

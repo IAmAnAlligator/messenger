@@ -24,6 +24,7 @@ import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
+import com.jeannimi.messenger.application.port.out.ImageThumbnailPort;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
 import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
@@ -63,6 +64,42 @@ public class MessageServiceImpl implements MessageService {
   private final FileStoragePort fileStoragePort;
   private final FileAttachmentRepositoryPort fileAttachmentRepository;
   private final IdGenerator idGenerator;
+  private final ImageThumbnailPort imageThumbnailPort;
+
+  @Override
+  @Transactional(readOnly = true)
+  public FileDownloadResult getThumbnail(ChatId chatId, MessageId messageId, UserId userId) {
+
+    checkMembership(chatId, userId);
+
+    MessageWithSender messageWithSender =
+        messageRepository
+            .findByIdAndChatId(messageId, chatId)
+            .orElseThrow(() -> new NotFoundException("Message not found"));
+
+    FileAttachment attachment = messageWithSender.message().getAttachment();
+
+    if (attachment == null) {
+      throw new NotFoundException("Message does not contain a file");
+    }
+
+    if (!isSupportedImageContentType(attachment.getContentType())) {
+      throw new NotFoundException("Thumbnail not found");
+    }
+
+    byte[] thumbnail = fileStoragePort.loadThumbnail(attachment.getStorageFileName());
+
+    return new FileDownloadResult(
+        new java.io.ByteArrayInputStream(thumbnail),
+        "thumbnail.jpg",
+        "image/jpeg",
+        thumbnail.length);
+  }
+
+  private boolean isSupportedImageContentType(String contentType) {
+
+    return "image/jpeg".equalsIgnoreCase(contentType) || "image/png".equalsIgnoreCase(contentType);
+  }
 
   @Override
   @Transactional(readOnly = true)
@@ -95,21 +132,18 @@ public class MessageServiceImpl implements MessageService {
   @Override
   @Transactional
   public MessageResult sendFile(ChatId chatId, UserId senderId, FileUploadCommand file) {
-
     if (file == null) {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
     Chat chat = getChatForSending(chatId, senderId);
-
-    checkMembership(chatId, senderId);
-
     User sender = getUser(senderId);
 
     String originalFileName = sanitizeFileName(file.originalFileName());
 
     StoredFile storedFile;
 
+    // Сохраняем оригинальный файл.
     try (InputStream inputStream = file.inputStream()) {
 
       storedFile = fileStoragePort.store(inputStream, originalFileName);
@@ -119,14 +153,18 @@ public class MessageServiceImpl implements MessageService {
       throw new MessageException(MessageError.FILE_STORAGE_FAILED, "Failed to read uploaded file");
     }
 
-    String contentType = fileStoragePort.detectContentType(storedFile.storageFileName());
-
-    if (contentType == null || contentType.isBlank()) {
-
-      contentType = "application/octet-stream";
-    }
-
     try {
+
+      String contentType = fileStoragePort.detectContentType(storedFile.storageFileName());
+
+      if (contentType == null || contentType.isBlank()) {
+        contentType = "application/octet-stream";
+      }
+
+      // Генерируем миниатюру только для JPEG и PNG.
+      if (isSupportedImageContentType(contentType)) {
+        generateAndStoreThumbnail(storedFile);
+      }
 
       FileAttachmentId fileAttachmentId = new FileAttachmentId(idGenerator.generate());
 
@@ -145,13 +183,8 @@ public class MessageServiceImpl implements MessageService {
       Message savedMessage = messageRepository.save(message);
 
       chat.markMessageAdded(savedMessage.getCreatedAt());
-
       chatRepository.save(chat);
 
-      /*
-       * sender уже получен выше.
-       * Повторный запрос UserRepository не нужен.
-       */
       MessageResult result = toResult(savedMessage, sender);
 
       List<UserId> recipientUserIds =
@@ -165,16 +198,29 @@ public class MessageServiceImpl implements MessageService {
 
     } catch (RuntimeException e) {
 
+      // Удаляем оригинал и миниатюру, если она успела создаться.
       try {
-
         fileStoragePort.delete(storedFile.storageFileName());
-
       } catch (RuntimeException cleanupException) {
-
         e.addSuppressed(cleanupException);
       }
 
       throw e;
+    }
+  }
+
+  private void generateAndStoreThumbnail(StoredFile storedFile) {
+
+    try (InputStream original = fileStoragePort.load(storedFile.storageFileName())) {
+
+      byte[] thumbnail = imageThumbnailPort.generate(original);
+
+      fileStoragePort.storeThumbnail(storedFile.storageFileName(), thumbnail);
+
+    } catch (IOException e) {
+
+      throw new MessageException(
+          MessageError.FILE_STORAGE_FAILED, "Failed to generate image thumbnail");
     }
   }
 

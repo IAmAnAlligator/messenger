@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -20,9 +21,43 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   private final Path rootLocation;
 
+  private static final String THUMBNAIL_SUFFIX = ".thumbnail.jpg";
+
   public LocalFileStorageAdapter(@Value("${file.storage.location}") String storageLocation) {
 
     this.rootLocation = Path.of(storageLocation).toAbsolutePath().normalize();
+  }
+
+  @Override
+  public void storeThumbnail(String originalStorageFileName, byte[] content) {
+
+    if (content == null || content.length == 0) {
+      throw new FileStorageException("Thumbnail content is empty");
+    }
+
+    try {
+      Files.createDirectories(rootLocation);
+
+      Path thumbnailPath = resolveSafePath(getThumbnailFileName(originalStorageFileName));
+
+      Files.write(
+          thumbnailPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+    } catch (IOException e) {
+      throw new FileStorageException("Failed to store thumbnail", e);
+    }
+  }
+
+  @Override
+  public byte[] loadThumbnail(String originalStorageFileName) {
+
+    Path thumbnailPath = resolveSafePath(getThumbnailFileName(originalStorageFileName));
+
+    try {
+      return Files.readAllBytes(thumbnailPath);
+    } catch (IOException e) {
+      throw new FileStorageException("Failed to load thumbnail", e);
+    }
   }
 
   @Override
@@ -34,11 +69,7 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
       String extension = extractExtension(originalFileName);
       String storageFileName = UUID.randomUUID() + extension;
 
-      Path target = rootLocation.resolve(storageFileName).normalize();
-
-      if (!target.startsWith(rootLocation)) {
-        throw new FileStorageException("Invalid storage path");
-      }
+      Path target = resolveSafePath(storageFileName);
 
       Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
 
@@ -52,15 +83,10 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
   @Override
   public InputStream load(String storageFileName) {
 
+    Path file = resolveSafePath(storageFileName);
+
     try {
-      Path file = rootLocation.resolve(storageFileName).normalize();
-
-      if (!file.startsWith(rootLocation)) {
-        throw new FileStorageException("Invalid storage path");
-      }
-
       return Files.newInputStream(file);
-
     } catch (IOException e) {
       throw new FileStorageException("Failed to load file", e);
     }
@@ -68,30 +94,28 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   @Override
   public void delete(String storageFileName) {
-    Path path = rootLocation.resolve(storageFileName).normalize();
 
-    if (!path.startsWith(rootLocation)) {
-      throw new FileStorageException("Invalid storage path");
-    }
+    deleteFile(getThumbnailFileName(storageFileName));
+    deleteFile(storageFileName);
+  }
+
+  private void deleteFile(String fileName) {
+
+    Path path = resolveSafePath(fileName);
 
     try {
       Files.deleteIfExists(path);
     } catch (IOException e) {
-      throw new FileStorageException("Failed to delete file: " + storageFileName, e);
+      throw new FileStorageException("Failed to delete file: " + fileName, e);
     }
   }
 
   @Override
   public String detectContentType(String storageFileName) {
 
+    Path file = resolveSafePath(storageFileName);
+
     try {
-
-      Path file = rootLocation.resolve(storageFileName).normalize();
-
-      if (!file.startsWith(rootLocation)) {
-        throw new FileStorageException("Invalid storage path");
-      }
-
       String contentType = Files.probeContentType(file);
 
       return contentType == null || contentType.isBlank()
@@ -99,7 +123,6 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
           : contentType;
 
     } catch (IOException e) {
-
       throw new FileStorageException("Failed to detect content type: " + storageFileName, e);
     }
   }
@@ -143,5 +166,20 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
       throw new FileStorageException("Failed to read file metadata: " + file, e);
     }
+  }
+
+  private String getThumbnailFileName(String originalFileName) {
+    return originalFileName + THUMBNAIL_SUFFIX;
+  }
+
+  private Path resolveSafePath(String fileName) {
+
+    Path path = rootLocation.resolve(fileName).normalize();
+
+    if (!path.startsWith(rootLocation)) {
+      throw new FileStorageException("Invalid storage path");
+    }
+
+    return path;
   }
 }

@@ -25,7 +25,7 @@ public final class FileAttachment {
       Instant createdAt) {
 
     this.id = Objects.requireNonNull(id, "id");
-    this.originalFileName = Objects.requireNonNull(originalFileName, "originalFileName");
+    this.originalFileName = Objects.requireNonNull(originalFileName, "fileName");
     this.storageFileName = Objects.requireNonNull(storageFileName, "storageFileName");
     this.contentType = Objects.requireNonNull(contentType, "contentType");
     this.size = Objects.requireNonNull(size, "size");

@@ -1,6 +1,7 @@
 package com.jeannimi.messenger.adapter.out.persistence.mapper;
 
 import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageProjection;
+import com.jeannimi.messenger.application.message.dto.LastMessageAttachmentResult;
 import com.jeannimi.messenger.application.message.dto.LastMessageResult;
 import com.jeannimi.messenger.application.port.out.MessageEncryptionPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
@@ -30,7 +31,16 @@ public class LastMessagePersistenceMapper {
             ? null
             : messageEncryptionPort.decrypt(projection.getEncryptedContent());
 
+    LastMessageAttachmentResult attachment =
+        projection.getAttachmentContentType() == null
+            ? null
+            : new LastMessageAttachmentResult(projection.getAttachmentContentType());
+
     return new LastMessageResult(
-        new MessageId(projection.getMessageId()), sender, content, projection.getCreatedAt());
+        new MessageId(projection.getMessageId()),
+        sender,
+        content,
+        projection.getCreatedAt(),
+        attachment);
   }
 }

@@ -47,6 +47,21 @@ export async function getMessages(
 
 }
 
+export async function getMessageThumbnail(
+    chatId: string,
+    messageId: string
+): Promise<Blob> {
+
+    const response = await api.get(
+        `/chats/${chatId}/messages/${messageId}/file/thumbnail`,
+        {
+            responseType: "blob"
+        }
+    );
+
+    return response.data;
+}
+
 
 export async function sendFile(
 

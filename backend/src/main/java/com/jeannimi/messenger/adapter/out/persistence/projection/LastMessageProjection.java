@@ -20,4 +20,6 @@ public interface LastMessageProjection {
   String getEncryptedContent();
 
   Instant getCreatedAt();
+
+  String getAttachmentContentType();
 }

@@ -1,170 +1,140 @@
 import {
     useEffect,
+    useRef,
     useState
 } from "react";
-
 
 import type {
     MessageDto
 } from "../../../../types/message";
 
-
 import {
     useAuth
 } from "../../../../contexts/AuthContext";
 
-
 import {
-    getMessageFile
+    getMessageFile,
+    getMessageThumbnail
 } from "../../../../services/messageService";
 
+import {
+    getFileIcon
+} from "../../../../utils/fileUtils";
 
 type Props = {
-
     message: MessageDto;
-
-    onDelete(
-        id: string
-    ): void;
-
-    onUserProfile(
-        userId: string
-    ): void;
-
+    onDelete(id: string): void;
+    onUserProfile(userId: string): void;
     isRead: boolean;
-
 };
 
 
 export default function MessageItem({
-
     message,
-
     onDelete,
-
     onUserProfile,
-
     isRead
-
 }: Props) {
 
-
-    const { user } =
-        useAuth();
-
+    const { user } = useAuth();
 
     const [fileUrl, setFileUrl] =
         useState<string | null>(null);
 
-
     const [fileLoading, setFileLoading] =
         useState(false);
-
 
     const [fileError, setFileError] =
         useState(false);
 
+    const [originalImageUrl, setOriginalImageUrl] =
+        useState<string | null>(null);
+
+    const [originalLoading, setOriginalLoading] =
+        useState(false);
+
+    const [originalError, setOriginalError] =
+        useState(false);
+
+    const originalUrlRef = useRef<string | null>(null);
 
     const mine =
         user?.id === message.sender.id;
 
+    const attachment = message.attachment;
 
-    /*
-     * Загружаем файл через Axios,
-     * чтобы Authorization: Bearer ...
-     * был добавлен interceptor'ом.
-     */
+    const isImage =
+        attachment?.contentType.startsWith("image/") ?? false;
+
+
+    // --------------------------------------------------
+    // Load thumbnail or original file
+    // --------------------------------------------------
+
     useEffect(() => {
 
-        if (!message.attachment) {
-
+        if (!attachment) {
             setFileUrl(null);
-
             return;
-
         }
 
-
-        let objectUrl: string | null = null;
-
         let cancelled = false;
-
+        let objectUrl: string | null = null;
 
         async function loadFile() {
 
             try {
 
                 setFileLoading(true);
-
                 setFileError(false);
+                setFileUrl(null);
 
-
-                const blob =
-                    await getMessageFile(
+                const blob = isImage
+                    ? await getMessageThumbnail(
+                        message.chatId,
+                        message.id
+                    )
+                    : await getMessageFile(
                         message.chatId,
                         message.id
                     );
 
+                if (cancelled) return;
 
-                if (cancelled) {
-                    return;
-                }
+                objectUrl = URL.createObjectURL(blob);
 
-
-                objectUrl =
-                    URL.createObjectURL(blob);
-
-
-                setFileUrl(
-                    objectUrl
-                );
-
+                setFileUrl(objectUrl);
 
             } catch (error) {
 
-                if (cancelled) {
-                    return;
-                }
-
+                if (cancelled) return;
 
                 console.error(
-                    "Failed to load message file",
+                    isImage
+                        ? "Failed to load thumbnail"
+                        : "Failed to load message file",
                     error
                 );
 
-
                 setFileError(true);
-
-                setFileUrl(null);
-
 
             } finally {
 
                 if (!cancelled) {
-
                     setFileLoading(false);
-
                 }
 
             }
-
         }
 
-
         void loadFile();
-
 
         return () => {
 
             cancelled = true;
 
-
             if (objectUrl) {
-
-                URL.revokeObjectURL(
-                    objectUrl
-                );
-
+                URL.revokeObjectURL(objectUrl);
             }
 
         };
@@ -172,15 +142,103 @@ export default function MessageItem({
     }, [
         message.chatId,
         message.id,
-        message.attachment
+        attachment?.contentType,
+        isImage
     ]);
 
 
-    const messageDate =
-        new Date(
-            message.createdAt
-        );
+    // --------------------------------------------------
+    // Release original image URL
+    // --------------------------------------------------
 
+    useEffect(() => {
+
+        return () => {
+
+            if (originalUrlRef.current) {
+
+                URL.revokeObjectURL(
+                    originalUrlRef.current
+                );
+
+                originalUrlRef.current = null;
+
+            }
+
+        };
+
+    }, []);
+
+
+    // --------------------------------------------------
+    // Load original image on demand
+    // --------------------------------------------------
+
+    async function handleOpenOriginalImage() {
+
+        if (
+            originalImageUrl ||
+            originalLoading ||
+            !attachment
+        ) {
+            return;
+        }
+
+        try {
+
+            setOriginalLoading(true);
+            setOriginalError(false);
+
+            const blob = await getMessageFile(
+                message.chatId,
+                message.id
+            );
+
+            const objectUrl =
+                URL.createObjectURL(blob);
+
+            originalUrlRef.current = objectUrl;
+
+            setOriginalImageUrl(objectUrl);
+
+        } catch (error) {
+
+            console.error(
+                "Failed to load original image",
+                error
+            );
+
+            setOriginalError(true);
+
+        } finally {
+
+            setOriginalLoading(false);
+
+        }
+
+    }
+
+
+    function handleCloseOriginalImage() {
+
+        if (originalUrlRef.current) {
+
+            URL.revokeObjectURL(
+                originalUrlRef.current
+            );
+
+            originalUrlRef.current = null;
+
+        }
+
+        setOriginalImageUrl(null);
+        setOriginalError(false);
+
+    }
+
+
+    const messageDate =
+        new Date(message.createdAt);
 
     const formattedDate =
         new Intl.DateTimeFormat(
@@ -194,11 +252,6 @@ export default function MessageItem({
                 hour12: false
             }
         ).format(messageDate);
-
-
-    const isImage =
-        message.attachment?.contentType
-            .startsWith("image/") ?? false;
 
 
     return (
@@ -215,175 +268,126 @@ export default function MessageItem({
 
                 <div className="message-header">
 
-                    {
-                        !mine && (
+                    {!mine && (
 
-                            <button
-                                type="button"
-                                className="message-sender"
-                                onClick={() =>
-                                    onUserProfile(
-                                        message.sender.id
-                                    )
-                                }
-                            >
-                                {message.sender.username}
-                            </button>
+                        <button
+                            type="button"
+                            className="message-sender"
+                            onClick={() =>
+                                onUserProfile(message.sender.id)
+                            }
+                        >
+                            {message.sender.username}
+                        </button>
 
-                        )
-                    }
+                    )}
 
+                    {mine && (
 
-                    {
-                        mine && (
+                        <button
+                            type="button"
+                            className="delete-btn"
+                            onClick={() =>
+                                onDelete(message.id)
+                            }
+                        >
+                            ×
+                        </button>
 
-                            <button
-                                type="button"
-                                className="delete-btn"
-                                onClick={() =>
-                                    onDelete(
-                                        message.id
-                                    )
-                                }
-                            >
-                                ×
-                            </button>
-
-                        )
-                    }
+                    )}
 
                 </div>
 
 
-                {
-                    message.content && (
+                {message.content && (
 
-                        <div className="message-text">
+                    <div className="message-text">
+                        {message.content}
+                    </div>
 
-                            {message.content}
-
-                        </div>
-
-                    )
-                }
+                )}
 
 
-                {
-                    message.attachment && (
+                {attachment && (
 
-                        <div className="message-attachment">
+                    <div className="message-attachment">
 
-                            {
-                                fileLoading && (
+                        {fileLoading && (
 
-                                    <div className="message-file-loading">
-                                        Loading file...
-                                    </div>
+                            <div className="message-file-loading">
+                                {isImage
+                                    ? "Loading image..."
+                                    : "Loading file..."}
+                            </div>
 
-                                )
-                            }
-
-
-                            {
-                                fileError && (
-
-                                    <div className="message-file-error">
-                                        Failed to load file
-                                    </div>
-
-                                )
-                            }
+                        )}
 
 
-                            {
-                                !fileLoading &&
-                                !fileError &&
-                                fileUrl && (
+                        {fileError && (
 
-                                    isImage ? (
+                            <div className="message-file-error">
+                                Failed to load file
+                            </div>
 
-                                        <a
-                                            href={fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="message-image-link"
-                                        >
-
-                                            <img
-                                                src={fileUrl}
-                                                alt={
-                                                    message
-                                                        .attachment
-                                                        .originalFileName
-                                                }
-                                                className="message-image-preview"
-                                            />
-
-                                        </a>
-
-                                    ) : (
-
-                                        <a
-                                            href={fileUrl}
-                                            download={
-                                                message
-                                                    .attachment
-                                                    .originalFileName
-                                            }
-                                            className="message-file"
-                                        >
-
-                                            <span className="message-file-icon">
-
-                                                {
-                                                    getFileIcon(
-                                                        message
-                                                            .attachment
-                                                            .contentType
-                                                    )
-                                                }
-
-                                            </span>
+                        )}
 
 
-                                            <span className="message-file-info">
+                        {!fileLoading &&
+                            !fileError &&
+                            fileUrl && (
 
-                                                <span className="message-file-name">
+                            isImage ? (
 
-                                                    {
-                                                        message
-                                                            .attachment
-                                                            .originalFileName
-                                                    }
+                                <button
+                                    type="button"
+                                    className="message-image-button"
+                                    onClick={handleOpenOriginalImage}
+                                    title="Open original image"
+                                >
 
-                                                </span>
+                                    <img
+                                        src={fileUrl}
+                                        alt={attachment.originalFileName}
+                                        className="message-image-preview"
+                                    />
 
+                                </button>
 
-                                                <span className="message-file-size">
+                            ) : (
 
-                                                    {
-                                                        formatFileSize(
-                                                            message
-                                                                .attachment
-                                                                .size
-                                                        )
-                                                    }
+                                <a
+                                    href={fileUrl}
+                                    download={attachment.originalFileName}
+                                    className="message-file"
+                                >
 
-                                                </span>
+                                    <span className="message-file-icon">
+                                        {getFileIcon(
+                                            attachment.contentType
+                                        )}
+                                    </span>
 
-                                            </span>
+                                    <span className="message-file-info">
 
-                                        </a>
+                                        <span className="message-file-name">
+                                            {attachment.originalFileName}
+                                        </span>
 
-                                    )
+                                        <span className="message-file-size">
+                                            {formatFileSize(attachment.size)}
+                                        </span>
 
-                                )
-                            }
+                                    </span>
 
-                        </div>
+                                </a>
 
-                    )
-                }
+                            )
+
+                        )}
+
+                    </div>
+
+                )}
 
 
                 <div className="message-footer">
@@ -392,31 +396,70 @@ export default function MessageItem({
                         {formattedDate}
                     </span>
 
+                    {mine && (
 
-                    {
-                        mine && (
+                        <span
+                            className={
+                                isRead
+                                    ? "message-read read"
+                                    : "message-read"
+                            }
+                            title={
+                                isRead
+                                    ? "Read"
+                                    : "Sent"
+                            }
+                        >
+                            {isRead ? "✓✓" : "✓"}
+                        </span>
 
-                            <span
-                                className={
-                                    isRead
-                                        ? "message-read read"
-                                        : "message-read"
-                                }
-                                title={
-                                    isRead
-                                        ? "Прочитано"
-                                        : "Отправлено"
-                                }
-                            >
-                                {isRead ? "✓✓" : "✓"}
-                            </span>
-
-                        )
-                    }
+                    )}
 
                 </div>
 
             </div>
+
+
+            {/* Original image viewer */}
+
+            {originalImageUrl && (
+
+                <div
+                    className="image-viewer-overlay"
+                    onClick={handleCloseOriginalImage}
+                >
+
+                    <button
+                        type="button"
+                        className="image-viewer-close"
+                        onClick={handleCloseOriginalImage}
+                        aria-label="Close image"
+                    >
+                        ×
+                    </button>
+
+                    <img
+                        src={originalImageUrl}
+                        alt={attachment?.originalFileName ?? "Original image"}
+                        className="image-viewer-image"
+                        onClick={event => event.stopPropagation()}
+                    />
+
+                </div>
+
+            )}
+
+            {originalLoading && (
+                <div className="image-viewer-loading">
+                    Loading original image...
+                </div>
+            )}
+
+            {originalError && (
+                <div className="message-file-error">
+                    Failed to load original image
+                </div>
+            )}
 
         </div>
 
@@ -425,106 +468,19 @@ export default function MessageItem({
 }
 
 
-function getFileIcon(
-    contentType: string
-): string {
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
 
-    if (
-        contentType.startsWith(
-            "image/"
-        )
-    ) {
-
-        return "🖼️";
-
-    }
-
-
-    if (
-        contentType.startsWith(
-            "video/"
-        )
-    ) {
-
-        return "🎬";
-
-    }
-
-
-    if (
-        contentType.startsWith(
-            "audio/"
-        )
-    ) {
-
-        return "🎵";
-
-    }
-
-
-    if (
-        contentType ===
-        "application/pdf"
-    ) {
-
-        return "📄";
-
-    }
-
-
-    if (
-        contentType.includes("zip") ||
-        contentType.includes("rar") ||
-        contentType.includes("7z")
-    ) {
-
-        return "📦";
-
-    }
-
-
-    if (
-        contentType.includes("text") ||
-        contentType.includes("json")
-    ) {
-
-        return "📝";
-
-    }
-
-
-    return "📎";
-
-}
-
-
-function formatFileSize(
-    size: number
-): string {
+function formatFileSize(size: number): string {
 
     if (size < 1024) {
-
         return `${size} B`;
-
     }
 
-
-    if (
-        size <
-        1024 * 1024
-    ) {
-
-        return `${(
-            size / 1024
-        ).toFixed(1)} KB`;
-
+    if (size < 1024 * 1024) {
+        return `${(size / 1024).toFixed(1)} KB`;
     }
 
-
-    return `${(
-        size /
-        1024 /
-        1024
-    ).toFixed(1)} MB`;
-
+    return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
