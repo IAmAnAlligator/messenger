@@ -4,5 +4,6 @@ import java.io.InputStream;
 
 public interface ImageThumbnailPort {
 
-  byte[] generate(InputStream original);
+  GeneratedThumbnail generate(InputStream original);
+
 }

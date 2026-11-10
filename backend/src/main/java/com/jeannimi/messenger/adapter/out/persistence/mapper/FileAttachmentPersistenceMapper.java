@@ -20,6 +20,7 @@ public class FileAttachmentPersistenceMapper {
         entity.getStorageFileName(),
         entity.getContentType(),
         entity.getSize(),
+        entity.getThumbnailContentType(),
         entity.getCreatedAt());
   }
 
@@ -35,6 +36,7 @@ public class FileAttachmentPersistenceMapper {
         attachment.getStorageFileName(),
         attachment.getContentType(),
         attachment.getSize(),
+        attachment.getThumbnailContentType(),
         attachment.getCreatedAt());
   }
 }

@@ -6,6 +6,7 @@ import com.jeannimi.messenger.application.port.out.StoredFile;
 import com.jeannimi.messenger.application.port.out.StoredFileInfo;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -21,16 +22,31 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   private final Path rootLocation;
 
-  private static final String THUMBNAIL_SUFFIX = ".thumbnail.jpg";
+  private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
+  private static final int BUFFER_SIZE = 8192;
 
   public LocalFileStorageAdapter(@Value("${file.storage.location}") String storageLocation) {
 
     this.rootLocation = Path.of(storageLocation).toAbsolutePath().normalize();
   }
 
-  @Override
-  public void storeThumbnail(String originalStorageFileName, byte[] content) {
+  private String getThumbnailFileName(
+      String originalFileName,
+      String extension
+  ) {
+    if (!".jpg".equals(extension) && !".png".equals(extension)) {
+      throw new FileStorageException("Unsupported thumbnail extension");
+    }
 
+    return originalFileName + ".thumbnail" + extension;
+  }
+
+  @Override
+  public void storeThumbnail(
+      String originalStorageFileName,
+      byte[] content,
+      String extension
+  ) {
     if (content == null || content.length == 0) {
       throw new FileStorageException("Thumbnail content is empty");
     }
@@ -38,10 +54,14 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
     try {
       Files.createDirectories(rootLocation);
 
-      Path thumbnailPath = resolveSafePath(getThumbnailFileName(originalStorageFileName));
+      Path thumbnailPath = resolveSafePath(
+          getThumbnailFileName(originalStorageFileName, extension));
 
       Files.write(
-          thumbnailPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+          thumbnailPath,
+          content,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.TRUNCATE_EXISTING);
 
     } catch (IOException e) {
       throw new FileStorageException("Failed to store thumbnail", e);
@@ -49,9 +69,12 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
   }
 
   @Override
-  public byte[] loadThumbnail(String originalStorageFileName) {
-
-    Path thumbnailPath = resolveSafePath(getThumbnailFileName(originalStorageFileName));
+  public byte[] loadThumbnail(
+      String originalStorageFileName,
+      String extension
+  ) {
+    Path thumbnailPath = resolveSafePath(
+        getThumbnailFileName(originalStorageFileName, extension));
 
     try {
       return Files.readAllBytes(thumbnailPath);
@@ -62,7 +85,6 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
   @Override
   public StoredFile store(InputStream inputStream, String originalFileName) {
-
     try {
       Files.createDirectories(rootLocation);
 
@@ -71,7 +93,25 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
       Path target = resolveSafePath(storageFileName);
 
-      Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+      try (OutputStream outputStream = Files.newOutputStream(target)) {
+        byte[] buffer = new byte[BUFFER_SIZE];
+        long totalBytes = 0;
+        int bytesRead;
+
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+          totalBytes += bytesRead;
+
+          if (totalBytes > MAX_FILE_SIZE_BYTES) {
+            throw new FileStorageException(
+                "File size exceeds 10 MB");
+          }
+
+          outputStream.write(buffer, 0, bytesRead);
+        }
+      } catch (RuntimeException e) {
+        Files.deleteIfExists(target);
+        throw e;
+      }
 
       return new StoredFile(storageFileName);
 
@@ -95,7 +135,9 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
   @Override
   public void delete(String storageFileName) {
 
-    deleteFile(getThumbnailFileName(storageFileName));
+    deleteFile(getThumbnailFileName(storageFileName, ".jpg"));
+    deleteFile(getThumbnailFileName(storageFileName, ".png"));
+
     deleteFile(storageFileName);
   }
 
@@ -166,10 +208,6 @@ public class LocalFileStorageAdapter implements FileStoragePort, FileStorageMain
 
       throw new FileStorageException("Failed to read file metadata: " + file, e);
     }
-  }
-
-  private String getThumbnailFileName(String originalFileName) {
-    return originalFileName + THUMBNAIL_SUFFIX;
   }
 
   private Path resolveSafePath(String fileName) {

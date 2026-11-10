@@ -1,5 +1,6 @@
 package com.jeannimi.messenger.adapter.out.imagethumbnail;
 
+import com.jeannimi.messenger.application.port.out.GeneratedThumbnail;
 import com.jeannimi.messenger.application.port.out.ImageThumbnailPort;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -25,7 +26,7 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
   private static final long MAX_IMAGE_PIXELS = 25_000_000L;
 
   @Override
-  public byte[] generate(InputStream original) {
+  public GeneratedThumbnail generate(InputStream original) {
 
     try {
       byte[] originalBytes = original.readAllBytes();
@@ -52,10 +53,12 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
 
           String format = reader.getFormatName().toLowerCase(Locale.ROOT);
 
-          if (!"jpeg".equals(format) && !"png".equals(format)) {
-            throw new ThumbnailGenerationException(
+          String originalContentType = switch (format) {
+            case "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            default -> throw new ThumbnailGenerationException(
                 "Only JPEG and PNG images are supported");
-          }
+          };
 
           int width = reader.getWidth(0);
           int height = reader.getHeight(0);
@@ -72,10 +75,13 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
                 "Image dimensions exceed the allowed limit");
           }
 
-          // Маленькие изображения возвращаем без изменений.
+          // Маленькие изображения сохраняем без перекодирования.
           if (width <= THUMBNAIL_WIDTH
               && height <= THUMBNAIL_HEIGHT) {
-            return originalBytes;
+
+            return new GeneratedThumbnail(
+                originalBytes,
+                originalContentType);
           }
 
           BufferedImage image = reader.read(0);
@@ -85,6 +91,7 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
                 "Failed to decode uploaded image");
           }
 
+          // Большие изображения уменьшаем и сохраняем в JPEG.
           try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
 
             Thumbnails.of(image)
@@ -93,7 +100,9 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
                 .outputQuality(OUTPUT_QUALITY)
                 .toOutputStream(output);
 
-            return output.toByteArray();
+            return new GeneratedThumbnail(
+                output.toByteArray(),
+                "image/jpeg");
           }
 
         } finally {

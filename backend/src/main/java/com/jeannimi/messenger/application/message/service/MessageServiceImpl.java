@@ -23,6 +23,7 @@ import com.jeannimi.messenger.application.port.out.ChatRepositoryPort;
 import com.jeannimi.messenger.application.port.out.EventPublisherPort;
 import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.application.port.out.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.GeneratedThumbnail;
 import com.jeannimi.messenger.application.port.out.IdGenerator;
 import com.jeannimi.messenger.application.port.out.ImageThumbnailPort;
 import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
@@ -68,7 +69,11 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public FileDownloadResult getThumbnail(ChatId chatId, MessageId messageId, UserId userId) {
+  public FileDownloadResult getThumbnail(
+      ChatId chatId,
+      MessageId messageId,
+      UserId userId
+  ) {
 
     checkMembership(chatId, userId);
 
@@ -79,20 +84,27 @@ public class MessageServiceImpl implements MessageService {
 
     FileAttachment attachment = messageWithSender.message().getAttachment();
 
-    if (attachment == null) {
-      throw new NotFoundException("Message does not contain a file");
-    }
-
-    if (!isSupportedImageContentType(attachment.getContentType())) {
+    if (attachment == null || attachment.getThumbnailContentType() == null) {
       throw new NotFoundException("Thumbnail not found");
     }
 
-    byte[] thumbnail = fileStoragePort.loadThumbnail(attachment.getStorageFileName());
+    String contentType = attachment.getThumbnailContentType();
+
+    String extension = switch (contentType) {
+      case "image/jpeg" -> ".jpg";
+      case "image/png" -> ".png";
+      default -> throw new IllegalStateException(
+          "Unsupported thumbnail content type: " + contentType);
+    };
+
+    byte[] thumbnail = fileStoragePort.loadThumbnail(
+        attachment.getStorageFileName(),
+        extension);
 
     return new FileDownloadResult(
         new java.io.ByteArrayInputStream(thumbnail),
-        "thumbnail.jpg",
-        "image/jpeg",
+        "thumbnail" + extension,
+        contentType,
         thumbnail.length);
   }
 
@@ -136,6 +148,8 @@ public class MessageServiceImpl implements MessageService {
       throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
+    validateFileSize(file.size());
+
     Chat chat = getChatForSending(chatId, senderId);
     User sender = getUser(senderId);
 
@@ -161,9 +175,11 @@ public class MessageServiceImpl implements MessageService {
         contentType = "application/octet-stream";
       }
 
-      // Генерируем миниатюру только для JPEG и PNG.
+      String thumbnailContentType = null;
+
+// Генерируем превью только для JPEG и PNG.
       if (isSupportedImageContentType(contentType)) {
-        generateAndStoreThumbnail(storedFile);
+        thumbnailContentType = generateAndStoreThumbnail(storedFile);
       }
 
       FileAttachmentId fileAttachmentId = new FileAttachmentId(idGenerator.generate());
@@ -174,7 +190,8 @@ public class MessageServiceImpl implements MessageService {
               originalFileName,
               storedFile.storageFileName(),
               contentType,
-              file.size());
+              file.size(),
+              thumbnailContentType);
 
       MessageId messageId = new MessageId(idGenerator.generate());
 
@@ -209,18 +226,40 @@ public class MessageServiceImpl implements MessageService {
     }
   }
 
-  private void generateAndStoreThumbnail(StoredFile storedFile) {
+  private void validateFileSize(Long size) {
+    if (size == null || size <= 0) {
+      throw new MessageException(
+          MessageError.FILE_EMPTY,
+          "File must not be empty");
+    }
 
-    try (InputStream original = fileStoragePort.load(storedFile.storageFileName())) {
+    if (size > FileAttachmentConstants.MAX_FILE_SIZE_BYTES) {
+      throw new MessageException(
+          MessageError.FILE_TOO_LARGE,
+          "File size exceeds 10 MB");
+    }
+  }
 
-      byte[] thumbnail = imageThumbnailPort.generate(original);
+  private String generateAndStoreThumbnail(StoredFile storedFile) {
 
-      fileStoragePort.storeThumbnail(storedFile.storageFileName(), thumbnail);
+    try (InputStream original = fileStoragePort.load(
+        storedFile.storageFileName())) {
+
+      GeneratedThumbnail thumbnail =
+          imageThumbnailPort.generate(original);
+
+      fileStoragePort.storeThumbnail(
+          storedFile.storageFileName(),
+          thumbnail.content(),
+          thumbnail.extension());
+
+      return thumbnail.contentType();
 
     } catch (IOException e) {
 
       throw new MessageException(
-          MessageError.FILE_STORAGE_FAILED, "Failed to generate image thumbnail");
+          MessageError.FILE_STORAGE_FAILED,
+          "Failed to generate image thumbnail");
     }
   }
 

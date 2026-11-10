@@ -12,7 +12,12 @@ public interface FileStoragePort {
 
   String detectContentType(String storageFileName);
 
-  void storeThumbnail(String originalStorageFileName, byte[] content);
+  void storeThumbnail(
+      String originalStorageFileName,
+      byte[] content,
+      String extension);
 
-  byte[] loadThumbnail(String originalStorageFileName);
+  byte[] loadThumbnail(
+      String originalStorageFileName,
+      String extension);
 }

@@ -32,6 +32,9 @@ public class FileAttachmentJpaEntity {
   @Column(name = "size", nullable = false)
   private Long size;
 
+  @Column(name = "thumbnail_content_type", length = 100)
+  private String thumbnailContentType;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
@@ -41,13 +44,15 @@ public class FileAttachmentJpaEntity {
       String storageFileName,
       String contentType,
       Long size,
-      Instant createdAt) {
-
+      String thumbnailContentType,
+      Instant createdAt
+  ) {
     this.id = id;
     this.originalFileName = originalFileName;
     this.storageFileName = storageFileName;
     this.contentType = contentType;
     this.size = size;
+    this.thumbnailContentType = thumbnailContentType;
     this.createdAt = createdAt;
   }
 }

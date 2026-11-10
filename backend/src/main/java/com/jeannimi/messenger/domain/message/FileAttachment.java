@@ -14,6 +14,7 @@ public final class FileAttachment {
   private final String storageFileName;
   private final String contentType;
   private final Long size;
+  private final String thumbnailContentType;
   private final Instant createdAt;
 
   private FileAttachment(
@@ -22,13 +23,15 @@ public final class FileAttachment {
       String storageFileName,
       String contentType,
       Long size,
-      Instant createdAt) {
-
+      String thumbnailContentType,
+      Instant createdAt
+  ) {
     this.id = Objects.requireNonNull(id, "id");
     this.originalFileName = Objects.requireNonNull(originalFileName, "fileName");
     this.storageFileName = Objects.requireNonNull(storageFileName, "storageFileName");
     this.contentType = Objects.requireNonNull(contentType, "contentType");
     this.size = Objects.requireNonNull(size, "size");
+    this.thumbnailContentType = thumbnailContentType;
     this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
   }
 
@@ -37,15 +40,23 @@ public final class FileAttachment {
       String originalFileName,
       String storageFileName,
       String contentType,
-      Long size) {
-
+      Long size,
+      String thumbnailContentType
+  ) {
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
     validateContentType(contentType);
     validateSize(size);
+    validateThumbnailContentType(thumbnailContentType);
 
     return new FileAttachment(
-        id, originalFileName, storageFileName, contentType, size, Instant.now());
+        id,
+        originalFileName,
+        storageFileName,
+        contentType,
+        size,
+        thumbnailContentType,
+        Instant.now());
   }
 
   public static FileAttachment reconstitute(
@@ -54,14 +65,38 @@ public final class FileAttachment {
       String storageFileName,
       String contentType,
       Long size,
-      Instant createdAt) {
-
+      String thumbnailContentType,
+      Instant createdAt
+  ) {
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
     validateContentType(contentType);
     validateSize(size);
+    validateThumbnailContentType(thumbnailContentType);
 
-    return new FileAttachment(id, originalFileName, storageFileName, contentType, size, createdAt);
+    return new FileAttachment(
+        id,
+        originalFileName,
+        storageFileName,
+        contentType,
+        size,
+        thumbnailContentType,
+        createdAt);
+  }
+
+  private static void validateThumbnailContentType(String contentType) {
+
+    if (contentType == null) {
+      return;
+    }
+
+    if (!"image/jpeg".equals(contentType)
+        && !"image/png".equals(contentType)) {
+
+      throw new MessageException(
+          MessageError.FILE_CONTENT_TYPE_INVALID,
+          "Unsupported thumbnail content type");
+    }
   }
 
   private static void validateOriginalFileName(String fileName) {
