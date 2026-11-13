@@ -69,11 +69,7 @@ public class MessageServiceImpl implements MessageService {
 
   @Override
   @Transactional(readOnly = true)
-  public FileDownloadResult getThumbnail(
-      ChatId chatId,
-      MessageId messageId,
-      UserId userId
-  ) {
+  public FileDownloadResult getThumbnail(ChatId chatId, MessageId messageId, UserId userId) {
 
     checkMembership(chatId, userId);
 
@@ -90,16 +86,15 @@ public class MessageServiceImpl implements MessageService {
 
     String contentType = attachment.getThumbnailContentType();
 
-    String extension = switch (contentType) {
-      case "image/jpeg" -> ".jpg";
-      case "image/png" -> ".png";
-      default -> throw new IllegalStateException(
-          "Unsupported thumbnail content type: " + contentType);
-    };
+    String extension =
+        switch (contentType) {
+          case "image/jpeg" -> ".jpg";
+          case "image/png" -> ".png";
+          default -> throw new IllegalStateException(
+              "Unsupported thumbnail content type: " + contentType);
+        };
 
-    byte[] thumbnail = fileStoragePort.loadThumbnail(
-        attachment.getStorageFileName(),
-        extension);
+    byte[] thumbnail = fileStoragePort.loadThumbnail(attachment.getStorageFileName(), extension);
 
     return new FileDownloadResult(
         new java.io.ByteArrayInputStream(thumbnail),
@@ -177,7 +172,7 @@ public class MessageServiceImpl implements MessageService {
 
       String thumbnailContentType = null;
 
-// Генерируем превью только для JPEG и PNG.
+      // Генерируем превью только для JPEG и PNG.
       if (isSupportedImageContentType(contentType)) {
         thumbnailContentType = generateAndStoreThumbnail(storedFile);
       }
@@ -228,38 +223,29 @@ public class MessageServiceImpl implements MessageService {
 
   private void validateFileSize(Long size) {
     if (size == null || size <= 0) {
-      throw new MessageException(
-          MessageError.FILE_EMPTY,
-          "File must not be empty");
+      throw new MessageException(MessageError.FILE_EMPTY, "File must not be empty");
     }
 
     if (size > FileAttachmentConstants.MAX_FILE_SIZE_BYTES) {
-      throw new MessageException(
-          MessageError.FILE_TOO_LARGE,
-          "File size exceeds 10 MB");
+      throw new MessageException(MessageError.FILE_TOO_LARGE, "File size exceeds 10 MB");
     }
   }
 
   private String generateAndStoreThumbnail(StoredFile storedFile) {
 
-    try (InputStream original = fileStoragePort.load(
-        storedFile.storageFileName())) {
+    try (InputStream original = fileStoragePort.load(storedFile.storageFileName())) {
 
-      GeneratedThumbnail thumbnail =
-          imageThumbnailPort.generate(original);
+      GeneratedThumbnail thumbnail = imageThumbnailPort.generate(original);
 
       fileStoragePort.storeThumbnail(
-          storedFile.storageFileName(),
-          thumbnail.content(),
-          thumbnail.extension());
+          storedFile.storageFileName(), thumbnail.content(), thumbnail.extension());
 
       return thumbnail.contentType();
 
     } catch (IOException e) {
 
       throw new MessageException(
-          MessageError.FILE_STORAGE_FAILED,
-          "Failed to generate image thumbnail");
+          MessageError.FILE_STORAGE_FAILED, "Failed to generate image thumbnail");
     }
   }
 

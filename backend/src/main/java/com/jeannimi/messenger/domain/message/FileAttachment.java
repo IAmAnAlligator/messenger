@@ -24,8 +24,7 @@ public final class FileAttachment {
       String contentType,
       Long size,
       String thumbnailContentType,
-      Instant createdAt
-  ) {
+      Instant createdAt) {
     this.id = Objects.requireNonNull(id, "id");
     this.originalFileName = Objects.requireNonNull(originalFileName, "fileName");
     this.storageFileName = Objects.requireNonNull(storageFileName, "storageFileName");
@@ -41,8 +40,7 @@ public final class FileAttachment {
       String storageFileName,
       String contentType,
       Long size,
-      String thumbnailContentType
-  ) {
+      String thumbnailContentType) {
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
     validateContentType(contentType);
@@ -66,8 +64,7 @@ public final class FileAttachment {
       String contentType,
       Long size,
       String thumbnailContentType,
-      Instant createdAt
-  ) {
+      Instant createdAt) {
     validateOriginalFileName(originalFileName);
     validateStorageFileName(storageFileName);
     validateContentType(contentType);
@@ -75,13 +72,7 @@ public final class FileAttachment {
     validateThumbnailContentType(thumbnailContentType);
 
     return new FileAttachment(
-        id,
-        originalFileName,
-        storageFileName,
-        contentType,
-        size,
-        thumbnailContentType,
-        createdAt);
+        id, originalFileName, storageFileName, contentType, size, thumbnailContentType, createdAt);
   }
 
   private static void validateThumbnailContentType(String contentType) {
@@ -90,12 +81,10 @@ public final class FileAttachment {
       return;
     }
 
-    if (!"image/jpeg".equals(contentType)
-        && !"image/png".equals(contentType)) {
+    if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType)) {
 
       throw new MessageException(
-          MessageError.FILE_CONTENT_TYPE_INVALID,
-          "Unsupported thumbnail content type");
+          MessageError.FILE_CONTENT_TYPE_INVALID, "Unsupported thumbnail content type");
     }
   }
 

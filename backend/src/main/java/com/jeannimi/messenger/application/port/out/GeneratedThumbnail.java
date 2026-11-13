@@ -1,9 +1,6 @@
 package com.jeannimi.messenger.application.port.out;
 
-public record GeneratedThumbnail(
-    byte[] content,
-    String contentType
-) {
+public record GeneratedThumbnail(byte[] content, String contentType) {
   public String extension() {
     return switch (contentType) {
       case "image/png" -> ".png";

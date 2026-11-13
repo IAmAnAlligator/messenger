@@ -31,19 +31,17 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
     try {
       byte[] originalBytes = original.readAllBytes();
 
-      try (ImageInputStream imageInput = ImageIO.createImageInputStream(
-          new ByteArrayInputStream(originalBytes))) {
+      try (ImageInputStream imageInput =
+          ImageIO.createImageInputStream(new ByteArrayInputStream(originalBytes))) {
 
         if (imageInput == null) {
-          throw new ThumbnailGenerationException(
-              "Unable to read uploaded image");
+          throw new ThumbnailGenerationException("Unable to read uploaded image");
         }
 
         Iterator<ImageReader> readers = ImageIO.getImageReaders(imageInput);
 
         if (!readers.hasNext()) {
-          throw new ThumbnailGenerationException(
-              "Uploaded file is not a valid image");
+          throw new ThumbnailGenerationException("Uploaded file is not a valid image");
         }
 
         ImageReader reader = readers.next();
@@ -53,42 +51,37 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
 
           String format = reader.getFormatName().toLowerCase(Locale.ROOT);
 
-          String originalContentType = switch (format) {
-            case "jpeg" -> "image/jpeg";
-            case "png" -> "image/png";
-            default -> throw new ThumbnailGenerationException(
-                "Only JPEG and PNG images are supported");
-          };
+          String originalContentType =
+              switch (format) {
+                case "jpeg" -> "image/jpeg";
+                case "png" -> "image/png";
+                default -> throw new ThumbnailGenerationException(
+                    "Only JPEG and PNG images are supported");
+              };
 
           int width = reader.getWidth(0);
           int height = reader.getHeight(0);
 
           if (width <= 0 || height <= 0) {
-            throw new ThumbnailGenerationException(
-                "Invalid image dimensions");
+            throw new ThumbnailGenerationException("Invalid image dimensions");
           }
 
           long pixels = (long) width * height;
 
           if (pixels > MAX_IMAGE_PIXELS) {
-            throw new ThumbnailGenerationException(
-                "Image dimensions exceed the allowed limit");
+            throw new ThumbnailGenerationException("Image dimensions exceed the allowed limit");
           }
 
           // Маленькие изображения сохраняем без перекодирования.
-          if (width <= THUMBNAIL_WIDTH
-              && height <= THUMBNAIL_HEIGHT) {
+          if (width <= THUMBNAIL_WIDTH && height <= THUMBNAIL_HEIGHT) {
 
-            return new GeneratedThumbnail(
-                originalBytes,
-                originalContentType);
+            return new GeneratedThumbnail(originalBytes, originalContentType);
           }
 
           BufferedImage image = reader.read(0);
 
           if (image == null) {
-            throw new ThumbnailGenerationException(
-                "Failed to decode uploaded image");
+            throw new ThumbnailGenerationException("Failed to decode uploaded image");
           }
 
           // Большие изображения уменьшаем и сохраняем в JPEG.
@@ -100,9 +93,7 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
                 .outputQuality(OUTPUT_QUALITY)
                 .toOutputStream(output);
 
-            return new GeneratedThumbnail(
-                output.toByteArray(),
-                "image/jpeg");
+            return new GeneratedThumbnail(output.toByteArray(), "image/jpeg");
           }
 
         } finally {
@@ -111,8 +102,7 @@ public class ThumbnailatorAdapter implements ImageThumbnailPort {
       }
 
     } catch (IOException e) {
-      throw new ThumbnailGenerationException(
-          "Failed to generate image thumbnail", e);
+      throw new ThumbnailGenerationException("Failed to generate image thumbnail", e);
     }
   }
 }

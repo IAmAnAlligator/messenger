@@ -45,8 +45,7 @@ public class FileAttachmentJpaEntity {
       String contentType,
       Long size,
       String thumbnailContentType,
-      Instant createdAt
-  ) {
+      Instant createdAt) {
     this.id = id;
     this.originalFileName = originalFileName;
     this.storageFileName = storageFileName;

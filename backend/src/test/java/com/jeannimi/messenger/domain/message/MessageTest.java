@@ -23,6 +23,8 @@ class MessageTest {
 
   private static final Instant CREATED_AT = Instant.parse("2026-01-01T10:00:00Z");
 
+  private static final String THUMBNAIL_CONTENT_TYPE = "image/jpeg";
+
   private MessageId messageId;
   private ChatId chatId;
   private UserId senderId;
@@ -40,9 +42,87 @@ class MessageTest {
         FileAttachment.create(
             fileAttachmentId,
             "stored-document.pdf",
-            "application/pdf",
             "storage/files/stored-document.pdf",
-            1024L);
+            "application/pdf",
+            1024L,
+            null);
+  }
+
+  @Test
+  void reconstitute_shouldRestoreFileMessageWithoutThumbnail_whenDataIsValid() {
+    FileAttachment attachmentWithoutThumbnail =
+        FileAttachment.reconstitute(
+            new FileAttachmentId(UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789017")),
+            "document.pdf",
+            "document.pdf",
+            "application/pdf",
+            1024L,
+            null,
+            CREATED_AT);
+
+    Message message =
+        Message.reconstitute(
+            messageId,
+            chatId,
+            senderId,
+            null,
+            CREATED_AT,
+            MessageType.FILE,
+            attachmentWithoutThumbnail);
+
+    assertEquals(MessageType.FILE, message.getType());
+    assertNotNull(message.getAttachment());
+
+    assertNull(message.getAttachment().getThumbnailContentType());
+  }
+
+  @Test
+  void reconstitute_shouldRestoreFileMessageWithThumbnail_whenDataIsValid() {
+    FileAttachment attachmentWithThumbnail =
+        FileAttachment.reconstitute(
+            new FileAttachmentId(UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789016")),
+            "photo.jpg",
+            "photo.jpg",
+            "image/jpeg",
+            2048L,
+            THUMBNAIL_CONTENT_TYPE,
+            CREATED_AT);
+
+    Message message =
+        Message.reconstitute(
+            messageId,
+            chatId,
+            senderId,
+            null,
+            CREATED_AT,
+            MessageType.FILE,
+            attachmentWithThumbnail);
+
+    assertEquals(MessageType.FILE, message.getType());
+    assertNull(message.getContent());
+    assertSame(attachmentWithThumbnail, message.getAttachment());
+
+    assertEquals(THUMBNAIL_CONTENT_TYPE, message.getAttachment().getThumbnailContentType());
+  }
+
+  @Test
+  void ofFile_shouldCreateFileMessage_whenAttachmentHasThumbnail() {
+    FileAttachment attachmentWithThumbnail =
+        FileAttachment.create(
+            new FileAttachmentId(UUID.fromString("0199e8a1-7b2c-7abc-8def-123456789016")),
+            "photo.jpg",
+            "photo.jpg",
+            "image/jpeg",
+            2048L,
+            THUMBNAIL_CONTENT_TYPE);
+
+    Message message = Message.ofFile(messageId, chatId, senderId, attachmentWithThumbnail);
+
+    assertEquals(MessageType.FILE, message.getType());
+    assertNull(message.getContent());
+    assertSame(attachmentWithThumbnail, message.getAttachment());
+
+    assertEquals(THUMBNAIL_CONTENT_TYPE, message.getAttachment().getThumbnailContentType());
   }
 
   @Test

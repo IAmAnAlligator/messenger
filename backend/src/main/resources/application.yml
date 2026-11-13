@@ -84,7 +84,15 @@ security:
   refresh-expiration: ${REFRESH_EXPIRATION}
 
 encryption:
-  key: ${MESSAGE_ENCRYPTION_KEY}
+  messages:
+    active-key-id: 1
+    keys:
+      1: ${ENCRYPTION_MESSAGE_KEY_V1}
+
+  files:
+    active-key-id: 1
+    keys:
+      1: ${ENCRYPTION_FILE_KEY_V1}
 
 file:
   storage:

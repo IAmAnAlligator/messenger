@@ -24,6 +24,7 @@ class FileAttachmentTest {
   private static final String ORIGINAL_FILE_NAME = "document.pdf";
   private static final String STORAGE_FILE_NAME = "generated-file-123";
   private static final String CONTENT_TYPE = "application/pdf";
+  private static final String THUMBNAIL_CONTENT_TYPE = "image/jpeg";
 
   private static final Long FILE_SIZE = 1024L;
 
@@ -33,7 +34,12 @@ class FileAttachmentTest {
   void create_shouldCreateFileAttachment_whenArgumentsAreValid() {
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE);
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE);
 
     assertNotNull(fileAttachment);
     assertEquals(FILE_ATTACHMENT_ID, fileAttachment.getId());
@@ -41,6 +47,7 @@ class FileAttachmentTest {
     assertEquals(STORAGE_FILE_NAME, fileAttachment.getStorageFileName());
     assertEquals(CONTENT_TYPE, fileAttachment.getContentType());
     assertEquals(FILE_SIZE, fileAttachment.getSize());
+    assertEquals(THUMBNAIL_CONTENT_TYPE, fileAttachment.getThumbnailContentType());
     assertNotNull(fileAttachment.getCreatedAt());
   }
 
@@ -50,7 +57,12 @@ class FileAttachmentTest {
 
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE);
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE);
 
     Instant afterCreation = Instant.now();
 
@@ -60,13 +72,77 @@ class FileAttachmentTest {
   }
 
   @Test
+  void create_shouldAllowNullThumbnailContentType() {
+    FileAttachment fileAttachment =
+        FileAttachment.create(
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            null);
+
+    assertThat(fileAttachment.getThumbnailContentType()).isNull();
+  }
+
+  @Test
+  void create_shouldAcceptJpegThumbnailContentType() {
+    FileAttachment fileAttachment =
+        FileAttachment.create(
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            "image/jpeg");
+
+    assertEquals("image/jpeg", fileAttachment.getThumbnailContentType());
+  }
+
+  @Test
+  void create_shouldAcceptPngThumbnailContentType() {
+    FileAttachment fileAttachment =
+        FileAttachment.create(
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            "image/png");
+
+    assertEquals("image/png", fileAttachment.getThumbnailContentType());
+  }
+
+  @Test
+  void create_shouldThrowMessageException_whenThumbnailContentTypeIsUnsupported() {
+    MessageException exception =
+        assertThrows(
+            MessageException.class,
+            () ->
+                FileAttachment.create(
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    "application/pdf"));
+
+    assertEquals(MessageError.FILE_CONTENT_TYPE_INVALID, exception.getError());
+  }
+
+  @Test
   void create_shouldThrowMessageException_whenOriginalFileNameIsNull() {
     MessageException exception =
         assertThrows(
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, null, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    null,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_NAME_INVALID, exception.getError());
   }
@@ -78,7 +154,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, "   ", STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    "   ",
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_NAME_INVALID, exception.getError());
   }
@@ -92,7 +173,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, fileName, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    fileName,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_NAME_TOO_LONG, exception.getError());
   }
@@ -103,7 +189,12 @@ class FileAttachmentTest {
 
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, fileName, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE);
+            FILE_ATTACHMENT_ID,
+            fileName,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE);
 
     assertEquals(fileName, fileAttachment.getOriginalFileName());
   }
@@ -115,7 +206,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, null, CONTENT_TYPE, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    null,
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_STORAGE_NAME_INVALID, exception.getError());
   }
@@ -127,7 +223,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, " ", CONTENT_TYPE, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    " ",
+                    CONTENT_TYPE,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_STORAGE_NAME_INVALID, exception.getError());
   }
@@ -145,7 +246,8 @@ class FileAttachmentTest {
                     ORIGINAL_FILE_NAME,
                     storageFileName,
                     CONTENT_TYPE,
-                    FILE_SIZE));
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_STORAGE_NAME_TOO_LONG, exception.getError());
   }
@@ -156,7 +258,12 @@ class FileAttachmentTest {
 
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, storageFileName, CONTENT_TYPE, FILE_SIZE);
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            storageFileName,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE);
 
     assertEquals(storageFileName, fileAttachment.getStorageFileName());
   }
@@ -168,7 +275,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, null, FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    null,
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_CONTENT_TYPE_INVALID, exception.getError());
   }
@@ -180,7 +292,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, " ", FILE_SIZE));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    " ",
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_CONTENT_TYPE_INVALID, exception.getError());
   }
@@ -198,7 +315,8 @@ class FileAttachmentTest {
                     ORIGINAL_FILE_NAME,
                     STORAGE_FILE_NAME,
                     contentType,
-                    FILE_SIZE));
+                    FILE_SIZE,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_CONTENT_TYPE_TOO_LONG, exception.getError());
   }
@@ -209,7 +327,12 @@ class FileAttachmentTest {
 
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, contentType, FILE_SIZE);
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            contentType,
+            FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE);
 
     assertEquals(contentType, fileAttachment.getContentType());
   }
@@ -221,7 +344,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, null));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    null,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_EMPTY, exception.getError());
   }
@@ -233,7 +361,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, 0L));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    0L,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_EMPTY, exception.getError());
   }
@@ -245,7 +378,12 @@ class FileAttachmentTest {
             MessageException.class,
             () ->
                 FileAttachment.create(
-                    FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, -1L));
+                    FILE_ATTACHMENT_ID,
+                    ORIGINAL_FILE_NAME,
+                    STORAGE_FILE_NAME,
+                    CONTENT_TYPE,
+                    -1L,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_EMPTY, exception.getError());
   }
@@ -261,7 +399,8 @@ class FileAttachmentTest {
                     ORIGINAL_FILE_NAME,
                     STORAGE_FILE_NAME,
                     CONTENT_TYPE,
-                    FileAttachmentConstants.MAX_FILE_SIZE_BYTES + 1));
+                    FileAttachmentConstants.MAX_FILE_SIZE_BYTES + 1,
+                    THUMBNAIL_CONTENT_TYPE));
 
     assertEquals(MessageError.FILE_TOO_LARGE, exception.getError());
   }
@@ -272,7 +411,12 @@ class FileAttachmentTest {
 
     FileAttachment fileAttachment =
         FileAttachment.create(
-            FILE_ATTACHMENT_ID, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, maxSize);
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            maxSize,
+            THUMBNAIL_CONTENT_TYPE);
 
     assertEquals(maxSize, fileAttachment.getSize());
   }
@@ -286,6 +430,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertEquals(FILE_ATTACHMENT_ID, fileAttachment.getId());
@@ -293,7 +438,23 @@ class FileAttachmentTest {
     assertEquals(STORAGE_FILE_NAME, fileAttachment.getStorageFileName());
     assertEquals(CONTENT_TYPE, fileAttachment.getContentType());
     assertEquals(FILE_SIZE, fileAttachment.getSize());
+    assertEquals(THUMBNAIL_CONTENT_TYPE, fileAttachment.getThumbnailContentType());
     assertEquals(CREATED_AT, fileAttachment.getCreatedAt());
+  }
+
+  @Test
+  void reconstitute_shouldAllowNullThumbnailContentType() {
+    FileAttachment fileAttachment =
+        FileAttachment.reconstitute(
+            FILE_ATTACHMENT_ID,
+            ORIGINAL_FILE_NAME,
+            STORAGE_FILE_NAME,
+            CONTENT_TYPE,
+            FILE_SIZE,
+            null,
+            CREATED_AT);
+
+    assertThat(fileAttachment.getThumbnailContentType()).isNull();
   }
 
   @Test
@@ -302,7 +463,13 @@ class FileAttachmentTest {
         NullPointerException.class,
         () ->
             FileAttachment.reconstitute(
-                null, ORIGINAL_FILE_NAME, STORAGE_FILE_NAME, CONTENT_TYPE, FILE_SIZE, CREATED_AT));
+                null,
+                ORIGINAL_FILE_NAME,
+                STORAGE_FILE_NAME,
+                CONTENT_TYPE,
+                FILE_SIZE,
+                THUMBNAIL_CONTENT_TYPE,
+                CREATED_AT));
   }
 
   @Test
@@ -316,6 +483,7 @@ class FileAttachmentTest {
                 STORAGE_FILE_NAME,
                 CONTENT_TYPE,
                 FILE_SIZE,
+                THUMBNAIL_CONTENT_TYPE,
                 null));
   }
 
@@ -328,6 +496,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertEquals(fileAttachment, fileAttachment);
@@ -342,6 +511,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     FileAttachment second =
@@ -351,6 +521,7 @@ class FileAttachmentTest {
             "another-storage-name",
             "application/octet-stream",
             2048L,
+            "image/png",
             Instant.parse("2026-10-16T10:00:00Z"));
 
     assertEquals(first, second);
@@ -365,6 +536,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     FileAttachment second =
@@ -374,6 +546,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertNotEquals(first, second);
@@ -388,6 +561,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertNotEquals(null, fileAttachment);
@@ -402,6 +576,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertThat(fileAttachment.equals("fileAttachment")).isFalse();
@@ -416,6 +591,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     FileAttachment second =
@@ -425,6 +601,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertEquals(first.hashCode(), second.hashCode());
@@ -439,6 +616,7 @@ class FileAttachmentTest {
             STORAGE_FILE_NAME,
             CONTENT_TYPE,
             FILE_SIZE,
+            THUMBNAIL_CONTENT_TYPE,
             CREATED_AT);
 
     assertEquals(fileAttachment.hashCode(), fileAttachment.hashCode());

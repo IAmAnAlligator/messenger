@@ -4,9 +4,6 @@ public interface MessageEncryptionPort {
 
   String encrypt(String plaintext);
 
-  String decrypt(String ciphertext);
+  String decrypt(String encryptedText);
 
-  byte[] encrypt(byte[] plaintext);
-
-  byte[] decrypt(byte[] encryptedData);
 }
