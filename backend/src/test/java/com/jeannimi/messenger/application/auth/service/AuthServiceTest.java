@@ -33,6 +33,7 @@ import com.jeannimi.messenger.domain.user.Username;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
@@ -63,7 +64,7 @@ class AuthServiceTest {
   private static final String REFRESH_TOKEN = "refresh-token";
   private static final String NEW_REFRESH_TOKEN = "new-refresh-token";
 
-  private static final Instant EXPIRATION = Instant.parse("2026-11-13T12:00:00Z");
+  private static final Instant EXPIRATION = Instant.now().plus(Duration.ofDays(30));
 
   @Mock private UserRepositoryPort userRepository;
 

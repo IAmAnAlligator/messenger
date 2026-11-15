@@ -12,8 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AesGcmMessageEncryptionAdapter
-    implements MessageEncryptionPort {
+public class AesGcmMessageEncryptionAdapter implements MessageEncryptionPort {
 
   private static final String TRANSFORMATION = "AES/GCM/NoPadding";
 
@@ -26,9 +25,7 @@ public class AesGcmMessageEncryptionAdapter
   private final AesGcmKeyRing keyRing;
   private final SecureRandom secureRandom;
 
-  public AesGcmMessageEncryptionAdapter(
-      @Qualifier("messageKeyRing") AesGcmKeyRing keyRing
-  ) {
+  public AesGcmMessageEncryptionAdapter(@Qualifier("messageKeyRing") AesGcmKeyRing keyRing) {
     this.keyRing = keyRing;
     this.secureRandom = new SecureRandom();
   }
@@ -48,20 +45,19 @@ public class AesGcmMessageEncryptionAdapter
     try {
       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
 
-      cipher.init(
-          Cipher.ENCRYPT_MODE,
-          key,
-          new GCMParameterSpec(TAG_SIZE_BITS, iv)
-      );
+      cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_SIZE_BITS, iv));
 
-      byte[] ciphertext = cipher.doFinal(
-          plaintext.getBytes(StandardCharsets.UTF_8)
-      );
+      cipher.updateAAD((FORMAT_VERSION + ":" + keyId).getBytes(StandardCharsets.UTF_8));
+
+      byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
       return FORMAT_VERSION
-          + ":" + keyId
-          + ":" + Base64.getEncoder().encodeToString(iv)
-          + ":" + Base64.getEncoder().encodeToString(ciphertext);
+          + ":"
+          + keyId
+          + ":"
+          + Base64.getEncoder().encodeToString(iv)
+          + ":"
+          + Base64.getEncoder().encodeToString(ciphertext);
 
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException("Failed to encrypt message", e);
@@ -72,17 +68,13 @@ public class AesGcmMessageEncryptionAdapter
   public String decrypt(String encryptedText) {
 
     if (encryptedText == null) {
-      throw new IllegalArgumentException(
-          "Encrypted text must not be null"
-      );
+      throw new IllegalArgumentException("Encrypted text must not be null");
     }
 
     String[] parts = encryptedText.split(":", -1);
 
     if (parts.length != 4 || !FORMAT_VERSION.equals(parts[0])) {
-      throw new IllegalArgumentException(
-          "Invalid encrypted message format"
-      );
+      throw new IllegalArgumentException("Invalid encrypted message format");
     }
 
     int keyId;
@@ -102,9 +94,7 @@ public class AesGcmMessageEncryptionAdapter
       iv = Base64.getDecoder().decode(parts[2]);
       ciphertext = Base64.getDecoder().decode(parts[3]);
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(
-          "Invalid Base64 in encrypted message", e
-      );
+      throw new IllegalArgumentException("Invalid Base64 in encrypted message", e);
     }
 
     if (iv.length != IV_SIZE_BYTES) {
@@ -112,19 +102,15 @@ public class AesGcmMessageEncryptionAdapter
     }
 
     if (ciphertext.length < TAG_SIZE_BYTES) {
-      throw new IllegalArgumentException(
-          "Invalid AES-GCM ciphertext length"
-      );
+      throw new IllegalArgumentException("Invalid AES-GCM ciphertext length");
     }
 
     try {
       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
 
-      cipher.init(
-          Cipher.DECRYPT_MODE,
-          key,
-          new GCMParameterSpec(TAG_SIZE_BITS, iv)
-      );
+      cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_SIZE_BITS, iv));
+
+      cipher.updateAAD((FORMAT_VERSION + ":" + keyId).getBytes(StandardCharsets.UTF_8));
 
       byte[] plaintext = cipher.doFinal(ciphertext);
 
