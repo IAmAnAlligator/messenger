@@ -15,8 +15,13 @@ public class UserPresenceService {
 
   public synchronized boolean registerSession(String sessionId, UserId userId) {
 
-    Objects.requireNonNull(sessionId, "sessionId");
+    validateSessionId(sessionId);
+
     Objects.requireNonNull(userId, "userId");
+
+    if (sessions.containsKey(sessionId)) {
+      throw new IllegalStateException("WebSocket session is already registered");
+    }
 
     boolean wasOnline = isOnline(userId);
 
@@ -28,7 +33,8 @@ public class UserPresenceService {
   public synchronized void updatePresence(
       String sessionId, UserId userId, ChatId chatId, boolean visible) {
 
-    Objects.requireNonNull(sessionId, "sessionId");
+    validateSessionId(sessionId);
+
     Objects.requireNonNull(userId, "userId");
 
     SessionPresence current = sessions.get(sessionId);
@@ -87,6 +93,14 @@ public class UserPresenceService {
                 session.userId().equals(userId)
                     && session.visible()
                     && chatId.equals(session.chatId()));
+  }
+
+  private void validateSessionId(String sessionId) {
+    Objects.requireNonNull(sessionId, "sessionId");
+
+    if (sessionId.isBlank()) {
+      throw new IllegalArgumentException("sessionId must not be blank");
+    }
   }
 
   private record SessionPresence(UserId userId, ChatId chatId, boolean visible) {}
