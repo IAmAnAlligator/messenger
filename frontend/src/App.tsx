@@ -1,180 +1,131 @@
-import {
-    BrowserRouter,
-    Routes,
-    Route,
-    Navigate
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import AuthPage
-    from "./ui/pages/AuthPage";
+import AuthPage from "./ui/pages/AuthPage";
 
-import ChatsPage
-    from "./ui/pages/ChatsPage";
+import ChatsPage from "./ui/pages/ChatsPage";
 
-import ChatPage
-    from "./ui/pages/ChatPage";
+import ChatPage from "./ui/pages/ChatPage";
 
-import ChatEditPage
-    from "./ui/pages/ChatEditPage";
+import ChatEditPage from "./ui/pages/ChatEditPage";
 
-import ChatCreatePage
-    from "./ui/pages/ChatCreatePage";
+import ChatCreatePage from "./ui/pages/ChatCreatePage";
 
-import ProfilePage
-    from "./ui/pages/ProfilePage";
+import ProfilePage from "./ui/pages/ProfilePage";
 
-import ProtectedRoute
-    from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-import MemberProfilePage
-    from "./ui/pages/MemberProfilePage";
+import MemberProfilePage from "./ui/pages/MemberProfilePage";
 
-import GroupChatCreatePage
-    from "./ui/pages/GroupChatCreatePage";
+import GroupChatCreatePage from "./ui/pages/GroupChatCreatePage";
 
-import PrivateChatCreatePage
-    from "./ui/pages/PrivateChatCreatePage";
+import PrivateChatCreatePage from "./ui/pages/PrivateChatCreatePage";
 
-import NewPrivateChatPage
-    from "./ui/pages/NewPrivateChatPage";
+import NewPrivateChatPage from "./ui/pages/NewPrivateChatPage";
 
 import NotificationSettingsPage from "./ui/pages/SettingsPage";
 
-
 function App() {
+  return (
+    <div className="app">
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-    return (
+          <Route path="/login" element={<AuthPage />} />
 
-        <div className="app">
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <ChatsPage />
+              </ProtectedRoute>
+            }
+          />
 
-            <BrowserRouter>
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
-                <Routes>
+          <Route
+            path="/chats/create/group"
+            element={
+              <ProtectedRoute>
+                <GroupChatCreatePage />
+              </ProtectedRoute>
+            }
+          />
 
-                    <Route
-    path="/"
-    element={
-        <Navigate
-            to="/login"
-            replace
-        />
-    }
-/>
+          <Route
+            path="/chats/create/private"
+            element={
+              <ProtectedRoute>
+                <PrivateChatCreatePage />
+              </ProtectedRoute>
+            }
+          />
 
-                    <Route
-                        path="/login"
-                        element={
-                            <AuthPage />
-                        }
-                    />
+          <Route
+            path="/chats/new"
+            element={
+              <ProtectedRoute>
+                <NewPrivateChatPage />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route
+            path="/chats/:chatId/members/:userId/profile"
+            element={
+              <ProtectedRoute>
+                <MemberProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
-                    <Route
-                        path="/chats"
-                        element={
-                            <ProtectedRoute>
-                                <ChatsPage />
-                            </ProtectedRoute>
-                        }
-                    />
+          <Route
+            path="/chats/:chatId"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route
+            path="/chats/create"
+            element={
+              <ProtectedRoute>
+                <ChatCreatePage />
+              </ProtectedRoute>
+            }
+          />
 
-                    <Route
-                        path="/profile"
-                        element={
-                            <ProtectedRoute>
-                                <ProfilePage />
-                            </ProtectedRoute>
-                        }
-                    />
+          <Route
+            path="/chats/:chatId/edit"
+            element={
+              <ProtectedRoute>
+                <ChatEditPage />
+              </ProtectedRoute>
+            }
+          />
 
-
-                    <Route
-                        path="/chats/create/group"
-                        element={
-                            <ProtectedRoute>
-                                <GroupChatCreatePage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/create/private"
-                        element={
-                            <ProtectedRoute>
-                                <PrivateChatCreatePage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/new"
-                        element={
-                            <ProtectedRoute>
-                                <NewPrivateChatPage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/:chatId/members/:userId/profile"
-                        element={
-                            <ProtectedRoute>
-                                <MemberProfilePage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/:chatId"
-                        element={
-                            <ProtectedRoute>
-                                <ChatPage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/create"
-                        element={
-                            <ProtectedRoute>
-                                <ChatCreatePage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-
-                    <Route
-                        path="/chats/:chatId/edit"
-                        element={
-                            <ProtectedRoute>
-                                <ChatEditPage />
-                            </ProtectedRoute>
-                        }
-                    />
-
-                    <Route
-    path="/settings"
-    element={
-        <ProtectedRoute>
-            <NotificationSettingsPage />
-        </ProtectedRoute>
-    }
-/>
-
-                </Routes>
-
-            </BrowserRouter>
-
-        </div>
-
-    );
-
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <NotificationSettingsPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
 }
 
 export default App;

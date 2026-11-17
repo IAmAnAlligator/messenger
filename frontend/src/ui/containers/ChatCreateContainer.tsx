@@ -1,149 +1,74 @@
-import {
-useNavigate
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+import { useChatCreate } from "../../hooks/useChatCreate";
 
-import {
-useChatCreate
-} from "../../hooks/useChatCreate";
+import ChatTypeSelector from "../components/chat/create/ChatTypeSelector";
 
+import ChatNameInput from "../components/chat/create/ChatNameInput";
 
-import ChatTypeSelector
-from "../components/chat/create/ChatTypeSelector";
+import UserSearch from "../components/chat/create/UserSearch";
 
+import SelectedUsers from "../components/chat/create/SelectedUsers";
 
-import ChatNameInput
-from "../components/chat/create/ChatNameInput";
+export default function ChatCreateContainer() {
+  const navigate = useNavigate();
 
+  const chat = useChatCreate();
 
-import UserSearch
-from "../components/chat/create/UserSearch";
-
-
-import SelectedUsers
-from "../components/chat/create/SelectedUsers";
-
-
-
-export default function ChatCreateContainer(){
-
-
-const navigate =
-    useNavigate();
-
-
-
-const chat =
-    useChatCreate();
-
-
-
-async function submit(){
-
+  async function submit() {
     await chat.createChat();
 
     navigate("/chats");
+  }
 
-}
+  return (
+    <div>
+      <button onClick={() => navigate("/chats")}>Back</button>
 
+      <h2>Create chat</h2>
 
+      <ChatTypeSelector
+        value={chat.type}
 
-return (
+        onChange={chat.setType}
+      />
 
-<div>
+      {chat.type === "GROUP" && (
+        <ChatNameInput
+          value={chat.name}
 
+          onChange={chat.setName}
+        />
+      )}
 
-<button
-onClick={()=>
-navigate("/chats")
-}
->
-Back
-</button>
+      <UserSearch
+        value={chat.search}
 
+        users={chat.users}
 
+        loading={chat.searchLoading}
 
-<h2>
-Create chat
-</h2>
+        onChange={chat.setSearch}
 
+        onSelect={chat.addUser}
+      />
 
+      <SelectedUsers
+        users={chat.selectedUsers}
 
-<ChatTypeSelector
+        onRemove={chat.removeUser}
+      />
 
-value={chat.type}
+      <button
+        disabled={
+          chat.selectedUsers.length === 0 ||
+          (chat.type === "GROUP" && !chat.name.trim())
+        }
 
-onChange={chat.setType}
-
-/>
-
-
-
-{
-chat.type==="GROUP" &&
-
-<ChatNameInput
-
-value={chat.name}
-
-onChange={chat.setName}
-
-/>
-
-}
-
-
-
-<UserSearch
-
-value={chat.search}
-
-users={chat.users}
-
-loading={chat.searchLoading}
-
-onChange={chat.setSearch}
-
-onSelect={chat.addUser}
-
-/>
-
-
-
-<SelectedUsers
-
-users={chat.selectedUsers}
-
-onRemove={chat.removeUser}
-
-/>
-
-
-
-<button
-
-disabled={
-chat.selectedUsers.length===0 ||
-(
-chat.type==="GROUP"
-&&
-!chat.name.trim()
-)
-
-}
-
-onClick={submit}
-
->
-
-Create
-
-</button>
-
-
-
-</div>
-
-);
-
+        onClick={submit}
+      >
+        Create
+      </button>
+    </div>
+  );
 }

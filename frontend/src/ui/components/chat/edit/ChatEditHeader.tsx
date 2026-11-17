@@ -1,67 +1,36 @@
 type Props = {
+  title: string;
 
-    title:string;
+  onBack(): void;
 
-    onBack():void;
+  onLeave(): void;
 
-    onLeave():void;
+  onDelete(): void;
 
-    onDelete():void;
+  canLeave: boolean;
 
-    canLeave:boolean;
-
-    canDelete:boolean;
-
+  canDelete: boolean;
 };
 
-
 export default function ChatEditHeader({
-    title,
-    onBack,
-    onLeave,
-    onDelete,
-    canLeave,
-    canDelete
-}:Props){
+  title,
+  onBack,
+  onLeave,
+  onDelete,
+  canLeave,
+  canDelete,
+}: Props) {
+  return (
+    <div className="edit-header">
+      <button onClick={onBack}>← Back</button>
 
+      <h2>{title}</h2>
 
-return (
+      <div>
+        {canLeave && <button onClick={onLeave}>Leave</button>}
 
-<div className="edit-header">
-
-
-<button onClick={onBack}>
-    ← Back
-</button>
-
-
-<h2>
-    {title}
-</h2>
-
-
-<div>
-
-{
-canLeave &&
-<button onClick={onLeave}>
-    Leave
-</button>
-}
-
-
-{
-canDelete &&
-<button onClick={onDelete}>
-    Delete
-</button>
-}
-
-</div>
-
-
-</div>
-
-);
-
+        {canDelete && <button onClick={onDelete}>Delete</button>}
+      </div>
+    </div>
+  );
 }

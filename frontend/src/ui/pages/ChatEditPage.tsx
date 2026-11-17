@@ -1,236 +1,121 @@
-import {
-    useParams,
-    useNavigate
-} from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
+import { useChatEdit } from "../../hooks/useChatEdit";
 
-import {
-    useChatEdit
-} from "../../hooks/useChatEdit";
+import ChatEditHeader from "../components/chat/edit/ChatEditHeader";
 
+import MemberList from "../components/chat/edit/MemberList";
 
-import ChatEditHeader
-    from "../components/chat/edit/ChatEditHeader";
+import AddMemberForm from "../components/chat/edit/AddMemberForm";
 
-
-import MemberList
-    from "../components/chat/edit/MemberList";
-
-
-import AddMemberForm
-    from "../components/chat/edit/AddMemberForm";
-
-
-import ChatRenameForm
-    from "../components/chat/edit/ChatRenameForm";
-
+import ChatRenameForm from "../components/chat/edit/ChatRenameForm";
 
 import "../styles/chatEditPage.css";
 
-
 export default function ChatEditPage() {
+  const {
+    chat,
+    members,
+    loading,
 
-    const {
-        chat,
-        members,
-        loading,
+    chatName,
+    setChatName,
 
-        chatName,
-        setChatName,
+    searchUsername,
+    setSearchUsername,
 
-        searchUsername,
-        setSearchUsername,
+    users,
 
-        users,
+    currentUserId,
 
-        currentUserId,
+    permissions,
 
-        permissions,
+    renameChat,
+    addMember,
+    removeMember,
+    leaveChat,
+    deleteChat,
+  } = useChatEdit(useParams().chatId);
 
-        renameChat,
-        addMember,
-        removeMember,
-        leaveChat,
-        deleteChat
+  const navigate = useNavigate();
 
-    } = useChatEdit(
-        useParams().chatId
-    );
-
-
-    const navigate =
-        useNavigate();
-
-
-    function handleUserProfile(
-        userId: string
-    ) {
-
-        if (!chat?.id) {
-            return;
-        }
-
-
-        if (userId === currentUserId) {
-            return;
-        }
-
-
-    navigate(
-        `/chats/${chat.id}/members/${userId}/profile?from=edit`
-    );
-
+  function handleUserProfile(userId: string) {
+    if (!chat?.id) {
+      return;
     }
 
+    if (userId === currentUserId) {
+      return;
+    }
 
-    if (loading)
-        return <p>Loading...</p>;
+    navigate(`/chats/${chat.id}/members/${userId}/profile?from=edit`);
+  }
 
+  if (loading) return <p>Loading...</p>;
 
-    const sortedMembers =
-        [...members].sort((a, b) => {
+  const sortedMembers = [...members].sort((a, b) => {
+    const aIsAdmin = a.chatRole === "ADMIN";
 
-            const aIsAdmin =
-                a.chatRole === "ADMIN";
+    const bIsAdmin = b.chatRole === "ADMIN";
 
-            const bIsAdmin =
-                b.chatRole === "ADMIN";
+    if (aIsAdmin && !bIsAdmin) return -1;
 
+    if (!aIsAdmin && bIsAdmin) return 1;
 
-            if (aIsAdmin && !bIsAdmin)
-                return -1;
+    return new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime();
+  });
 
+  return (
+    <div className="chat-edit-page">
+      <ChatEditHeader
+        title={chat?.type === "PRIVATE" ? "Private Chat" : "Group Settings"}
 
-            if (!aIsAdmin && bIsAdmin)
-                return 1;
+        onBack={() => navigate(`/chats/${chat?.id}`)}
 
+        onLeave={leaveChat}
 
-            return new Date(b.joinedAt).getTime()
-                - new Date(a.joinedAt).getTime();
+        onDelete={deleteChat}
 
-        });
+        canLeave={permissions.canLeave}
 
+        canDelete={permissions.canDelete}
+      />
 
-    return (
+      {permissions.canRename && (
+        <ChatRenameForm
+          value={chatName}
 
-        <div className="chat-edit-page">
+          onChange={setChatName}
 
+          onSave={renameChat}
+        />
+      )}
 
-            <ChatEditHeader
+      {permissions.canAdd && (
+        <AddMemberForm
+          value={searchUsername}
 
-                title={
-                    chat?.type === "PRIVATE"
-                        ? "Private Chat"
-                        : "Group Settings"
-                }
+          onChange={setSearchUsername}
 
-                onBack={() =>
-                    navigate(
-                        `/chats/${chat?.id}`
-                    )
-                }
+          users={users}
 
-                onLeave={
-                    leaveChat
-                }
+          onAdd={addMember}
+        />
+      )}
 
-                onDelete={
-                    deleteChat
-                }
+      <div className="chat-members-count">Members: {members.length}</div>
 
-                canLeave={
-                    permissions.canLeave
-                }
+      <MemberList
+        members={sortedMembers}
 
-                canDelete={
-                    permissions.canDelete
-                }
+        currentUserId={currentUserId}
 
-            />
+        canRemove={permissions.canRemove}
 
+        onRemove={removeMember}
 
-            {
-                permissions.canRename &&
-
-                <ChatRenameForm
-
-                    value={
-                        chatName
-                    }
-
-                    onChange={
-                        setChatName
-                    }
-
-                    onSave={
-                        renameChat
-                    }
-
-                />
-
-            }
-
-
-            {
-                permissions.canAdd &&
-
-                <AddMemberForm
-
-                    value={
-                        searchUsername
-                    }
-
-                    onChange={
-                        setSearchUsername
-                    }
-
-                    users={
-                        users
-                    }
-
-                    onAdd={
-                        addMember
-                    }
-
-                />
-
-            }
-
-
-            <div className="chat-members-count">
-
-                Members: {members.length}
-
-            </div>
-
-
-            <MemberList
-
-                members={
-                    sortedMembers
-                }
-
-                currentUserId={
-                    currentUserId
-                }
-
-                canRemove={
-                    permissions.canRemove
-                }
-
-                onRemove={
-                    removeMember
-                }
-
-                onUserProfile={
-                    handleUserProfile
-                }
-
-            />
-
-
-        </div>
-
-    );
-
+        onUserProfile={handleUserProfile}
+      />
+    </div>
+  );
 }

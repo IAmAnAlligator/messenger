@@ -1,59 +1,55 @@
 import { useState } from "react";
 import {
-    subscribeToWebPush,
-    unsubscribeFromWebPush,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
 } from "../notifications/webPush";
 
 interface EnableWebPushButtonProps {
-    enabled: boolean;
-    onEnabledChange: (enabled: boolean) => void;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }
 
 export default function EnableWebPushButton({
-    enabled,
-    onEnabledChange,
+  enabled,
+  onEnabledChange,
 }: EnableWebPushButtonProps) {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    async function handleClick() {
-        setLoading(true);
-        setError(null);
+  async function handleClick() {
+    setLoading(true);
+    setError(null);
 
-        try {
-            if (enabled) {
-                await unsubscribeFromWebPush();
-                onEnabledChange(false);
-            } else {
-                await subscribeToWebPush();
-                onEnabledChange(true);
-            }
-        } catch (exception) {
-            setError(
-                exception instanceof Error
-                    ? exception.message
-                    : "Не удалось изменить настройки уведомлений"
-            );
-        } finally {
-            setLoading(false);
-        }
+    try {
+      if (enabled) {
+        await unsubscribeFromWebPush();
+        onEnabledChange(false);
+      } else {
+        await subscribeToWebPush();
+        onEnabledChange(true);
+      }
+    } catch (exception) {
+      setError(
+        exception instanceof Error
+          ? exception.message
+          : "Не удалось изменить настройки уведомлений",
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return (
-        <div>
-            <button
-                type="button"
-                onClick={handleClick}
-                disabled={loading}
-            >
-                {loading
-                    ? "Обработка..."
-                    : enabled
-                        ? "Отключить уведомления"
-                        : "Включить уведомления"}
-            </button>
+  return (
+    <div>
+      <button type="button" onClick={handleClick} disabled={loading}>
+        {loading
+          ? "Обработка..."
+          : enabled
+            ? "Отключить уведомления"
+            : "Включить уведомления"}
+      </button>
 
-            {error && <p role="alert">{error}</p>}
-        </div>
-    );
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
 }

@@ -1,152 +1,130 @@
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import { api } from "../api/client";
 
-import {
-    connectSocket,
-    disconnectSocket,
-} from "../services/chatSocket";
+import { connectSocket, disconnectSocket } from "../services/chatSocket";
 
-import {
-    syncWebPushSubscription,
-} from "../notifications/webPush.ts";
+import { syncWebPushSubscription } from "../notifications/webPush.ts";
 
 type User = {
-    id: string;
-    handle: string;
-    username: string;
+  id: string;
+  handle: string;
+  username: string;
 };
 
 type CurrentUserResponse = {
-    id: string;
-    handle: string;
-    username: string;
-    role: string;
+  id: string;
+  handle: string;
+  username: string;
+  role: string;
 };
 
 type AuthContextType = {
-    user: User | null;
-    loading: boolean;
-    login: (access: string) => Promise<void>;
-    logout: () => Promise<void>;
+  user: User | null;
+  loading: boolean;
+  login: (access: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    const initialized = useRef(false);
+  const initialized = useRef(false);
 
-    async function fetchMe() {
-        try {
-            const token = localStorage.getItem("accessToken");
+  async function fetchMe() {
+    try {
+      const token = localStorage.getItem("accessToken");
 
-            if (!token) {
-                setUser(null);
-                return;
-            }
-
-            const res = await api.get<CurrentUserResponse>(
-                "/users/me"
-            );
-
-            setUser({
-                id: res.data.id,
-                handle: res.data.handle,
-                username: res.data.username,
-            });
-
-            disconnectSocket();
-            connectSocket();
-
-            try {
-                await syncWebPushSubscription();
-            } catch (error: unknown) {
-                console.error(
-                    "Failed to synchronize Web Push subscription:",
-                    error
-                );
-            }
-        } catch {
-            setUser(null);
-
-            localStorage.removeItem("accessToken");
-
-            disconnectSocket();
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        if (initialized.current) {
-            return;
-        }
-
-        initialized.current = true;
-
-        void fetchMe();
-    }, []);
-
-    async function login(access: string) {
-        disconnectSocket();
-
-        localStorage.setItem("accessToken", access);
-
-        setLoading(true);
-
-        await fetchMe();
-    }
-
-    async function logout() {
-        disconnectSocket();
-
-        localStorage.removeItem("accessToken");
-
+      if (!token) {
         setUser(null);
-        setLoading(false);
+        return;
+      }
 
-        try {
-            await api.post("/auth/logout");
-        } catch {
-            // Ignore logout request errors.
-        }
+      const res = await api.get<CurrentUserResponse>("/users/me");
+
+      setUser({
+        id: res.data.id,
+        handle: res.data.handle,
+        username: res.data.username,
+      });
+
+      disconnectSocket();
+      connectSocket();
+
+      try {
+        await syncWebPushSubscription();
+      } catch (error: unknown) {
+        console.error("Failed to synchronize Web Push subscription:", error);
+      }
+    } catch {
+      setUser(null);
+
+      localStorage.removeItem("accessToken");
+
+      disconnectSocket();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (initialized.current) {
+      return;
     }
 
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                loading,
-                login,
-                logout,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+    initialized.current = true;
+
+    void fetchMe();
+  }, []);
+
+  async function login(access: string) {
+    disconnectSocket();
+
+    localStorage.setItem("accessToken", access);
+
+    setLoading(true);
+
+    await fetchMe();
+  }
+
+  async function logout() {
+    disconnectSocket();
+
+    localStorage.removeItem("accessToken");
+
+    setUser(null);
+    setLoading(false);
+
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Ignore logout request errors.
+    }
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-    const ctx = useContext(AuthContext);
+  const ctx = useContext(AuthContext);
 
-    if (!ctx) {
-        throw new Error(
-            "useAuth must be used inside AuthProvider"
-        );
-    }
+  if (!ctx) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
 
-    return ctx;
+  return ctx;
 }

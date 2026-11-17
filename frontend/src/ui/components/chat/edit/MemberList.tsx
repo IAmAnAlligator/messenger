@@ -1,123 +1,67 @@
 import MemberItem from "./MemberItem";
 
-import type {
-    ChatMemberDto
-} from "../../../../hooks/useChatEdit";
-
+import type { ChatMemberDto } from "../../../../hooks/useChatEdit";
 
 type Props = {
+  members: ChatMemberDto[];
 
-    members: ChatMemberDto[];
+  currentUserId: string | null;
 
-    currentUserId: string | null;
+  canRemove: boolean;
 
-    canRemove: boolean;
+  onRemove(userId: string): void;
 
-    onRemove(
-        userId: string
-    ): void;
-
-    onUserProfile(
-        userId: string
-    ): void;
-
+  onUserProfile(userId: string): void;
 };
 
-
 export default function MemberList({
+  members,
 
-    members,
+  currentUserId,
 
-    currentUserId,
+  canRemove,
 
-    canRemove,
+  onRemove,
 
-    onRemove,
-
-    onUserProfile
-
+  onUserProfile,
 }: Props) {
+  const sortedMembers = [...members].sort((a, b) => {
+    const aIsCurrentUser = a.user.id === currentUserId;
 
+    const bIsCurrentUser = b.user.id === currentUserId;
 
-    const sortedMembers =
-        [...members].sort((a, b) => {
+    if (aIsCurrentUser && !bIsCurrentUser) {
+      return -1;
+    }
 
-            const aIsCurrentUser =
-                a.user.id === currentUserId;
+    if (!aIsCurrentUser && bIsCurrentUser) {
+      return 1;
+    }
 
-            const bIsCurrentUser =
-                b.user.id === currentUserId;
+    return 0;
+  });
 
+  return (
+    <div className="member-list">
+      {sortedMembers.map((member) => (
+        <MemberItem
+          key={member.user.id}
 
-            if (
-                aIsCurrentUser &&
-                !bIsCurrentUser
-            ) {
+          member={member}
 
-                return -1;
+          currentUserId={currentUserId}
 
-            }
+          canRemove={
+            canRemove &&
+            member.chatRole !== "ADMIN" &&
+            member.user.id !== currentUserId
+          }
 
+          onRemove={onRemove}
 
-            if (
-                !aIsCurrentUser &&
-                bIsCurrentUser
-            ) {
-
-                return 1;
-
-            }
-
-
-            return 0;
-
-        });
-
-
-    return (
-
-        <div className="member-list">
-
-            {
-                sortedMembers.map(
-                    member => (
-
-                        <MemberItem
-
-                            key={
-                                member.user.id
-                            }
-
-                            member={
-                                member
-                            }
-
-                            currentUserId={
-                                currentUserId
-                            }
-
-                            canRemove={
-                                canRemove &&
-                                member.chatRole !== "ADMIN" &&
-                                member.user.id !== currentUserId
-                            }
-
-                            onRemove={
-                                onRemove
-                            }
-
-                            onUserProfile={
-                                onUserProfile
-                            }
-
-                        />
-
-                    )
-                )
-            }
-
-        </div>
-
-    );
-
+          onUserProfile={onUserProfile}
+        />
+      ))}
+    </div>
+  );
 }

@@ -1,45 +1,33 @@
-import type {
-    ChatId,
-    FileAttachmentId,
-    MessageId
-} from "./ids";
+import type { ChatId, FileAttachmentId, MessageId } from "./ids";
 
 import type { UserDto } from "./user";
 
 import type { CursorPageResponse } from "./pagination";
 
-
 export interface FileAttachmentDto {
+  id: FileAttachmentId;
 
-    id: FileAttachmentId;
+  originalFileName: string;
 
-    originalFileName: string;
+  contentType: string;
 
-    contentType: string;
+  size: number;
 
-    size: number;
-
-    url: string;
-
+  url: string;
 }
-
 
 export interface MessageDto {
+  id: MessageId;
 
-    id: MessageId;
+  chatId: ChatId;
 
-    chatId: ChatId;
+  sender: UserDto;
 
-    sender: UserDto;
+  content: string | null;
 
-    content: string | null;
+  createdAt: string;
 
-    createdAt: string;
-
-    attachment: FileAttachmentDto | null;
-
+  attachment: FileAttachmentDto | null;
 }
 
-
-export type MessagePageDto =
-    CursorPageResponse<MessageDto>;
+export type MessagePageDto = CursorPageResponse<MessageDto>;

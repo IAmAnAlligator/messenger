@@ -1,824 +1,369 @@
+import { useCallback, useEffect, useState } from "react";
+
+import { getChat } from "../services/chatService";
 
 import {
-    useCallback,
-    useEffect,
-    useState
-} from "react";
-
-
-import {
-    getChat
-} from "../services/chatService";
-
-
-import {
-    getMessages,
-    sendFile as sendFileRequest
+  getMessages,
+  sendFile as sendFileRequest,
 } from "../services/messageService";
 
+import { useAuth } from "../contexts/AuthContext";
 
-import {
-    useAuth
-} from "../contexts/AuthContext";
+import type { ChatDto, MessageReadEvent } from "../types/chat";
 
+import type { MessageDto } from "../types/message";
 
-import type {
-    ChatDto,
-    MessageReadEvent
-} from "../types/chat";
+import type { CursorDto } from "../types/pagination";
 
+import type { ChatId, MessageId, UserId } from "../types/ids";
 
-import type {
-    MessageDto
-} from "../types/message";
+export function useChat(chatId?: ChatId) {
+  const { user } = useAuth();
 
+  const [chat, setChat] = useState<ChatDto | null>(null);
 
-import type {
-    CursorDto
-} from "../types/pagination";
+  const [messages, setMessages] = useState<MessageDto[]>([]);
 
+  const [loading, setLoading] = useState(true);
 
-import type {
-    ChatId,
-    MessageId,
-    UserId
-} from "../types/ids";
+  const [loadingMore, setLoadingMore] = useState(false);
 
+  const [cursor, setCursor] = useState<CursorDto | null>(null);
 
-export function useChat(
-    chatId?: ChatId
-) {
+  const [hasMore, setHasMore] = useState(true);
 
-    const { user } =
-        useAuth();
+  const [currentUserLastReadMessageId, setCurrentUserLastReadMessageId] =
+    useState<MessageId | null>(null);
 
+  const [otherUserLastReadMessageId, setOtherUserLastReadMessageId] =
+    useState<MessageId | null>(null);
 
-    const [
-        chat,
-        setChat
-    ] =
-        useState<ChatDto | null>(
-            null
+  const [otherUsersLastReadMessageIds, setOtherUsersLastReadMessageIds] =
+    useState<Map<UserId, MessageId>>(new Map());
+
+  /*
+   * Проверяет, прочитал ли другой пользователь
+   * конкретное сообщение.
+   *
+   * UUID нельзя сравнивать через > / < как number.
+   *
+   * Поэтому сначала пытаемся найти lastReadMessageId
+   * и проверяем положение сообщений в текущем массиве.
+   *
+   * messages хранятся в порядке:
+   *
+   * oldest -> newest
+   *
+   * Если marker найден, все сообщения до него
+   * считаются прочитанными.
+   */
+  const isMessageReadByOtherUser = useCallback(
+    (messageId: MessageId): boolean => {
+      const messageIndex = messages.findIndex(
+        (message) => message.id === messageId,
+      );
+
+      if (messageIndex === -1) {
+        return false;
+      }
+
+      for (const lastReadMessageId of otherUsersLastReadMessageIds.values()) {
+        const lastReadIndex = messages.findIndex(
+          (message) => message.id === lastReadMessageId,
         );
 
-
-    const [
-        messages,
-        setMessages
-    ] =
-        useState<MessageDto[]>(
-            []
-        );
-
-
-    const [
-        loading,
-        setLoading
-    ] =
-        useState(true);
-
-
-    const [
-        loadingMore,
-        setLoadingMore
-    ] =
-        useState(false);
-
-
-    const [
-        cursor,
-        setCursor
-    ] =
-        useState<CursorDto | null>(
-            null
-        );
-
-
-    const [
-        hasMore,
-        setHasMore
-    ] =
-        useState(true);
-
-
-    const [
-        currentUserLastReadMessageId,
-        setCurrentUserLastReadMessageId
-    ] =
-        useState<MessageId | null>(
-            null
-        );
-
-
-    const [
-        otherUserLastReadMessageId,
-        setOtherUserLastReadMessageId
-    ] =
-        useState<MessageId | null>(
-            null
-        );
-
-
-    const [
-        otherUsersLastReadMessageIds,
-        setOtherUsersLastReadMessageIds
-    ] =
-        useState<Map<UserId, MessageId>>(
-            new Map()
-        );
-
-
-    /*
-     * Проверяет, прочитал ли другой пользователь
-     * конкретное сообщение.
-     *
-     * UUID нельзя сравнивать через > / < как number.
-     *
-     * Поэтому сначала пытаемся найти lastReadMessageId
-     * и проверяем положение сообщений в текущем массиве.
-     *
-     * messages хранятся в порядке:
-     *
-     * oldest -> newest
-     *
-     * Если marker найден, все сообщения до него
-     * считаются прочитанными.
-     */
-    const isMessageReadByOtherUser =
-        useCallback(
-            (
-                messageId: MessageId
-            ): boolean => {
-
-                const messageIndex =
-                    messages.findIndex(
-                        message =>
-                            message.id === messageId
-                    );
-
-
-                if (messageIndex === -1) {
-                    return false;
-                }
-
-
-                for (
-                    const lastReadMessageId
-                        of otherUsersLastReadMessageIds.values()
-                ) {
-
-                    const lastReadIndex =
-                        messages.findIndex(
-                            message =>
-                                message.id ===
-                                lastReadMessageId
-                        );
-
-
-                    if (
-                        lastReadIndex !== -1 &&
-                        messageIndex <= lastReadIndex
-                    ) {
-
-                        return true;
-
-                    }
-
-                }
-
-
-                return false;
-
-            },
-            [
-                messages,
-                otherUsersLastReadMessageIds
-            ]
-        );
-
-
-    const load =
-        useCallback(
-            async () => {
-
-                if (!chatId) {
-                    return;
-                }
-
-
-                try {
-
-                    setLoading(true);
-
-
-                    const [
-                        chatData,
-                        messagesPage
-                    ] =
-                        await Promise.all([
-
-                            getChat(
-                                chatId
-                            ),
-
-                            getMessages(
-                                chatId
-                            )
-
-                        ]);
-
-
-                    setChat(
-                        chatData
-                    );
-
-
-                    const currentUserId =
-                        user?.id;
-
-
-                    const otherUsersReadMap =
-                        new Map<
-                            UserId,
-                            MessageId
-                        >();
-
-
-                    if (
-                        currentUserId !== undefined
-                    ) {
-
-                        for (
-                            const member
-                                of chatData.members
-                        ) {
-
-                            if (
-                                member.user.id ===
-                                currentUserId
-                            ) {
-
-                                continue;
-
-                            }
-
-
-                            if (
-                                member.lastReadMessageId !==
-                                null
-                            ) {
-
-                                otherUsersReadMap.set(
-                                    member.user.id,
-                                    member.lastReadMessageId
-                                );
-
-                            }
-
-                        }
-
-                    }
-
-
-                    setOtherUsersLastReadMessageIds(
-                        otherUsersReadMap
-                    );
-
-
-                    setMessages(
-                        [
-                            ...messagesPage.content
-                        ].reverse()
-                    );
-
-
-                    setCursor(
-                        messagesPage.nextCursor
-                    );
-
-
-                    setHasMore(
-                        messagesPage.hasNext
-                    );
-
-
-                    const currentMember =
-                        chatData.members.find(
-                            member =>
-                                member.user.id ===
-                                user?.id
-                        );
-
-
-                    setCurrentUserLastReadMessageId(
-                        currentMember
-                            ?.lastReadMessageId
-                            ?? null
-                    );
-
-
-                    const otherMember =
-                        chatData.members.length === 2
-                            ? chatData.members.find(
-                                member =>
-                                    member.user.id !==
-                                    user?.id
-                            )
-                            : undefined;
-
-
-                    console.log(
-                        "[CHAT READ STATE]",
-                        {
-                            currentUserId: user?.id,
-
-                            members:
-                                chatData.members.map(
-                                    member => ({
-                                        userId:
-                                            member.user.id,
-
-                                        username:
-                                            member.user.username,
-
-                                        lastReadMessageId:
-                                            member.lastReadMessageId
-                                    })
-                                ),
-
-                            otherMember:
-                                otherMember
-                                    ? {
-                                        userId:
-                                            otherMember.user.id,
-
-                                        username:
-                                            otherMember.user.username,
-
-                                        lastReadMessageId:
-                                            otherMember.lastReadMessageId
-                                    }
-                                    : null
-                        }
-                    );
-
-
-                    setOtherUserLastReadMessageId(
-                        otherMember
-                            ?.lastReadMessageId
-                            ?? null
-                    );
-
-
-                } finally {
-
-                    setLoading(false);
-
-                }
-
-            },
-            [
-                chatId,
-                user?.id
-            ]
-        );
-
-
-    useEffect(() => {
-
-        load();
-
-    }, [load]);
-
-
-    const reloadChat = useCallback(
-    async () => {
-        if (!chatId) {
-            return;
+        if (lastReadIndex !== -1 && messageIndex <= lastReadIndex) {
+          return true;
         }
+      }
 
-        try {
-            const chatData = await getChat(chatId);
-
-            setChat(chatData);
-
-            const currentUserId = user?.id;
-
-            const otherUsersReadMap =
-                new Map<UserId, MessageId>();
-
-            if (currentUserId !== undefined) {
-                for (const member of chatData.members) {
-                    if (
-                        member.user.id === currentUserId
-                    ) {
-                        continue;
-                    }
-
-                    if (member.lastReadMessageId !== null) {
-                        otherUsersReadMap.set(
-                            member.user.id,
-                            member.lastReadMessageId
-                        );
-                    }
-                }
-            }
-
-            setOtherUsersLastReadMessageIds(
-                otherUsersReadMap
-            );
-
-            const currentMember =
-                chatData.members.find(
-                    member =>
-                        member.user.id === currentUserId
-                );
-
-            setCurrentUserLastReadMessageId(
-                currentMember?.lastReadMessageId ?? null
-            );
-
-            const otherMember =
-                chatData.members.length === 2
-                    ? chatData.members.find(
-                        member =>
-                            member.user.id !== currentUserId
-                    )
-                    : undefined;
-
-            setOtherUserLastReadMessageId(
-                otherMember?.lastReadMessageId ?? null
-            );
-
-        } catch (error) {
-            console.error(
-                "Failed to reload chat",
-                error
-            );
-        }
+      return false;
     },
-    [
-        chatId,
-        user?.id
-    ]
-);
+    [messages, otherUsersLastReadMessageIds],
+  );
 
+  const load = useCallback(async () => {
+    if (!chatId) {
+      return;
+    }
 
-    const markCurrentUserRead =
-        useCallback(
-            (
-                messageId: MessageId
-            ) => {
+    try {
+      setLoading(true);
 
-                setCurrentUserLastReadMessageId(
-                    prev => {
+      const [chatData, messagesPage] = await Promise.all([
+        getChat(chatId),
 
-                        /*
-                         * UUID нельзя сравнивать через >.
-                         *
-                         * Здесь достаточно установить marker,
-                         * который пришёл от текущего read-события.
-                         *
-                         * Backend отвечает за корректный порядок
-                         * lastReadMessageId.
-                         */
-                        if (
-                            prev === null ||
-                            prev !== messageId
-                        ) {
+        getMessages(chatId),
+      ]);
 
-                            return messageId;
+      setChat(chatData);
 
-                        }
+      const currentUserId = user?.id;
 
+      const otherUsersReadMap = new Map<UserId, MessageId>();
 
-                        return prev;
+      if (currentUserId !== undefined) {
+        for (const member of chatData.members) {
+          if (member.user.id === currentUserId) {
+            continue;
+          }
 
-                    }
-                );
+          if (member.lastReadMessageId !== null) {
+            otherUsersReadMap.set(member.user.id, member.lastReadMessageId);
+          }
+        }
+      }
 
-            },
-            []
-        );
+      setOtherUsersLastReadMessageIds(otherUsersReadMap);
 
+      setMessages([...messagesPage.content].reverse());
 
-    const sendFile =
-        useCallback(
-            async (
-                file: File
-            ) => {
+      setCursor(messagesPage.nextCursor);
 
-                if (!chatId) {
-                    return;
-                }
+      setHasMore(messagesPage.hasNext);
 
+      const currentMember = chatData.members.find(
+        (member) => member.user.id === user?.id,
+      );
 
-                await sendFileRequest(
-                    chatId,
-                    file
-                );
+      setCurrentUserLastReadMessageId(currentMember?.lastReadMessageId ?? null);
 
-            },
-            [
-                chatId
-            ]
-        );
+      const otherMember =
+        chatData.members.length === 2
+          ? chatData.members.find((member) => member.user.id !== user?.id)
+          : undefined;
 
+      console.log("[CHAT READ STATE]", {
+        currentUserId: user?.id,
 
-    const loadMoreMessages =
-        useCallback(
-            async () => {
+        members: chatData.members.map((member) => ({
+          userId: member.user.id,
 
-                if (
-                    !chatId ||
-                    !hasMore ||
-                    loadingMore ||
-                    !cursor
-                ) {
+          username: member.user.username,
 
-                    return;
+          lastReadMessageId: member.lastReadMessageId,
+        })),
 
-                }
+        otherMember: otherMember
+          ? {
+              userId: otherMember.user.id,
 
+              username: otherMember.user.username,
 
-                try {
+              lastReadMessageId: otherMember.lastReadMessageId,
+            }
+          : null,
+      });
 
-                    setLoadingMore(true);
+      setOtherUserLastReadMessageId(otherMember?.lastReadMessageId ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatId, user?.id]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
 
-                    const page =
-                        await getMessages(
-                            chatId,
-                            cursor
-                        );
+  const reloadChat = useCallback(async () => {
+    if (!chatId) {
+      return;
+    }
 
+    try {
+      const chatData = await getChat(chatId);
 
-                    setMessages(prev => {
+      setChat(chatData);
 
-                        const oldIds =
-                            new Set(
-                                prev.map(
-                                    message =>
-                                        message.id
-                                )
-                            );
+      const currentUserId = user?.id;
 
+      const otherUsersReadMap = new Map<UserId, MessageId>();
 
-                        const newMessages =
-                            [
-                                ...page.content
-                            ]
-                                .reverse()
-                                .filter(
-                                    message =>
-                                        !oldIds.has(
-                                            message.id
-                                        )
-                                );
+      if (currentUserId !== undefined) {
+        for (const member of chatData.members) {
+          if (member.user.id === currentUserId) {
+            continue;
+          }
+
+          if (member.lastReadMessageId !== null) {
+            otherUsersReadMap.set(member.user.id, member.lastReadMessageId);
+          }
+        }
+      }
+
+      setOtherUsersLastReadMessageIds(otherUsersReadMap);
+
+      const currentMember = chatData.members.find(
+        (member) => member.user.id === currentUserId,
+      );
+
+      setCurrentUserLastReadMessageId(currentMember?.lastReadMessageId ?? null);
+
+      const otherMember =
+        chatData.members.length === 2
+          ? chatData.members.find((member) => member.user.id !== currentUserId)
+          : undefined;
+
+      setOtherUserLastReadMessageId(otherMember?.lastReadMessageId ?? null);
+    } catch (error) {
+      console.error("Failed to reload chat", error);
+    }
+  }, [chatId, user?.id]);
+
+  const markCurrentUserRead = useCallback((messageId: MessageId) => {
+    setCurrentUserLastReadMessageId((prev) => {
+      /*
+       * UUID нельзя сравнивать через >.
+       *
+       * Здесь достаточно установить marker,
+       * который пришёл от текущего read-события.
+       *
+       * Backend отвечает за корректный порядок
+       * lastReadMessageId.
+       */
+      if (prev === null || prev !== messageId) {
+        return messageId;
+      }
+
+      return prev;
+    });
+  }, []);
+
+  const sendFile = useCallback(
+    async (file: File) => {
+      if (!chatId) {
+        return;
+      }
+
+      await sendFileRequest(chatId, file);
+    },
+    [chatId],
+  );
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!chatId || !hasMore || loadingMore || !cursor) {
+      return;
+    }
+
+    try {
+      setLoadingMore(true);
+
+      const page = await getMessages(chatId, cursor);
+
+      setMessages((prev) => {
+        const oldIds = new Set(prev.map((message) => message.id));
+
+        const newMessages = [...page.content]
+          .reverse()
+          .filter((message) => !oldIds.has(message.id));
+
+        return [...newMessages, ...prev];
+      });
 
+      setCursor(page.nextCursor);
 
-                        return [
-                            ...newMessages,
-                            ...prev
-                        ];
+      setHasMore(page.hasNext);
+    } catch (error) {
+      console.error("Failed to load more messages", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [chatId, cursor, hasMore, loadingMore]);
 
-                    });
+  const reloadMessages = useCallback(async () => {
+    if (!chatId) {
+      return;
+    }
 
+    try {
+      const page = await getMessages(chatId);
 
-                    setCursor(
-                        page.nextCursor
-                    );
+      setMessages([...page.content].reverse());
 
+      setCursor(page.nextCursor);
 
-                    setHasMore(
-                        page.hasNext
-                    );
+      setHasMore(page.hasNext);
+    } catch (error) {
+      console.error("Failed to reload messages", error);
+    }
+  }, [chatId]);
 
+  const addMessage = useCallback((message: MessageDto) => {
+    setMessages((prev) => {
+      if (prev.some((current) => current.id === message.id)) {
+        return prev;
+      }
 
-                } catch (error) {
+      return [...prev, message];
+    });
+  }, []);
 
-                    console.error(
-                        "Failed to load more messages",
-                        error
-                    );
+  const removeMessage = useCallback((messageId: MessageId) => {
+    setMessages((prev) => prev.filter((message) => message.id !== messageId));
+  }, []);
 
-                } finally {
+  const updateMessageStatus = useCallback(
+    (event: MessageReadEvent) => {
+      if (event.chatId !== chatId) {
+        return;
+      }
 
-                    setLoadingMore(false);
+      if (event.readerId === user?.id) {
+        return;
+      }
 
-                }
+      console.log("[READ] other user read:", event);
 
-            },
-            [
-                chatId,
-                cursor,
-                hasMore,
-                loadingMore
-            ]
-        );
+      setOtherUsersLastReadMessageIds((prev) => {
+        const next = new Map(prev);
 
+        /*
+         * Не сравниваем UUID через >.
+         *
+         * Backend присылает актуальный
+         * lastReadMessageId.
+         *
+         * Поэтому просто обновляем marker.
+         */
+        next.set(event.readerId, event.lastReadMessageId);
 
-    const reloadMessages =
-        useCallback(
-            async () => {
+        return next;
+      });
+    },
+    [chatId, user?.id],
+  );
 
-                if (!chatId) {
-                    return;
-                }
+  return {
+    chat,
 
+    messages,
 
-                try {
+    loading,
 
-                    const page =
-                        await getMessages(
-                            chatId
-                        );
+    loadingMore,
 
+    hasMore,
 
-                    setMessages(
-                        [
-                            ...page.content
-                        ].reverse()
-                    );
+    currentUserLastReadMessageId,
 
+    otherUserLastReadMessageId,
 
-                    setCursor(
-                        page.nextCursor
-                    );
+    addMessage,
 
+    removeMessage,
 
-                    setHasMore(
-                        page.hasNext
-                    );
+    updateMessageStatus,
 
+    markCurrentUserRead,
 
-                } catch (error) {
+    reloadMessages,
 
-                    console.error(
-                        "Failed to reload messages",
-                        error
-                    );
+    loadMoreMessages,
 
-                }
+    sendFile,
 
-            },
-            [
-                chatId
-            ]
-        );
+    isMessageReadByOtherUser,
 
-
-    const addMessage =
-        useCallback(
-            (
-                message: MessageDto
-            ) => {
-
-                setMessages(prev => {
-
-                    if (
-                        prev.some(
-                            current =>
-                                current.id ===
-                                message.id
-                        )
-                    ) {
-
-                        return prev;
-
-                    }
-
-
-                    return [
-                        ...prev,
-                        message
-                    ];
-
-                });
-
-            },
-            []
-        );
-
-
-    const removeMessage =
-        useCallback(
-            (
-                messageId: MessageId
-            ) => {
-
-                setMessages(prev =>
-                    prev.filter(
-                        message =>
-                            message.id !==
-                            messageId
-                    )
-                );
-
-            },
-            []
-        );
-
-
-    const updateMessageStatus =
-        useCallback(
-            (
-                event: MessageReadEvent
-            ) => {
-
-                if (
-                    event.chatId !== chatId
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
-                    event.readerId ===
-                    user?.id
-                ) {
-
-                    return;
-
-                }
-
-
-                console.log(
-                    "[READ] other user read:",
-                    event
-                );
-
-
-                setOtherUsersLastReadMessageIds(
-                    prev => {
-
-                        const next =
-                            new Map(prev);
-
-
-                        /*
-                         * Не сравниваем UUID через >.
-                         *
-                         * Backend присылает актуальный
-                         * lastReadMessageId.
-                         *
-                         * Поэтому просто обновляем marker.
-                         */
-                        next.set(
-                            event.readerId,
-                            event.lastReadMessageId
-                        );
-
-
-                        return next;
-
-                    }
-                );
-
-            },
-            [
-                chatId,
-                user?.id
-            ]
-        );
-
-
-    return {
-
-        chat,
-
-        messages,
-
-        loading,
-
-        loadingMore,
-
-        hasMore,
-
-        currentUserLastReadMessageId,
-
-        otherUserLastReadMessageId,
-
-        addMessage,
-
-        removeMessage,
-
-        updateMessageStatus,
-
-        markCurrentUserRead,
-
-        reloadMessages,
-
-        loadMoreMessages,
-
-        sendFile,
-
-        isMessageReadByOtherUser,
-
-        reloadChat
-
-    };
-
+    reloadChat,
+  };
 }

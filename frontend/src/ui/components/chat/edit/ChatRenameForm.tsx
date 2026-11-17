@@ -1,59 +1,29 @@
 type Props = {
+  value: string;
 
-    value:string;
+  onChange(value: string): void;
 
-    onChange(
-        value:string
-    ):void;
-
-
-    onSave():void;
-
+  onSave(): void;
 };
 
-
-
 export default function ChatRenameForm({
+  value,
 
-    value,
+  onChange,
 
-    onChange,
+  onSave,
+}: Props) {
+  return (
+    <div className="chat-rename-form">
+      <input
+        value={value}
 
-    onSave
+        placeholder="Group name"
 
-}:Props){
+        onChange={(e) => onChange(e.target.value)}
+      />
 
-
-return (
-
-<div className="chat-rename-form">
-
-<input
-
-    value={value}
-
-    placeholder="Group name"
-
-    onChange={
-        e =>
-            onChange(
-                e.target.value
-            )
-    }
-
-/>
-
-
-<button
-    onClick={onSave}
->
-    Rename
-</button>
-
-
-</div>
-
-);
-
-
+      <button onClick={onSave}>Rename</button>
+    </div>
+  );
 }

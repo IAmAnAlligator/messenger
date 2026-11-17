@@ -1,325 +1,165 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState
-} from "react";
+import { api } from "../api/client";
 
+import type { UserDto } from "../types/user";
 
-import {
-    api
-} from "../api/client";
-
-
-import type {
-    UserDto
-} from "../types/user";
-
-
-import {
-    useChatsContext
-} from "../contexts/ChatsContext";
+import { useChatsContext } from "../contexts/ChatsContext";
 
 export type LastMessageAttachmentDto = {
-    contentType: string;
+  contentType: string;
 };
 
-export type LastMessageStatus =
-    | "NONE"
-    | "SENT"
-    | "READ";
-
+export type LastMessageStatus = "NONE" | "SENT" | "READ";
 
 export type ChatMemberDto = {
+  user: UserDto;
 
-    user: UserDto;
+  chatRole: "ADMIN" | "MEMBER";
 
-    chatRole: "ADMIN" | "MEMBER";
-
-    joinedAt: string;
-
+  joinedAt: string;
 };
 
-
-export type ChatDto = { id: string; name: string; type: "PRIVATE" | "GROUP"; members: ChatMemberDto[]; createdAt: string; lastMessageAt: string | null; lastMessage: LastMessageDto | null; unreadCount: number; lastMessageStatus: LastMessageStatus; };
+export type ChatDto = {
+  id: string;
+  name: string;
+  type: "PRIVATE" | "GROUP";
+  members: ChatMemberDto[];
+  createdAt: string;
+  lastMessageAt: string | null;
+  lastMessage: LastMessageDto | null;
+  unreadCount: number;
+  lastMessageStatus: LastMessageStatus;
+};
 
 export type LastMessageDto = {
-    id: string;
-    sender: UserDto;
-    content: string | null;
-    createdAt: string;
-    attachment: LastMessageAttachmentDto | null;
+  id: string;
+  sender: UserDto;
+  content: string | null;
+  createdAt: string;
+  attachment: LastMessageAttachmentDto | null;
 };
-
-
 
 type ChatCursor = {
+  cursorTime: string;
 
-    cursorTime: string;
-
-    cursorId: string;
-
+  cursorId: string;
 };
-
 
 type ChatPageResponse = {
+  content: ChatDto[];
 
-    content: ChatDto[];
+  nextCursor: ChatCursor | null;
 
-    nextCursor: ChatCursor | null;
-
-    hasNext: boolean;
-
+  hasNext: boolean;
 };
 
+function mergeChats(oldChats: ChatDto[], newChats: ChatDto[]): ChatDto[] {
+  const ids = new Set(oldChats.map((chat) => chat.id));
 
-function mergeChats(
-    oldChats: ChatDto[],
-    newChats: ChatDto[]
-): ChatDto[] {
-
-    const ids =
-        new Set(
-            oldChats.map(
-                chat => chat.id
-            )
-        );
-
-
-    return [
-
-        ...oldChats,
-
-        ...newChats.filter(
-            chat => !ids.has(chat.id)
-        )
-
-    ];
-
+  return [...oldChats, ...newChats.filter((chat) => !ids.has(chat.id))];
 }
-
 
 export function useChats() {
+  const { chatEventsVersion } = useChatsContext();
 
-    const {
-        chatEventsVersion
-    } = useChatsContext();
+  const [chats, setChats] = useState<ChatDto[]>([]);
 
+  const [loading, setLoading] = useState(true);
 
-    const [
-        chats,
-        setChats
-    ] = useState<ChatDto[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
+  const [hasNext, setHasNext] = useState(false);
 
-    const [
-        loading,
-        setLoading
-    ] = useState(true);
+  const [cursor, setCursor] = useState<ChatCursor | null>(null);
 
+  const loadingMoreRef = useRef(false);
 
-    const [
-        loadingMore,
-        setLoadingMore
-    ] = useState(false);
+  const loadChats = useCallback(async () => {
+    try {
+      setLoading(true);
 
+      const response = await api.get<ChatPageResponse>("/chats", {
+        params: {
+          limit: 30,
+        },
+      });
 
-    const [
-        hasNext,
-        setHasNext
-    ] = useState(false);
+      console.log(
+        "[CHATS] API response",
+        response.status,
+        response.data.content,
+      );
 
+      setChats(response.data.content);
 
-    const [
-        cursor,
-        setCursor
-    ] = useState<ChatCursor | null>(null);
+      setCursor(response.data.nextCursor);
 
+      setHasNext(response.data.hasNext);
+    } catch (error) {
+      console.error("[CHATS] Failed to reload chat list", error);
 
-    const loadingMoreRef =
-        useRef(false);
+      console.error("Failed to load chats:", error);
 
+      setChats([]);
 
-    const loadChats =
-        useCallback(
-            async () => {
+      setCursor(null);
 
-                try {
+      setHasNext(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-                    setLoading(true);
+  const loadMore = useCallback(async () => {
+    if (!hasNext || !cursor || loadingMoreRef.current) {
+      return;
+    }
 
+    loadingMoreRef.current = true;
 
-                    const response =
-                        await api.get<ChatPageResponse>(
-                            "/chats",
-                            {
-                                params: {
-                                    limit: 30
-                                }
-                            }
-                        );
+    setLoadingMore(true);
 
-                        console.log(
-    "[CHATS] API response",
-    response.status,
-    response.data.content
-);
+    try {
+      const response = await api.get<ChatPageResponse>("/chats", {
+        params: {
+          cursorTime: cursor.cursorTime,
 
+          cursorId: cursor.cursorId,
 
-                    setChats(
-                        response.data.content
-                    );
+          limit: 30,
+        },
+      });
 
+      setChats((previous) => mergeChats(previous, response.data.content));
 
-                    setCursor(
-                        response.data.nextCursor
-                    );
+      setCursor(response.data.nextCursor);
 
+      setHasNext(response.data.hasNext);
+    } catch (error) {
+      console.error("Failed to load more chats:", error);
+    } finally {
+      loadingMoreRef.current = false;
 
-                    setHasNext(
-                        response.data.hasNext
-                    );
+      setLoadingMore(false);
+    }
+  }, [cursor, hasNext]);
 
-                } catch (error) {
+  useEffect(() => {
+    console.log("[CHATS] Reloading chat list", chatEventsVersion);
 
-                    console.error(
-    "[CHATS] Failed to reload chat list",
-    error
-);
+    void loadChats();
+  }, [loadChats, chatEventsVersion]);
 
-                    console.error(
-                        "Failed to load chats:",
-                        error
-                    );
+  return {
+    chats,
 
+    loading,
 
-                    setChats([]);
+    loadingMore,
 
-                    setCursor(null);
+    hasNext,
 
-                    setHasNext(false);
-
-                } finally {
-
-                    setLoading(false);
-
-                }
-
-            },
-            []
-        );
-
-
-    const loadMore =
-        useCallback(
-            async () => {
-
-                if (
-                    !hasNext ||
-                    !cursor ||
-                    loadingMoreRef.current
-                ) {
-                    return;
-                }
-
-
-                loadingMoreRef.current = true;
-
-                setLoadingMore(true);
-
-
-                try {
-
-                    const response =
-                        await api.get<ChatPageResponse>(
-                            "/chats",
-                            {
-                                params: {
-
-                                    cursorTime:
-                                        cursor.cursorTime,
-
-                                    cursorId:
-                                        cursor.cursorId,
-
-                                    limit: 30
-
-                                }
-                            }
-                        );
-
-
-                    setChats(
-                        previous =>
-                            mergeChats(
-                                previous,
-                                response.data.content
-                            )
-                    );
-
-
-                    setCursor(
-                        response.data.nextCursor
-                    );
-
-
-                    setHasNext(
-                        response.data.hasNext
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Failed to load more chats:",
-                        error
-                    );
-
-                } finally {
-
-                    loadingMoreRef.current = false;
-
-                    setLoadingMore(false);
-
-                }
-
-            },
-            [
-                cursor,
-                hasNext
-            ]
-        );
-
-useEffect(
-    () => {
-
-        console.log(
-            "[CHATS] Reloading chat list",
-            chatEventsVersion
-        );
-
-        void loadChats();
-
-    },
-    [
-        loadChats,
-        chatEventsVersion
-    ]
-);
-
-    return {
-
-        chats,
-
-        loading,
-
-        loadingMore,
-
-        hasNext,
-
-        loadMore
-
-    };
-
+    loadMore,
+  };
 }
-

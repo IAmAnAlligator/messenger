@@ -1,71 +1,49 @@
-import type {
-    ChatId,
-    MessageId,
-    UserId
-} from "./ids";
+import type { ChatId, MessageId, UserId } from "./ids";
 
 import type { UserDto } from "./user";
 
+export type ChatType = "PRIVATE" | "GROUP";
 
-export type ChatType =
-    | "PRIVATE"
-    | "GROUP";
-
-
-export type ChatRole =
-    | "ADMIN"
-    | "MEMBER";
-
+export type ChatRole = "ADMIN" | "MEMBER";
 
 export interface ChatMemberDto {
+  user: UserDto;
 
-    user: UserDto;
+  chatRole: ChatRole;
 
-    chatRole: ChatRole;
+  joinedAt: string;
 
-    joinedAt: string;
-
-    lastReadMessageId: MessageId | null;
-
+  lastReadMessageId: MessageId | null;
 }
-
 
 export interface ChatDto {
+  id: ChatId;
 
-    id: ChatId;
+  name: string | null;
 
-    name: string | null;
+  type: ChatType;
 
-    type: ChatType;
+  members: ChatMemberDto[];
 
-    members: ChatMemberDto[];
+  createdAt: string;
 
-    createdAt: string;
-
-    lastMessageAt: string | null;
-
+  lastMessageAt: string | null;
 }
-
 
 export interface ChatMemberReadDto {
+  userId: UserId;
 
-    userId: UserId;
-
-    lastReadMessageId: MessageId | null;
-
+  lastReadMessageId: MessageId | null;
 }
 
-
 export interface MessageReadEvent {
+  messageId: MessageId;
 
-    messageId: MessageId;
+  chatId: ChatId;
 
-    chatId: ChatId;
+  readerId: UserId;
 
-    readerId: UserId;
+  readAt: string;
 
-    readAt: string;
-
-    lastReadMessageId: MessageId;
-
+  lastReadMessageId: MessageId;
 }

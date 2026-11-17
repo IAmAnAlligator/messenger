@@ -1,34 +1,21 @@
-import type {
-    UserDto
-} from "../../../../types/user";
+import type { UserDto } from "../../../../types/user";
 
 type Props = {
-    users: UserDto[];
+  users: UserDto[];
 
-    onRemove(
-        id: string
-    ): void;
+  onRemove(id: string): void;
 };
 
-export default function SelectedUsers({
-    users,
-    onRemove
-}: Props) {
-    return (
-        <div>
-            {users.map(user => (
-                <div key={user.id}>
-                    {user.username}
+export default function SelectedUsers({ users, onRemove }: Props) {
+  return (
+    <div>
+      {users.map((user) => (
+        <div key={user.id}>
+          {user.username}
 
-                    <button
-                        onClick={() =>
-                            onRemove(user.id)
-                        }
-                    >
-                        ×
-                    </button>
-                </div>
-            ))}
+          <button onClick={() => onRemove(user.id)}>×</button>
         </div>
-    );
+      ))}
+    </div>
+  );
 }

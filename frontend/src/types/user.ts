@@ -1,14 +1,11 @@
 import type { UserId } from "./ids";
 
-
 export interface UserDto {
+  id: UserId;
 
-    id: UserId;
+  handle: string;
 
-    handle: string;
+  username: string;
 
-    username: string;
-
-    role: string;
-
+  role: string;
 }

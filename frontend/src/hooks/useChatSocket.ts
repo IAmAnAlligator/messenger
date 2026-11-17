@@ -1,670 +1,331 @@
-import type {
-    IMessage
-} from "@stomp/stompjs";
+import type { IMessage } from "@stomp/stompjs";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useNavigate } from "react-router-dom";
+
+import { useAuth } from "../contexts/AuthContext";
 
 import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState
-} from "react";
-
-import {
-    useNavigate
-} from "react-router-dom";
-
-import {
-    useAuth
-} from "../contexts/AuthContext";
-
-import {
-    connectSocket,
-    subscribe,
-    unsubscribe,
-    getSocket,
-    onSocketConnected
+  connectSocket,
+  subscribe,
+  unsubscribe,
+  getSocket,
+  onSocketConnected,
 } from "../services/chatSocket";
 
-import type {
-    MessageDto
-} from "../types/message";
+import type { MessageDto } from "../types/message";
 
-import type {
-    MessageReadEvent
-} from "../types/chat";
+import type { MessageReadEvent } from "../types/chat";
 
-import type {
-    ChatSocketEvent,
-    WebSocketErrorResponse
-} from "../types/events";
+import type { ChatSocketEvent, WebSocketErrorResponse } from "../types/events";
 
-import type {
-    MessageId
-} from "../types/ids";
-
+import type { MessageId } from "../types/ids";
 
 interface Props {
+  chatId?: string;
 
-    chatId?: string;
+  onMessage(message: MessageDto): void;
 
-    onMessage(
-        message: MessageDto
-    ): void;
+  onDelete(messageId: MessageId): void | Promise<void>;
 
-    onDelete(
-        messageId: MessageId
-    ): void | Promise<void>;
+  onRead(event: MessageReadEvent): void;
 
-    onRead(
-        event: MessageReadEvent
-    ): void;
-
-    reloadMessages?():
-        void | Promise<void>;
-
+  reloadMessages?(): void | Promise<void>;
 }
 
-
 export function useChatSocket({
-    chatId,
-    onMessage,
-    onDelete,
-    onRead,
-    reloadMessages
+  chatId,
+  onMessage,
+  onDelete,
+  onRead,
+  reloadMessages,
 }: Props) {
+  const navigate = useNavigate();
 
-    const navigate =
-        useNavigate();
+  const { user } = useAuth();
 
+  const [error, setError] = useState<string | null>(null);
 
-    const { user } =
-        useAuth();
+  const onMessageRef = useRef(onMessage);
 
+  const onDeleteRef = useRef(onDelete);
 
-    const [
-        error,
-        setError
-    ] =
-        useState<string | null>(
-            null
-        );
+  const onReadRef = useRef(onRead);
 
+  const reloadMessagesRef = useRef(reloadMessages);
 
-    const onMessageRef =
-        useRef(onMessage);
+  const userIdRef = useRef<string | undefined>(user?.id);
 
+  const pendingReadRef = useRef<string | null>(null);
 
-    const onDeleteRef =
-        useRef(onDelete);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
+  useEffect(() => {
+    onDeleteRef.current = onDelete;
+  }, [onDelete]);
 
-    const onReadRef =
-        useRef(onRead);
+  useEffect(() => {
+    onReadRef.current = onRead;
+  }, [onRead]);
 
+  useEffect(() => {
+    reloadMessagesRef.current = reloadMessages;
+  }, [reloadMessages]);
 
-    const reloadMessagesRef =
-        useRef(reloadMessages);
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
 
+  const publishRead = useCallback(
+    (messageId: string) => {
+      if (!chatId) {
+        return;
+      }
 
-    const userIdRef =
-        useRef<string | undefined>(
-            user?.id
-        );
+      const socket = getSocket();
 
+      if (!socket?.connected) {
+        return;
+      }
 
-    const pendingReadRef =
-        useRef<string | null>(
-            null
-        );
+      console.log("[READ] sending", {
+        chatId,
+        messageId,
+      });
 
+      socket.publish({
+        destination: "/app/chat.read",
 
-    useEffect(() => {
+        body: JSON.stringify({
+          chatId,
 
-        onMessageRef.current =
-            onMessage;
+          messageId,
+        }),
+      });
+    },
+    [chatId],
+  );
 
-    }, [
-        onMessage
-    ]);
+  const sendReadUpTo = useCallback(
+    (messageId: string) => {
+      if (!chatId) {
+        return;
+      }
 
+      const socket = getSocket();
 
-    useEffect(() => {
+      if (!socket?.connected) {
+        pendingReadRef.current = messageId;
 
-        onDeleteRef.current =
-            onDelete;
+        console.log("[READ] queued", {
+          chatId,
+          messageId,
+        });
 
-    }, [
-        onDelete
-    ]);
+        return;
+      }
 
+      publishRead(messageId);
+    },
+    [chatId, publishRead],
+  );
 
-    useEffect(() => {
+  useEffect(() => {
+    pendingReadRef.current = null;
 
-        onReadRef.current =
-            onRead;
+    if (!chatId) {
+      return;
+    }
 
-    }, [
-        onRead
-    ]);
+    const chatTopic = `/topic/chat/${chatId}`;
 
+    const errorQueue = "/user/queue/errors";
 
-    useEffect(() => {
+    const handleChatMessage = (frame: IMessage) => {
+      let event: ChatSocketEvent;
 
-        reloadMessagesRef.current =
-            reloadMessages;
+      try {
+        event = JSON.parse(frame.body) as ChatSocketEvent;
+      } catch (error) {
+        console.error("[WS] invalid JSON", error);
 
-    }, [
-        reloadMessages
-    ]);
+        return;
+      }
 
+      switch (event.type) {
+        case "MESSAGE_CREATED": {
+          onMessageRef.current(event.payload);
 
-    useEffect(() => {
-
-        userIdRef.current =
-            user?.id;
-
-    }, [
-        user?.id
-    ]);
-
-
-    const publishRead =
-        useCallback(
-            (
-                messageId: string
-            ) => {
-
-                if (!chatId) {
-                    return;
-                }
-
-
-                const socket =
-                    getSocket();
-
-
-                if (!socket?.connected) {
-                    return;
-                }
-
-
-                console.log(
-                    "[READ] sending",
-                    {
-                        chatId,
-                        messageId
-                    }
-                );
-
-
-                socket.publish({
-
-                    destination:
-                        "/app/chat.read",
-
-                    body:
-                        JSON.stringify({
-
-                            chatId,
-
-                            messageId
-
-                        })
-
-                });
-
-            },
-            [
-                chatId
-            ]
-        );
-
-
-    const sendReadUpTo =
-        useCallback(
-            (
-                messageId: string
-            ) => {
-
-                if (!chatId) {
-                    return;
-                }
-
-
-                const socket =
-                    getSocket();
-
-
-                if (!socket?.connected) {
-
-                    pendingReadRef.current =
-                        messageId;
-
-
-                    console.log(
-                        "[READ] queued",
-                        {
-                            chatId,
-                            messageId
-                        }
-                    );
-
-
-                    return;
-                }
-
-
-                publishRead(
-                    messageId
-                );
-
-            },
-            [
-                chatId,
-                publishRead
-            ]
-        );
-
-
-    useEffect(() => {
-
-        pendingReadRef.current =
-            null;
-
-
-        if (!chatId) {
-            return;
+          break;
         }
 
+        case "MESSAGE_DELETED": {
+          void Promise.resolve(
+            onDeleteRef.current(event.payload.messageId),
+          ).catch((error) => {
+            console.error("[WS] Failed to handle message deletion", error);
+          });
 
-        const chatTopic =
-            `/topic/chat/${chatId}`;
+          break;
+        }
 
+        case "MESSAGE_READ": {
+          const readEvent = event.payload;
 
-        const errorQueue =
-            "/user/queue/errors";
+          console.log("[MESSAGE_READ]", readEvent);
 
+          if (readEvent.readerId === userIdRef.current) {
+            console.log("[MESSAGE_READ] own read ignored");
 
-        const handleChatMessage =
-            (frame: IMessage) => {
+            break;
+          }
 
-                let event:
-                    ChatSocketEvent;
+          onReadRef.current(readEvent);
 
+          break;
+        }
 
-                try {
+        case "CHAT_DELETED": {
+          if (event.payload.chatId === chatId) {
+            navigate("/chats", {
+              replace: true,
+            });
+          }
 
-                    event =
-                        JSON.parse(
-                            frame.body
-                        ) as ChatSocketEvent;
+          break;
+        }
 
-                } catch (error) {
+        case "CHAT_MEMBER_REMOVED": {
+          if (event.payload.chatId !== chatId) {
+            break;
+          }
 
-                    console.error(
-                        "[WS] invalid JSON",
-                        error
-                    );
-
-                    return;
-                }
-
-
-                switch (event.type) {
-
-                    case "MESSAGE_CREATED": {
-
-                        onMessageRef.current(
-                            event.payload
-                        );
-
-                        break;
-                    }
-
-
-                    case "MESSAGE_DELETED": {
-
-                        void Promise.resolve(
-                            onDeleteRef.current(
-                                event.payload.messageId
-                            )
-                        ).catch(error => {
-
-                            console.error(
-                                "[WS] Failed to handle message deletion",
-                                error
-                            );
-
-                        });
-
-                        break;
-                    }
-
-
-                    case "MESSAGE_READ": {
-
-                        const readEvent =
-                            event.payload;
-
-
-                        console.log(
-                            "[MESSAGE_READ]",
-                            readEvent
-                        );
-
-
-                        if (
-                            readEvent.readerId ===
-                            userIdRef.current
-                        ) {
-
-                            console.log(
-                                "[MESSAGE_READ] own read ignored"
-                            );
-
-                            break;
-                        }
-
-
-                        onReadRef.current(
-                            readEvent
-                        );
-
-                        break;
-                    }
-
-
-                    case "CHAT_DELETED": {
-
-                        if (
-                            event.payload.chatId ===
-                            chatId
-                        ) {
-
-                            navigate(
-                                "/chats",
-                                {
-                                    replace: true
-                                }
-                            );
-
-                        }
-
-                        break;
-                    }
-
-
-                    case "CHAT_MEMBER_REMOVED": {
-
-                        if (
-                            event.payload.chatId !==
-                            chatId
-                        ) {
-                            break;
-                        }
-
-
-                        if (
-                            event.payload.userId ===
-                            userIdRef.current
-                        ) {
-
-                            navigate(
-                                "/chats",
-                                {
-                                    replace: true
-                                }
-                            );
-
-                            return;
-                        }
-
-
-                        reloadMessagesRef
-                            .current
-                            ?.();
-
-
-                        break;
-                    }
-
-
-                    case "CHAT_CREATED":
-
-                    case "CHAT_RENAMED":
-
-                    case "CHAT_MEMBER_ADDED":
-
-                    case "CHAT_MEMBER_LEFT":
-
-                        break;
-
-                }
-
-            };
-
-
-        const handleError =
-            (frame: IMessage) => {
-
-                try {
-
-                    const response =
-                        JSON.parse(
-                            frame.body
-                        ) as WebSocketErrorResponse;
-
-
-                    setError(
-                        response.message
-                    );
-
-
-                    setTimeout(() => {
-
-                        setError(
-                            null
-                        );
-
-                    }, 4000);
-
-
-                } catch (error) {
-
-                    console.error(
-                        "[WS ERROR PARSE]",
-                        error
-                    );
-
-                }
-
-            };
-
-
-        const removeConnectionListener =
-            onSocketConnected(() => {
-
-                console.log(
-                    "[WS] chat socket connected",
-                    chatId
-                );
-
-
-                reloadMessagesRef
-                    .current
-                    ?.();
-
-
-                const pendingRead =
-                    pendingReadRef.current;
-
-
-                if (
-                    pendingRead !== null
-                ) {
-
-                    console.log(
-                        "[READ] sending pending",
-                        {
-                            chatId,
-                            messageId:
-                                pendingRead
-                        }
-                    );
-
-
-                    pendingReadRef.current =
-                        null;
-
-
-                    publishRead(
-                        pendingRead
-                    );
-
-                }
-
+          if (event.payload.userId === userIdRef.current) {
+            navigate("/chats", {
+              replace: true,
             });
 
+            return;
+          }
 
-        connectSocket();
+          reloadMessagesRef.current?.();
 
+          break;
+        }
 
-        subscribe(
-            chatTopic,
-            handleChatMessage
-        );
+        case "CHAT_CREATED":
 
+        case "CHAT_RENAMED":
 
-        subscribe(
-            errorQueue,
-            handleError
-        );
+        case "CHAT_MEMBER_ADDED":
 
-
-        return () => {
-
-            removeConnectionListener();
-
-
-            unsubscribe(
-                chatTopic,
-                handleChatMessage
-            );
-
-
-            unsubscribe(
-                errorQueue,
-                handleError
-            );
-
-        };
-
-
-    }, [
-        chatId,
-        navigate,
-        publishRead
-    ]);
-
-
-    const sendMessage =
-        useCallback(
-            (
-                content: string
-            ) => {
-
-                const socket =
-                    getSocket();
-
-
-                if (
-                    !socket?.connected ||
-                    !chatId
-                ) {
-
-                    console.warn(
-                        "[MESSAGE] socket is not connected"
-                    );
-
-                    return;
-                }
-
-
-                socket.publish({
-
-                    destination:
-                        "/app/chat.send",
-
-                    body:
-                        JSON.stringify({
-
-                            chatId,
-
-                            content
-
-                        })
-
-                });
-
-            },
-            [
-                chatId
-            ]
-        );
-
-
-    const deleteMessage =
-        useCallback(
-            (
-                messageId: string
-            ) => {
-
-                const socket =
-                    getSocket();
-
-
-                if (
-                    !socket?.connected ||
-                    !chatId
-                ) {
-                    return;
-                }
-
-
-                socket.publish({
-
-                    destination:
-                        "/app/chat.delete",
-
-                    body:
-                        JSON.stringify({
-
-                            id:
-                                messageId,
-
-                            chatId
-
-                        })
-
-                });
-
-            },
-            [
-                chatId
-            ]
-        );
-
-
-    return {
-
-        error,
-
-        sendMessage,
-
-        deleteMessage,
-
-        sendReadUpTo
-
+        case "CHAT_MEMBER_LEFT":
+          break;
+      }
     };
 
+    const handleError = (frame: IMessage) => {
+      try {
+        const response = JSON.parse(frame.body) as WebSocketErrorResponse;
+
+        setError(response.message);
+
+        setTimeout(() => {
+          setError(null);
+        }, 4000);
+      } catch (error) {
+        console.error("[WS ERROR PARSE]", error);
+      }
+    };
+
+    const removeConnectionListener = onSocketConnected(() => {
+      console.log("[WS] chat socket connected", chatId);
+
+      reloadMessagesRef.current?.();
+
+      const pendingRead = pendingReadRef.current;
+
+      if (pendingRead !== null) {
+        console.log("[READ] sending pending", {
+          chatId,
+          messageId: pendingRead,
+        });
+
+        pendingReadRef.current = null;
+
+        publishRead(pendingRead);
+      }
+    });
+
+    connectSocket();
+
+    subscribe(chatTopic, handleChatMessage);
+
+    subscribe(errorQueue, handleError);
+
+    return () => {
+      removeConnectionListener();
+
+      unsubscribe(chatTopic, handleChatMessage);
+
+      unsubscribe(errorQueue, handleError);
+    };
+  }, [chatId, navigate, publishRead]);
+
+  const sendMessage = useCallback(
+    (content: string) => {
+      const socket = getSocket();
+
+      if (!socket?.connected || !chatId) {
+        console.warn("[MESSAGE] socket is not connected");
+
+        return;
+      }
+
+      socket.publish({
+        destination: "/app/chat.send",
+
+        body: JSON.stringify({
+          chatId,
+
+          content,
+        }),
+      });
+    },
+    [chatId],
+  );
+
+  const deleteMessage = useCallback(
+    (messageId: string) => {
+      const socket = getSocket();
+
+      if (!socket?.connected || !chatId) {
+        return;
+      }
+
+      socket.publish({
+        destination: "/app/chat.delete",
+
+        body: JSON.stringify({
+          id: messageId,
+
+          chatId,
+        }),
+      });
+    },
+    [chatId],
+  );
+
+  return {
+    error,
+
+    sendMessage,
+
+    deleteMessage,
+
+    sendReadUpTo,
+  };
 }

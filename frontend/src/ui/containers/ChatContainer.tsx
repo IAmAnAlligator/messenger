@@ -1,455 +1,217 @@
-import {
-    useCallback,
-    useEffect,
-    useState
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import type {
-    MessageId
-} from "../../types/ids";
+import type { MessageId } from "../../types/ids";
 
-import {
-    useNavigate
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import {
-    useAuth
-} from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
+
+import { useChat } from "../../hooks/useChat";
+
+import { useChatSocket } from "../../hooks/useChatSocket";
+
+import ChatContent from "../components/chat/view/ChatContent";
 
 import {
-    useChat
-} from "../../hooks/useChat";
-
-import {
-    useChatSocket
-} from "../../hooks/useChatSocket";
-
-import ChatContent
-    from "../components/chat/view/ChatContent";
-
-import {
-    onSocketConnected,
-    updatePresence,
-    subscribe,
-    unsubscribe
+  onSocketConnected,
+  updatePresence,
+  subscribe,
+  unsubscribe,
 } from "../../services/chatSocket";
 
-
 type Props = {
-    chatId?: string;
+  chatId?: string;
 };
-
 
 type PresenceStatus = {
-    userId: string;
-    online: boolean;
+  userId: string;
+  online: boolean;
 };
 
+export default function ChatContainer({ chatId }: Props) {
+  const navigate = useNavigate();
 
-export default function ChatContainer(
-    {
-        chatId
-    }: Props
-) {
+  const { user } = useAuth();
 
-    const navigate =
-        useNavigate();
+  const [text, setText] = useState("");
 
+  const [isOnline, setIsOnline] = useState(false);
 
-    const { user } =
-        useAuth();
+  const {
+    chat,
+    messages,
+    loading,
+    loadingMore,
+    hasMore,
+    isMessageReadByOtherUser,
+    addMessage,
+    removeMessage,
+    updateMessageStatus,
+    markCurrentUserRead,
+    reloadChat,
+    reloadMessages,
+    loadMoreMessages,
+    sendFile,
+  } = useChat(chatId);
 
+  const otherUserId =
+    chat?.type === "PRIVATE"
+      ? (chat.members.find((member) => member.user.id !== user?.id)?.user.id ??
+        null)
+      : null;
 
-    const [
-        text,
-        setText
-    ] = useState("");
+  const handleDeleteMessage = useCallback(
+    async (messageId: MessageId) => {
+      // Сразу удаляем сообщение из интерфейса.
+      removeMessage(messageId);
 
+      // Обновляем данные с backend.
+      await Promise.all([reloadMessages(), reloadChat()]);
+    },
+    [removeMessage, reloadMessages, reloadChat],
+  );
 
-    const [
-        isOnline,
-        setIsOnline
-    ] = useState(false);
+  const { error, sendMessage, deleteMessage, sendReadUpTo } = useChatSocket({
+    chatId,
 
+    onMessage: addMessage,
 
-    const {
-        chat,
-        messages,
-        loading,
-        loadingMore,
-        hasMore,
-        isMessageReadByOtherUser,
-        addMessage,
-        removeMessage,
-        updateMessageStatus,
-        markCurrentUserRead,
-        reloadChat,
-        reloadMessages,
-        loadMoreMessages,
-        sendFile
-    } = useChat(chatId);
+    onDelete: handleDeleteMessage,
 
+    onRead: updateMessageStatus,
 
-    const otherUserId =
-        chat?.type === "PRIVATE"
-            ? chat.members.find(
-                member =>
-                    member.user.id !== user?.id
-            )?.user.id ?? null
-            : null;
+    reloadMessages,
+  });
 
+  useEffect(() => {
+    function publishCurrentPresence() {
+      const visible = document.visibilityState === "visible";
 
-    const handleDeleteMessage =
-        useCallback(
-            async (
-                messageId: MessageId
-            ) => {
+      updatePresence(chatId ?? null, visible && Boolean(chatId));
+    }
 
-                // Сразу удаляем сообщение из интерфейса.
-                removeMessage(
-                    messageId
-                );
+    publishCurrentPresence();
 
+    const unsubscribeConnection = onSocketConnected(publishCurrentPresence);
 
-                // Обновляем данные с backend.
-                await Promise.all([
+    document.addEventListener("visibilitychange", publishCurrentPresence);
 
-                    reloadMessages(),
+    return () => {
+      document.removeEventListener("visibilitychange", publishCurrentPresence);
 
-                    reloadChat()
+      unsubscribeConnection();
 
-                ]);
+      updatePresence(null, false);
+    };
+  }, [chatId]);
 
-            },
-            [
-                removeMessage,
-                reloadMessages,
-                reloadChat
-            ]
-        );
+  useEffect(() => {
+    setIsOnline(false);
 
+    if (!otherUserId) {
+      return;
+    }
 
-    const {
-        error,
-        sendMessage,
-        deleteMessage,
-        sendReadUpTo
-    } = useChatSocket({
+    const handlePresence = (message: { body: string }) => {
+      try {
+        const presence = JSON.parse(message.body) as PresenceStatus;
 
-        chatId,
-
-        onMessage:
-            addMessage,
-
-        onDelete:
-            handleDeleteMessage,
-
-        onRead:
-            updateMessageStatus,
-
-        reloadMessages
-
-    });
-
-
-    useEffect(() => {
-
-        function publishCurrentPresence() {
-
-            const visible =
-                document.visibilityState === "visible";
-
-            updatePresence(
-                chatId ?? null,
-                visible && Boolean(chatId)
-            );
-
+        if (presence.userId === otherUserId) {
+          setIsOnline(presence.online);
         }
+      } catch (error) {
+        console.error("Failed to parse presence event", error);
+      }
+    };
 
+    const liveDestination = `/topic/presence/user/${otherUserId}`;
 
-        publishCurrentPresence();
+    const initialDestination = `/app/presence/user/${otherUserId}`;
 
+    subscribe(liveDestination, handlePresence);
 
-        const unsubscribeConnection =
-            onSocketConnected(
-                publishCurrentPresence
-            );
+    subscribe(initialDestination, handlePresence);
 
+    return () => {
+      unsubscribe(liveDestination, handlePresence);
 
-        document.addEventListener(
-            "visibilitychange",
-            publishCurrentPresence
-        );
+      unsubscribe(initialDestination, handlePresence);
+    };
+  }, [otherUserId]);
 
+  function handleReadUpTo(messageId: string) {
+    sendReadUpTo(messageId);
 
-        return () => {
+    markCurrentUserRead(messageId);
+  }
 
-            document.removeEventListener(
-                "visibilitychange",
-                publishCurrentPresence
-            );
+  async function handleSendFile(file: File) {
+    try {
+      await sendFile(file);
+    } catch (error) {
+      console.error("Failed to send file", error);
+    }
+  }
 
+  function handleUserProfile(userId: string) {
+    navigate(`/chats/${chatId}/members/${userId}/profile`);
+  }
 
-            unsubscribeConnection();
+  function handleSend() {
+    const content = text.trim();
 
-
-            updatePresence(
-                null,
-                false
-            );
-
-        };
-
-    }, [
-        chatId
-    ]);
-
-
-    useEffect(() => {
-
-        setIsOnline(false);
-
-
-        if (!otherUserId) {
-            return;
-        }
-
-
-        const handlePresence = (
-            message: { body: string }
-        ) => {
-
-            try {
-
-                const presence =
-                    JSON.parse(
-                        message.body
-                    ) as PresenceStatus;
-
-
-                if (
-                    presence.userId === otherUserId
-                ) {
-
-                    setIsOnline(
-                        presence.online
-                    );
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to parse presence event",
-                    error
-                );
-
-            }
-
-        };
-
-
-        const liveDestination =
-            `/topic/presence/user/${otherUserId}`;
-
-
-        const initialDestination =
-            `/app/presence/user/${otherUserId}`;
-
-
-        subscribe(
-            liveDestination,
-            handlePresence
-        );
-
-
-        subscribe(
-            initialDestination,
-            handlePresence
-        );
-
-
-        return () => {
-
-            unsubscribe(
-                liveDestination,
-                handlePresence
-            );
-
-
-            unsubscribe(
-                initialDestination,
-                handlePresence
-            );
-
-        };
-
-    }, [
-        otherUserId
-    ]);
-
-
-    function handleReadUpTo(
-        messageId: string
-    ) {
-
-        sendReadUpTo(
-            messageId
-        );
-
-
-        markCurrentUserRead(
-            messageId
-        );
-
+    if (!content) {
+      return;
     }
 
+    sendMessage(content);
 
-    async function handleSendFile(
-        file: File
-    ) {
+    setText("");
+  }
 
-        try {
+  if (!user) {
+    return null;
+  }
 
-            await sendFile(
-                file
-            );
+  return (
+    <ChatContent
+      chat={chat}
 
-        } catch (error) {
+      messages={messages}
 
-            console.error(
-                "Failed to send file",
-                error
-            );
+      loading={loading}
 
-        }
+      loadingMore={loadingMore}
 
-    }
+      hasMore={hasMore}
 
+      currentUserId={user.id}
 
-    function handleUserProfile(
-        userId: string
-    ) {
+      isMessageReadByOtherUser={isMessageReadByOtherUser}
 
-        navigate(
-            `/chats/${chatId}/members/${userId}/profile`
-        );
+      isOnline={isOnline}
 
-    }
+      onLoadMore={loadMoreMessages}
 
+      onSendFile={handleSendFile}
 
-    function handleSend() {
+      onReadUpTo={handleReadUpTo}
 
-        const content =
-            text.trim();
+      onUserProfile={handleUserProfile}
 
+      text={text}
 
-        if (!content) {
-            return;
-        }
+      error={error}
 
+      onTextChange={setText}
 
-        sendMessage(
-            content
-        );
+      onSend={handleSend}
 
+      onDelete={deleteMessage}
 
-        setText("");
+      onBack={() => navigate("/chats")}
 
-    }
-
-
-    if (!user) {
-        return null;
-    }
-
-
-    return (
-
-        <ChatContent
-
-            chat={
-                chat
-            }
-
-            messages={
-                messages
-            }
-
-            loading={
-                loading
-            }
-
-            loadingMore={
-                loadingMore
-            }
-
-            hasMore={
-                hasMore
-            }
-
-            currentUserId={
-                user.id
-            }
-
-            isMessageReadByOtherUser={
-                isMessageReadByOtherUser
-            }
-
-            isOnline={
-                isOnline
-            }
-
-            onLoadMore={
-                loadMoreMessages
-            }
-
-            onSendFile={
-                handleSendFile
-            }
-
-            onReadUpTo={
-                handleReadUpTo
-            }
-
-            onUserProfile={
-                handleUserProfile
-            }
-
-            text={
-                text
-            }
-
-            error={
-                error
-            }
-
-            onTextChange={
-                setText
-            }
-
-            onSend={
-                handleSend
-            }
-
-            onDelete={
-                deleteMessage
-            }
-
-            onBack={() =>
-                navigate(
-                    "/chats"
-                )
-            }
-
-            onEdit={() =>
-                navigate(
-                    `/chats/${chatId}/edit`
-                )
-            }
-
-        />
-
-    );
-
+      onEdit={() => navigate(`/chats/${chatId}/edit`)}
+    />
+  );
 }

@@ -1,135 +1,79 @@
-import {
-    useState
-} from "react";
+import { useState } from "react";
 
-import {
-    api
-} from "../api/client";
-
+import { api } from "../api/client";
 
 export type PrivateMessageResult = {
+  id: string;
 
-    id: string;
-
-    chatId: string;
-
+  chatId: string;
 };
 
-
 export function usePrivateMessage() {
+  const [sending, setSending] = useState(false);
 
-    const [
-        sending,
-        setSending
-    ] =
-        useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  async function sendMessage(
+    recipientId: string,
+    content: string,
+  ): Promise<PrivateMessageResult> {
+    try {
+      setSending(true);
 
-    const [
-        error,
-        setError
-    ] =
-        useState<string | null>(null);
+      setError(null);
 
+      const response = await api.post<PrivateMessageResult>(
+        `/private-messages/${recipientId}`,
+        {
+          content,
+        },
+      );
 
-    async function sendMessage(
-        recipientId: string,
-        content: string
-    ): Promise<PrivateMessageResult> {
+      return response.data;
+    } catch (error) {
+      setError("Failed to send message");
 
-        try {
-
-            setSending(true);
-
-            setError(null);
-
-
-            const response =
-                await api.post<PrivateMessageResult>(
-                    `/private-messages/${recipientId}`,
-                    {
-                        content
-                    }
-                );
-
-
-            return response.data;
-
-        } catch (error) {
-
-            setError(
-                "Failed to send message"
-            );
-
-            throw error;
-
-        } finally {
-
-            setSending(false);
-
-        }
-
+      throw error;
+    } finally {
+      setSending(false);
     }
+  }
 
+  async function sendFile(
+    recipientId: string,
+    file: File,
+  ): Promise<PrivateMessageResult> {
+    try {
+      setSending(true);
 
-    async function sendFile(
-        recipientId: string,
-        file: File
-    ): Promise<PrivateMessageResult> {
+      setError(null);
 
-        try {
+      const formData = new FormData();
 
-            setSending(true);
+      formData.append("file", file);
 
-            setError(null);
+      const response = await api.post<PrivateMessageResult>(
+        `/private-messages/${recipientId}/file`,
+        formData,
+      );
 
+      return response.data;
+    } catch (error) {
+      setError("Failed to send file");
 
-            const formData =
-                new FormData();
-
-
-            formData.append(
-                "file",
-                file
-            );
-
-
-            const response =
-                await api.post<PrivateMessageResult>(
-                    `/private-messages/${recipientId}/file`,
-                    formData
-                );
-
-
-            return response.data;
-
-        } catch (error) {
-
-            setError(
-                "Failed to send file"
-            );
-
-            throw error;
-
-        } finally {
-
-            setSending(false);
-
-        }
-
+      throw error;
+    } finally {
+      setSending(false);
     }
+  }
 
+  return {
+    sending,
 
-    return {
+    error,
 
-        sending,
+    sendMessage,
 
-        error,
-
-        sendMessage,
-
-        sendFile
-
-    };
-
+    sendFile,
+  };
 }

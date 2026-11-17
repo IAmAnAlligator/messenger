@@ -6,11 +6,7 @@ import { api } from "../api/client";
  * - не дублировать структуры
  * - легче поддерживать контракт с backend
  */
-import type {
-    LoginRequest,
-    RegisterRequest,
-    AuthResponse,
-} from "../api/auth";
+import type { LoginRequest, RegisterRequest, AuthResponse } from "../api/auth";
 
 /**
  * 🔐 LOGIN REQUEST
@@ -24,28 +20,22 @@ import type {
  *
  * 👉 Это чистый API слой (service layer)
  */
-export async function login(
-    data: LoginRequest
-): Promise<AuthResponse> {
+export async function login(data: LoginRequest): Promise<AuthResponse> {
+  /**
+   * 🌐 POST /auth/login
+   *
+   * Отправляем:
+   * {
+   *   email,
+   *   password
+   * }
+   */
+  const response = await api.post("/auth/login", data);
 
-    /**
-     * 🌐 POST /auth/login
-     *
-     * Отправляем:
-     * {
-     *   email,
-     *   password
-     * }
-     */
-    const response = await api.post(
-        "/auth/login",
-        data
-    );
-
-    /**
-     * 📤 Возвращаем данные авторизации.
-     */
-    return response.data;
+  /**
+   * 📤 Возвращаем данные авторизации.
+   */
+  return response.data;
 }
 
 /**
@@ -55,27 +45,21 @@ export async function login(
  *
  * Отвечает только за HTTP-запрос.
  */
-export async function register(
-    data: RegisterRequest
-): Promise<AuthResponse> {
+export async function register(data: RegisterRequest): Promise<AuthResponse> {
+  /**
+   * 🌐 POST /auth/register
+   *
+   * Отправляем:
+   * {
+   *   username,
+   *   email,
+   *   password
+   * }
+   */
+  const response = await api.post("/auth/register", data);
 
-    /**
-     * 🌐 POST /auth/register
-     *
-     * Отправляем:
-     * {
-     *   username,
-     *   email,
-     *   password
-     * }
-     */
-    const response = await api.post(
-        "/auth/register",
-        data
-    );
-
-    /**
-     * 📤 Возвращаем данные авторизации.
-     */
-    return response.data;
+  /**
+   * 📤 Возвращаем данные авторизации.
+   */
+  return response.data;
 }

@@ -1,246 +1,136 @@
-
-import {
-    useEffect,
-    useState
-} from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
 
-import type {
-    UserDto
-} from "../types/user";
+import type { UserDto } from "../types/user";
 
-
-export type ChatType =
-    | "PRIVATE"
-    | "GROUP";
-
+export type ChatType = "PRIVATE" | "GROUP";
 
 export function useChatCreate() {
+  const [type, setType] = useState<ChatType>("GROUP");
 
-    const [type, setType] =
-        useState<ChatType>("GROUP");
+  const [name, setName] = useState("");
 
+  const [search, setSearch] = useState("");
 
-    const [name, setName] =
-        useState("");
+  const [users, setUsers] = useState<UserDto[]>([]);
 
+  const [selectedUsers, setSelectedUsers] = useState<UserDto[]>([]);
 
-    const [search, setSearch] =
-        useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
 
+  useEffect(() => {
+    const query = search.trim();
 
-    const [users, setUsers] =
-        useState<UserDto[]>([]);
+    if (!query) {
+      setUsers([]);
+      setSearchLoading(false);
 
+      return;
+    }
 
-    const [selectedUsers, setSelectedUsers] =
-        useState<UserDto[]>([]);
+    let cancelled = false;
 
+    const timer = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
 
-    const [searchLoading, setSearchLoading] =
-        useState(false);
-
-
-    useEffect(() => {
-
-        const query = search.trim();
-
-        if (!query) {
-
-            setUsers([]);
-            setSearchLoading(false);
-
-            return;
-
-        }
-
-
-        let cancelled = false;
-
-
-        const timer = setTimeout(async () => {
-
-            try {
-
-                setSearchLoading(true);
-
-                const res = await api.get(
-                    "/users/search",
-                    {
-                        params: {
-                            query
-                        }
-                    }
-                );
-
-
-                if (!cancelled) {
-
-                    setUsers(
-                        Array.isArray(res.data)
-                            ? res.data
-                            : []
-                    );
-
-                }
-
-            } catch {
-
-                if (!cancelled) {
-
-                    setUsers([]);
-
-                }
-
-            } finally {
-
-                if (!cancelled) {
-
-                    setSearchLoading(false);
-
-                }
-
-            }
-
-        }, 300);
-
-
-        return () => {
-
-            cancelled = true;
-
-            clearTimeout(timer);
-
-        };
-
-    }, [search]);
-
-
-    // Исключаем пользователей,
-    // которых уже добавили в группу.
-    const availableUsers = users.filter(
-        user =>
-            !selectedUsers.some(
-                selectedUser =>
-                    selectedUser.id === user.id
-            )
-    );
-
-
-    function addUser(user: UserDto) {
-
-        setSelectedUsers(prev => {
-
-            if (type === "PRIVATE") {
-
-                return [user];
-
-            }
-
-
-            if (
-                prev.some(
-                    selectedUser =>
-                        selectedUser.id === user.id
-                )
-            ) {
-
-                return prev;
-
-            }
-
-
-            return [
-                ...prev,
-                user
-            ];
-
+        const res = await api.get("/users/search", {
+          params: {
+            query,
+          },
         });
 
-
-        setSearch("");
-
-        setUsers([]);
-
-    }
-
-
-    function removeUser(id: string) {
-
-        setSelectedUsers(prev =>
-            prev.filter(
-                user => user.id !== id
-            )
-        );
-
-    }
-
-
-    async function createChat() {
-
-        if (type === "GROUP") {
-
-            if (!name.trim()) {
-                throw new Error(
-                    "Group name is required"
-                );
-            }
-
-            if (selectedUsers.length === 0) {
-                throw new Error(
-                    "Select at least one member"
-                );
-            }
-
+        if (!cancelled) {
+          setUsers(Array.isArray(res.data) ? res.data : []);
         }
+      } catch {
+        if (!cancelled) {
+          setUsers([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchLoading(false);
+        }
+      }
+    }, 300);
 
+    return () => {
+      cancelled = true;
 
-        await api.post(
-            "/chats",
-            {
+      clearTimeout(timer);
+    };
+  }, [search]);
 
-                type,
+  // Исключаем пользователей,
+  // которых уже добавили в группу.
+  const availableUsers = users.filter(
+    (user) =>
+      !selectedUsers.some((selectedUser) => selectedUser.id === user.id),
+  );
 
-                name:
-                    type === "GROUP"
-                        ? name.trim()
-                        : null,
+  function addUser(user: UserDto) {
+    setSelectedUsers((prev) => {
+      if (type === "PRIVATE") {
+        return [user];
+      }
 
-                memberIds:
-                    selectedUsers.map(
-                        user => user.id
-                    )
+      if (prev.some((selectedUser) => selectedUser.id === user.id)) {
+        return prev;
+      }
 
-            }
-        );
+      return [...prev, user];
+    });
 
+    setSearch("");
+
+    setUsers([]);
+  }
+
+  function removeUser(id: string) {
+    setSelectedUsers((prev) => prev.filter((user) => user.id !== id));
+  }
+
+  async function createChat() {
+    if (type === "GROUP") {
+      if (!name.trim()) {
+        throw new Error("Group name is required");
+      }
+
+      if (selectedUsers.length === 0) {
+        throw new Error("Select at least one member");
+      }
     }
 
+    await api.post("/chats", {
+      type,
 
-    return {
+      name: type === "GROUP" ? name.trim() : null,
 
-        type,
-        setType,
+      memberIds: selectedUsers.map((user) => user.id),
+    });
+  }
 
-        name,
-        setName,
+  return {
+    type,
+    setType,
 
-        search,
-        setSearch,
+    name,
+    setName,
 
-        users: availableUsers,
+    search,
+    setSearch,
 
-        selectedUsers,
+    users: availableUsers,
 
-        searchLoading,
+    selectedUsers,
 
-        addUser,
+    searchLoading,
 
-        removeUser,
+    addUser,
 
-        createChat
+    removeUser,
 
-    };
-
+    createChat,
+  };
 }

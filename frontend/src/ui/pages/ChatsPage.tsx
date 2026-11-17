@@ -1,14 +1,5 @@
-import ChatsContainer
-    from "../containers/ChatsContainer";
-
+import ChatsContainer from "../containers/ChatsContainer";
 
 export default function ChatsPage() {
-
-
-    return (
-
-        <ChatsContainer />
-
-    );
-
+  return <ChatsContainer />;
 }

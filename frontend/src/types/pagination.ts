@@ -1,21 +1,15 @@
 import type { MessageId } from "./ids";
 
-
 export type CursorDto = {
+  cursorTime: string;
 
-    cursorTime: string;
-
-    cursorId: MessageId;
-
+  cursorId: MessageId;
 };
 
-
 export type CursorPageResponse<T> = {
+  content: T[];
 
-    content: T[];
+  nextCursor: CursorDto | null;
 
-    nextCursor: CursorDto | null;
-
-    hasNext: boolean;
-
+  hasNext: boolean;
 };

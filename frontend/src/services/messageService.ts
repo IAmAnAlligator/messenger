@@ -1,115 +1,73 @@
 import { api } from "../api/client";
 
-import type {
-    MessageDto
-} from "../types/message";
+import type { MessageDto } from "../types/message";
 
-import type {
-    MessagePageDto
-} from "../types/message";
+import type { MessagePageDto } from "../types/message";
 
-import type {
-    CursorDto
-} from "../types/pagination";
-
+import type { CursorDto } from "../types/pagination";
 
 export async function getMessages(
+  chatId: string,
 
-    chatId: string,
+  cursor?: CursorDto,
 
-    cursor?: CursorDto,
-
-    limit: number = 50
-
+  limit: number = 50,
 ): Promise<MessagePageDto> {
+  const response = await api.get<MessagePageDto>(`/chats/${chatId}/messages`, {
+    params: {
+      cursorTime: cursor?.cursorTime,
 
+      cursorId: cursor?.cursorId,
 
-    const response =
-        await api.get<MessagePageDto>(
-            `/chats/${chatId}/messages`,
-            {
-                params: {
+      limit,
+    },
+  });
 
-                    cursorTime:
-                        cursor?.cursorTime,
-
-                    cursorId:
-                        cursor?.cursorId,
-
-                    limit
-
-                }
-            }
-        );
-
-
-    return response.data;
-
+  return response.data;
 }
 
 export async function getMessageThumbnail(
-    chatId: string,
-    messageId: string
+  chatId: string,
+  messageId: string,
 ): Promise<Blob> {
+  const response = await api.get(
+    `/chats/${chatId}/messages/${messageId}/file/thumbnail`,
+    {
+      responseType: "blob",
+    },
+  );
 
-    const response = await api.get(
-        `/chats/${chatId}/messages/${messageId}/file/thumbnail`,
-        {
-            responseType: "blob"
-        }
-    );
-
-    return response.data;
+  return response.data;
 }
-
 
 export async function sendFile(
+  chatId: string,
 
-    chatId: string,
-
-    file: File
-
+  file: File,
 ): Promise<MessageDto> {
+  const formData = new FormData();
 
-    const formData =
-        new FormData();
+  formData.append("file", file);
 
+  const response = await api.post<MessageDto>(
+    `/chats/${chatId}/messages/file`,
+    formData,
+  );
 
-    formData.append(
-        "file",
-        file
-    );
-
-
-    const response =
-        await api.post<MessageDto>(
-            `/chats/${chatId}/messages/file`,
-            formData
-        );
-
-
-    return response.data;
-
+  return response.data;
 }
 
-
 export async function getMessageFile(
+  chatId: string,
 
-    chatId: string,
-
-    messageId: string
-
+  messageId: string,
 ): Promise<Blob> {
+  const response = await api.get(
+    `/chats/${chatId}/messages/${messageId}/file`,
+    {
+      responseType: "blob",
+    },
+  );
 
-    const response =
-        await api.get(
-            `/chats/${chatId}/messages/${messageId}/file`,
-            {
-                responseType: "blob"
-            }
-        );
-
-
-    return response.data;
-
+  return response.data;
 }

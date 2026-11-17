@@ -1,16 +1,8 @@
 import type { MessageDto } from "./message";
 
-import type {
-    ChatId,
-    MessageId,
-    UserId
-} from "./ids";
+import type { ChatId, MessageId, UserId } from "./ids";
 
-import type {
-    ChatType,
-    MessageReadEvent
-} from "./chat";
-
+import type { ChatType, MessageReadEvent } from "./chat";
 
 /**
  * Ошибка WebSocket validation.
@@ -19,174 +11,130 @@ import type {
  * @SendToUser("/queue/errors")
  */
 export interface WebSocketErrorResponse {
-
-    message: string;
-
+  message: string;
 }
-
 
 /**
  * CHAT CREATED
  */
 export interface ChatCreatedSocketEvent {
+  type: "CHAT_CREATED";
 
-    type: "CHAT_CREATED";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
+    name: string;
 
-        chatId: ChatId;
+    type: ChatType;
 
-        name: string;
-
-        type: ChatType;
-
-        memberIds: UserId[];
-
-    };
-
+    memberIds: UserId[];
+  };
 }
-
 
 /**
  * CHAT DELETED
  */
 export interface ChatDeletedSocketEvent {
+  type: "CHAT_DELETED";
 
-    type: "CHAT_DELETED";
-
-    payload: {
-
-        chatId: ChatId;
-
-    };
-
+  payload: {
+    chatId: ChatId;
+  };
 }
-
 
 /**
  * CHAT RENAMED
  */
 export interface ChatRenamedSocketEvent {
+  type: "CHAT_RENAMED";
 
-    type: "CHAT_RENAMED";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
-
-        chatId: ChatId;
-
-        name: string;
-
-    };
-
+    name: string;
+  };
 }
-
 
 /**
  * MEMBER ADDED
  */
 export interface ChatMemberAddedSocketEvent {
+  type: "CHAT_MEMBER_ADDED";
 
-    type: "CHAT_MEMBER_ADDED";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
-
-        chatId: ChatId;
-
-        userId: UserId;
-
-    };
-
+    userId: UserId;
+  };
 }
-
 
 /**
  * MEMBER REMOVED
  */
 export interface ChatMemberRemovedSocketEvent {
+  type: "CHAT_MEMBER_REMOVED";
 
-    type: "CHAT_MEMBER_REMOVED";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
-
-        chatId: ChatId;
-
-        userId: UserId;
-
-    };
-
+    userId: UserId;
+  };
 }
-
 
 /**
  * MEMBER LEFT
  */
 export interface ChatMemberLeftSocketEvent {
+  type: "CHAT_MEMBER_LEFT";
 
-    type: "CHAT_MEMBER_LEFT";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
-
-        chatId: ChatId;
-
-        userId: UserId;
-
-    };
-
+    userId: UserId;
+  };
 }
-
 
 /**
  * MESSAGE CREATED
  */
 export interface MessageSentSocketEvent {
+  type: "MESSAGE_CREATED";
 
-    type: "MESSAGE_CREATED";
-
-    payload: MessageDto;
-
+  payload: MessageDto;
 }
-
 
 /**
  * MESSAGE READ
  */
 export interface MessageReadSocketEvent {
+  type: "MESSAGE_READ";
 
-    type: "MESSAGE_READ";
-
-    payload: MessageReadEvent;
-
+  payload: MessageReadEvent;
 }
-
 
 /**
  * MESSAGE DELETED
  */
 export interface MessageDeletedSocketEvent {
+  type: "MESSAGE_DELETED";
 
-    type: "MESSAGE_DELETED";
+  payload: {
+    chatId: ChatId;
 
-    payload: {
-
-        chatId: ChatId;
-
-        messageId: MessageId;
-
-    };
-
+    messageId: MessageId;
+  };
 }
-
 
 /**
  * Все WebSocket события.
  */
 export type ChatSocketEvent =
-    | ChatCreatedSocketEvent
-    | ChatDeletedSocketEvent
-    | ChatRenamedSocketEvent
-    | ChatMemberAddedSocketEvent
-    | ChatMemberRemovedSocketEvent
-    | ChatMemberLeftSocketEvent
-    | MessageSentSocketEvent
-    | MessageReadSocketEvent
-    | MessageDeletedSocketEvent;
+  | ChatCreatedSocketEvent
+  | ChatDeletedSocketEvent
+  | ChatRenamedSocketEvent
+  | ChatMemberAddedSocketEvent
+  | ChatMemberRemovedSocketEvent
+  | ChatMemberLeftSocketEvent
+  | MessageSentSocketEvent
+  | MessageReadSocketEvent
+  | MessageDeletedSocketEvent;

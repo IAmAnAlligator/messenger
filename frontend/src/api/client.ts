@@ -7,10 +7,9 @@ import { API_BASE_URL } from "../config/apiConfig";
  * Все запросы идут через него
  */
 export const api = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true
+  baseURL: API_BASE_URL,
+  withCredentials: true,
 });
-
 
 // =======================
 // REQUEST INTERCEPTOR
@@ -21,22 +20,19 @@ export const api = axios.create({
  * Используется для добавления Authorization header
  */
 api.interceptors.request.use((config) => {
+  // 📦 достаём accessToken из localStorage
+  const token = localStorage.getItem("accessToken");
 
-    // 📦 достаём accessToken из localStorage
-    const token =
-        localStorage.getItem("accessToken");
+  /**
+   * 🔐 если token есть — добавляем его в заголовок
+   * формат:
+   * Authorization: Bearer <token>
+   */
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-    /**
-     * 🔐 если token есть — добавляем его в заголовок
-     * формат:
-     * Authorization: Bearer <token>
-     */
-    if (token) {
-        config.headers.Authorization =
-            `Bearer ${token}`;
-    }
-
-    return config;
+  return config;
 });
 
 // =======================
@@ -63,117 +59,103 @@ let queue: Array<() => void> = [];
  * 🚨 Срабатывает на ответ сервера (success + error)
  */
 api.interceptors.response.use(
-    // ✅ если запрос успешный — просто возвращаем ответ
-    (res) => res,
+  // ✅ если запрос успешный — просто возвращаем ответ
+  (res) => res,
 
-    // ❌ обработка ошибок
-    async (error) => {
+  // ❌ обработка ошибок
+  async (error) => {
+    /**
+     * 📌 оригинальный запрос, который упал
+     * (например /users/me)
+     */
+    const originalRequest = error.config;
+
+    /**
+     * 🔥 логика refresh token:
+     * срабатывает только если:
+     * - 401 Unauthorized
+     * - запрос ещё НЕ ретраился (_retry)
+     */
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      /**
+       * 🚫 защита от бесконечного цикла
+       */
+      originalRequest._retry = true;
+
+      /**
+       * ⏳ если refresh уже идёт —
+       * кладём запрос в очередь
+       */
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          queue.push(() => {
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      /**
+       * 🔄 начинаем refresh процесс
+       */
+      isRefreshing = true;
+
+      try {
+        /**
+         * 🔑 запрос на обновление access token
+         * refreshToken берётся из HttpOnly cookie
+         */
+        const data = await refreshToken();
 
         /**
-         * 📌 оригинальный запрос, который упал
-         * (например /users/me)
+         * 💾 сохраняем новый access token
          */
-        const originalRequest =
-            error.config;
+        localStorage.setItem("accessToken", data.accessToken);
 
         /**
-         * 🔥 логика refresh token:
-         * срабатывает только если:
-         * - 401 Unauthorized
-         * - запрос ещё НЕ ретраился (_retry)
+         * ✅ refresh завершён
          */
-        if (
-            error.response?.status === 401 &&
-            !originalRequest._retry
-        ) {
-
-            /**
-             * 🚫 защита от бесконечного цикла
-             */
-            originalRequest._retry = true;
-
-            /**
-             * ⏳ если refresh уже идёт —
-             * кладём запрос в очередь
-             */
-            if (isRefreshing) {
-
-                return new Promise((resolve) => {
-
-                    queue.push(() => {
-                        resolve(api(originalRequest));
-                    });
-
-                });
-            }
-
-            /**
-             * 🔄 начинаем refresh процесс
-             */
-            isRefreshing = true;
-
-            try {
-                /**
-                 * 🔑 запрос на обновление access token
-                 * refreshToken берётся из HttpOnly cookie
-                 */
-                const data = await refreshToken();
-
-                /**
-                 * 💾 сохраняем новый access token
-                 */
-                localStorage.setItem(
-                    "accessToken",
-                    data.accessToken
-                );
-
-                /**
-                 * ✅ refresh завершён
-                 */
-                isRefreshing = false;
-
-                /**
-                 * 🚀 выполняем все запросы из очереди
-                 * (которые ждали refresh)
-                 */
-                queue.forEach((cb) => cb());
-
-                queue = [];
-
-                /**
-                 * 🔁 повторяем оригинальный запрос
-                 */
-                return api(originalRequest);
-
-            } catch (e) {
-
-                /**
-                 * ❌ refresh не удался:
-                 * - refresh token истёк
-                 * - сервер отклонил
-                 */
-                isRefreshing = false;
-
-                queue = [];
-
-                /**
-                 * 🧹 чистим access token
-                 */
-                localStorage.removeItem("accessToken");
-
-                /**
-                 * 🚪 выкидываем пользователя на login
-                 * (жёсткий logout)
-                 */
-                window.location.href = "/login";
-
-                return Promise.reject(e);
-            }
-        }
+        isRefreshing = false;
 
         /**
-         * ❗ если ошибка не 401 — просто пробрасываем дальше
+         * 🚀 выполняем все запросы из очереди
+         * (которые ждали refresh)
          */
-        return Promise.reject(error);
+        queue.forEach((cb) => cb());
+
+        queue = [];
+
+        /**
+         * 🔁 повторяем оригинальный запрос
+         */
+        return api(originalRequest);
+      } catch (e) {
+        /**
+         * ❌ refresh не удался:
+         * - refresh token истёк
+         * - сервер отклонил
+         */
+        isRefreshing = false;
+
+        queue = [];
+
+        /**
+         * 🧹 чистим access token
+         */
+        localStorage.removeItem("accessToken");
+
+        /**
+         * 🚪 выкидываем пользователя на login
+         * (жёсткий logout)
+         */
+        window.location.href = "/login";
+
+        return Promise.reject(e);
+      }
     }
+
+    /**
+     * ❗ если ошибка не 401 — просто пробрасываем дальше
+     */
+    return Promise.reject(error);
+  },
 );

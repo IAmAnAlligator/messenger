@@ -1,286 +1,122 @@
+import { useState } from "react";
 
-import {
-    useState
-} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-    useLocation,
-    useNavigate
-} from "react-router-dom";
+import { usePrivateMessage } from "../../hooks/usePrivateMessage";
 
-import {
-    usePrivateMessage
-} from "../../hooks/usePrivateMessage";
-
-import MessageInput
-    from "../components/chat/view/MessageInput";
-
+import MessageInput from "../components/chat/view/MessageInput";
 
 type Recipient = {
+  id: string;
 
-    id: string;
+  username: string;
 
-    username: string;
-
-    handle: string;
-
+  handle: string;
 };
-
 
 type LocationState = {
+  recipient?: Recipient;
 
-    recipient?: Recipient;
-
-    backTo?: string;
-
+  backTo?: string;
 };
-
 
 type Props = {
-
-    recipientId: string;
-
+  recipientId: string;
 };
 
+export default function NewPrivateChatContainer({ recipientId }: Props) {
+  const navigate = useNavigate();
 
-export default function NewPrivateChatContainer({
-    recipientId
-}: Props) {
+  const location = useLocation();
 
-    const navigate =
-        useNavigate();
+  const { sending, error, sendMessage, sendFile } = usePrivateMessage();
 
+  const [text, setText] = useState("");
 
-    const location =
-        useLocation();
+  const state = location.state as LocationState | null;
 
+  const recipient = state?.recipient;
 
-    const {
-        sending,
-        error,
-        sendMessage,
-        sendFile
-    } =
-        usePrivateMessage();
+  async function handleSend() {
+    const content = text.trim();
 
-
-    const [
-        text,
-        setText
-    ] =
-        useState("");
-
-
-    const state =
-        location.state as LocationState | null;
-
-
-    const recipient =
-        state?.recipient;
-
-
-    async function handleSend() {
-
-        const content =
-            text.trim();
-
-
-        if (
-            !content ||
-            sending
-        ) {
-            return;
-        }
-
-
-        try {
-
-            const result =
-                await sendMessage(
-                    recipientId,
-                    content
-                );
-
-
-            setText("");
-
-
-            navigate(
-                `/chats/${result.chatId}`,
-                {
-                    replace: true
-                }
-            );
-
-        } catch {
-            // Error already stored in hook.
-        }
-
+    if (!content || sending) {
+      return;
     }
 
+    try {
+      const result = await sendMessage(recipientId, content);
 
-    async function handleSendFile(
-        file: File
-    ) {
+      setText("");
 
-        if (sending) {
-            return;
-        }
+      navigate(`/chats/${result.chatId}`, {
+        replace: true,
+      });
+    } catch {
+      // Error already stored in hook.
+    }
+  }
 
-
-        try {
-
-            const result =
-                await sendFile(
-                    recipientId,
-                    file
-                );
-
-
-            navigate(
-                `/chats/${result.chatId}`,
-                {
-                    replace: true
-                }
-            );
-
-        } catch {
-            // Error already stored in hook.
-        }
-
+  async function handleSendFile(file: File) {
+    if (sending) {
+      return;
     }
 
+    try {
+      const result = await sendFile(recipientId, file);
 
-    function handleBack() {
+      navigate(`/chats/${result.chatId}`, {
+        replace: true,
+      });
+    } catch {
+      // Error already stored in hook.
+    }
+  }
 
-        if (state?.backTo) {
+  function handleBack() {
+    if (state?.backTo) {
+      navigate(state.backTo);
 
-            navigate(
-                state.backTo
-            );
-
-            return;
-
-        }
-
-
-        navigate(
-            "/chats"
-        );
-
+      return;
     }
 
+    navigate("/chats");
+  }
 
-    return (
+  return (
+    <div className="chat-page">
+      <header className="chat-header">
+        <button type="button" onClick={handleBack}>
+          ← Back
+        </button>
 
-        <div className="chat-page">
+        <div className="chat-header-info">
+          <div className="chat-header-name">
+            {recipient?.username ?? "New message"}
+          </div>
 
-            <header className="chat-header">
-
-                <button
-                    type="button"
-                    onClick={
-                        handleBack
-                    }
-                >
-                    ← Back
-                </button>
-
-
-                <div className="chat-header-info">
-
-                    <div className="chat-header-name">
-
-                        {
-                            recipient?.username
-                            ??
-                            "New message"
-                        }
-
-                    </div>
-
-
-                    {
-                        recipient?.handle && (
-
-                            <div className="chat-header-handle">
-
-                                @{
-                                    recipient.handle
-                                }
-
-                            </div>
-
-                        )
-                    }
-
-                </div>
-
-            </header>
-
-
-            {
-                error && (
-
-                    <div className="ws-error">
-
-                        {
-                            error
-                        }
-
-                    </div>
-
-                )
-            }
-
-
-            <div className="messages">
-
-                {
-                    !sending && (
-
-                        <div className="new-chat-empty">
-
-                            Start a conversation
-
-                        </div>
-
-                    )
-                }
-
-
-                {
-                    sending && (
-
-                        <div className="new-chat-empty">
-
-                            Sending...
-
-                        </div>
-
-                    )
-                }
-
-            </div>
-
-
-            <MessageInput
-                value={
-                    text
-                }
-                onChange={
-                    setText
-                }
-                onSend={() => {
-                    void handleSend();
-                }}
-                onSendFile={
-                    handleSendFile
-                }
-            />
-
+          {recipient?.handle && (
+            <div className="chat-header-handle">@{recipient.handle}</div>
+          )}
         </div>
+      </header>
 
-    );
+      {error && <div className="ws-error">{error}</div>}
 
+      <div className="messages">
+        {!sending && <div className="new-chat-empty">Start a conversation</div>}
+
+        {sending && <div className="new-chat-empty">Sending...</div>}
+      </div>
+
+      <MessageInput
+        value={text}
+        onChange={setText}
+        onSend={() => {
+          void handleSend();
+        }}
+        onSendFile={handleSendFile}
+      />
+    </div>
+  );
 }
