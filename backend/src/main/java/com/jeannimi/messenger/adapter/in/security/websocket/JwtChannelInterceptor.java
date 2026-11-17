@@ -4,7 +4,7 @@ import static com.jeannimi.messenger.application.auth.AuthTokenConstants.ACCESS_
 
 import com.jeannimi.messenger.adapter.in.websocket.presence.PresenceBroadcaster;
 import com.jeannimi.messenger.application.chat.service.ChatService;
-import com.jeannimi.messenger.application.port.out.TokenServicePort;
+import com.jeannimi.messenger.application.port.out.security.TokenServicePort;
 import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.user.UserId;

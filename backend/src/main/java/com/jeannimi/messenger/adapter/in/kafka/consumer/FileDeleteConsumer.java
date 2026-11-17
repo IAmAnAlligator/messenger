@@ -7,7 +7,7 @@ import com.jeannimi.messenger.adapter.kafka.envelope.KafkaEventEnvelope;
 import com.jeannimi.messenger.adapter.out.kafka.KafkaTopics;
 import com.jeannimi.messenger.application.event.FileDeletionRequestedEvent;
 import com.jeannimi.messenger.application.event.service.ProcessedEventService;
-import com.jeannimi.messenger.application.port.out.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.file.FileStoragePort;
 import com.jeannimi.messenger.domain.common.EventId;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

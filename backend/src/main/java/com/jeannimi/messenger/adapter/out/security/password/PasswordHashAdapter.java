@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.adapter.out.security.password;
 
-import com.jeannimi.messenger.application.port.out.PasswordHashPort;
+import com.jeannimi.messenger.application.port.out.security.PasswordHashPort;
 import com.jeannimi.messenger.domain.user.Password;
 import com.jeannimi.messenger.domain.user.PasswordHash;
 import lombok.RequiredArgsConstructor;

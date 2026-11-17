@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.in.security.jwt;
 
 import com.jeannimi.messenger.adapter.in.security.CustomUserDetails;
-import com.jeannimi.messenger.application.port.out.TokenServicePort;
+import com.jeannimi.messenger.application.port.out.security.TokenServicePort;
 import com.jeannimi.messenger.domain.user.UserId;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

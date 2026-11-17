@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.application.outbox.service;
 
-import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.OutboxRepositoryPort;
 import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import java.time.Duration;
 import java.time.Instant;

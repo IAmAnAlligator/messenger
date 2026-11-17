@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeannimi.messenger.application.event.ChatMemberAddedEvent;
 import com.jeannimi.messenger.application.event.EventType;
-import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
+import com.jeannimi.messenger.application.port.out.messaging.RealtimeEventPublisherPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

@@ -2,7 +2,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.entity.NotificationOutboxJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.repository.NotificationOutboxJpaRepository;
-import com.jeannimi.messenger.application.port.out.NotificationOutboxRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.NotificationOutboxRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.message.MessageId;

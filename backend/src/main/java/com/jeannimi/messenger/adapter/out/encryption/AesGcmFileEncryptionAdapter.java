@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.adapter.out.encryption;
 
-import com.jeannimi.messenger.application.port.out.FileEncryptionPort;
+import com.jeannimi.messenger.application.port.out.file.FileEncryptionPort;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;

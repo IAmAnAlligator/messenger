@@ -2,8 +2,8 @@ package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.WebPushSubscriptionResult;
 import com.jeannimi.messenger.application.port.in.WebPushSubscriptionUseCase;
-import com.jeannimi.messenger.application.port.out.IdGenerator;
-import com.jeannimi.messenger.application.port.out.WebPushSubscriptionRepositoryPort;
+import com.jeannimi.messenger.application.port.out.common.IdGenerator;
+import com.jeannimi.messenger.application.port.out.repository.WebPushSubscriptionRepositoryPort;
 import com.jeannimi.messenger.domain.notification.WebPushSubscription;
 import com.jeannimi.messenger.domain.notification.WebPushSubscriptionId;
 import com.jeannimi.messenger.domain.user.UserId;

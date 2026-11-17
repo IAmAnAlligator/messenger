@@ -1,10 +1,10 @@
 package com.jeannimi.messenger.adapter.out.filestorage;
 
-import com.jeannimi.messenger.application.port.out.FileEncryptionPort;
-import com.jeannimi.messenger.application.port.out.FileStorageMaintenancePort;
-import com.jeannimi.messenger.application.port.out.FileStoragePort;
-import com.jeannimi.messenger.application.port.out.StoredFile;
-import com.jeannimi.messenger.application.port.out.StoredFileInfo;
+import com.jeannimi.messenger.application.port.out.file.FileEncryptionPort;
+import com.jeannimi.messenger.application.port.out.file.FileStorageMaintenancePort;
+import com.jeannimi.messenger.application.port.out.file.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.file.StoredFile;
+import com.jeannimi.messenger.application.port.out.file.StoredFileInfo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

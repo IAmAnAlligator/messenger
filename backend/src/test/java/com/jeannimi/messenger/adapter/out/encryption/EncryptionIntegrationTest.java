@@ -3,8 +3,8 @@ package com.jeannimi.messenger.adapter.out.encryption;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jeannimi.messenger.application.port.out.FileEncryptionPort;
-import com.jeannimi.messenger.application.port.out.MessageEncryptionPort;
+import com.jeannimi.messenger.application.port.out.file.FileEncryptionPort;
+import com.jeannimi.messenger.application.port.out.security.MessageEncryptionPort;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;

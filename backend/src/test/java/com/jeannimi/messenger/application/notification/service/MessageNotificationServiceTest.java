@@ -12,8 +12,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
-import com.jeannimi.messenger.application.port.out.NotificationEventRepositoryPort;
-import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.NotificationEventRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatType;

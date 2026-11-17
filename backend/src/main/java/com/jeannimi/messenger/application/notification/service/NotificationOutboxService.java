@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
-import com.jeannimi.messenger.application.port.out.IdGenerator;
-import com.jeannimi.messenger.application.port.out.NotificationOutboxRepositoryPort;
+import com.jeannimi.messenger.application.port.out.common.IdGenerator;
+import com.jeannimi.messenger.application.port.out.repository.NotificationOutboxRepositoryPort;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.NotificationOutbox;
 import com.jeannimi.messenger.domain.notification.NotificationOutboxId;

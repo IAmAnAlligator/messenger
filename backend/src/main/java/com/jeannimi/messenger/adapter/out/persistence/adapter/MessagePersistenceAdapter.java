@@ -16,7 +16,7 @@ import com.jeannimi.messenger.application.chat.dto.LastMessageStatus;
 import com.jeannimi.messenger.application.message.dto.ChatListData;
 import com.jeannimi.messenger.application.message.dto.LastMessageResult;
 import com.jeannimi.messenger.application.message.dto.MessageWithSender;
-import com.jeannimi.messenger.application.port.out.MessageRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.MessageRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;

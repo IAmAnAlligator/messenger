@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.application.user.service;
 
 import com.jeannimi.messenger.application.exception.NotFoundException;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.user.Handle;
 import com.jeannimi.messenger.domain.user.User;

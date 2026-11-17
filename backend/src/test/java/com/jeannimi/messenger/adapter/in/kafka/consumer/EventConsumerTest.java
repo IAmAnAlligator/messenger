@@ -24,7 +24,7 @@ import com.jeannimi.messenger.application.event.MessageCreatedEvent;
 import com.jeannimi.messenger.application.event.MessageDeletedEvent;
 import com.jeannimi.messenger.application.event.MessageReadEvent;
 import com.jeannimi.messenger.application.event.service.ProcessedEventService;
-import com.jeannimi.messenger.application.port.out.RealtimeEventPublisherPort;
+import com.jeannimi.messenger.application.port.out.messaging.RealtimeEventPublisherPort;
 import com.jeannimi.messenger.domain.common.EventId;
 import java.util.List;
 import java.util.UUID;

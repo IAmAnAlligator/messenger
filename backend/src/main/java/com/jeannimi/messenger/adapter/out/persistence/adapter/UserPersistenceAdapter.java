@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.UserPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.UserJpaRepository;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserRepositoryPort;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;

@@ -10,8 +10,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
-import com.jeannimi.messenger.application.port.out.EmailNotificationPort;
-import com.jeannimi.messenger.application.port.out.WebPushNotificationPort;
+import com.jeannimi.messenger.application.port.out.notification.EmailNotificationPort;
+import com.jeannimi.messenger.application.port.out.notification.WebPushNotificationPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.common.EventId;

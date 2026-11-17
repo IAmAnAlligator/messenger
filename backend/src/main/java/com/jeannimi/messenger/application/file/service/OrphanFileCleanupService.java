@@ -1,9 +1,9 @@
 package com.jeannimi.messenger.application.file.service;
 
-import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
-import com.jeannimi.messenger.application.port.out.FileStorageMaintenancePort;
-import com.jeannimi.messenger.application.port.out.FileStoragePort;
-import com.jeannimi.messenger.application.port.out.StoredFileInfo;
+import com.jeannimi.messenger.application.port.out.file.FileStorageMaintenancePort;
+import com.jeannimi.messenger.application.port.out.file.FileStoragePort;
+import com.jeannimi.messenger.application.port.out.file.StoredFileInfo;
+import com.jeannimi.messenger.application.port.out.repository.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import java.time.Duration;
 import java.time.Instant;

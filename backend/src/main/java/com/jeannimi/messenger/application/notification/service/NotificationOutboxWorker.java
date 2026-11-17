@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
-import com.jeannimi.messenger.application.port.out.EmailNotificationPort;
-import com.jeannimi.messenger.application.port.out.WebPushNotificationPort;
+import com.jeannimi.messenger.application.port.out.notification.EmailNotificationPort;
+import com.jeannimi.messenger.application.port.out.notification.WebPushNotificationPort;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;
 import com.jeannimi.messenger.domain.notification.NotificationOutbox;
 import java.time.Clock;

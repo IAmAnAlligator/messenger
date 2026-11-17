@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.out.imagethumbnail;
 
-import com.jeannimi.messenger.application.port.out.GeneratedThumbnail;
-import com.jeannimi.messenger.application.port.out.ImageThumbnailPort;
+import com.jeannimi.messenger.application.port.out.file.GeneratedThumbnail;
+import com.jeannimi.messenger.application.port.out.file.ImageThumbnailPort;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

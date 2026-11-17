@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.mapper;
 import com.jeannimi.messenger.adapter.out.persistence.projection.LastMessageProjection;
 import com.jeannimi.messenger.application.message.dto.LastMessageAttachmentResult;
 import com.jeannimi.messenger.application.message.dto.LastMessageResult;
-import com.jeannimi.messenger.application.port.out.MessageEncryptionPort;
+import com.jeannimi.messenger.application.port.out.security.MessageEncryptionPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.message.MessageId;
 import com.jeannimi.messenger.domain.user.Role;

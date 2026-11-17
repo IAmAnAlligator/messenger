@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.adapter.out.user;
 
-import com.jeannimi.messenger.application.port.out.HandleGeneratorPort;
+import com.jeannimi.messenger.application.port.out.common.HandleGeneratorPort;
 import com.jeannimi.messenger.domain.user.Handle;
 import java.security.SecureRandom;
 import org.springframework.stereotype.Component;

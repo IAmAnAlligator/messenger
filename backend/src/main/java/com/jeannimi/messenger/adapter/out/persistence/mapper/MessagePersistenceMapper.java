@@ -5,7 +5,7 @@ import com.jeannimi.messenger.adapter.out.persistence.entity.FileAttachmentJpaEn
 import com.jeannimi.messenger.adapter.out.persistence.entity.MessageJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserJpaEntity;
 import com.jeannimi.messenger.application.message.dto.MessageWithSender;
-import com.jeannimi.messenger.application.port.out.MessageEncryptionPort;
+import com.jeannimi.messenger.application.port.out.security.MessageEncryptionPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.Message;

@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 import com.jeannimi.messenger.adapter.out.persistence.entity.ProcessedEventJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ProcessedEventPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.ProcessedEventJpaRepository;
-import com.jeannimi.messenger.application.port.out.ProcessedEventRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.ProcessedEventRepositoryPort;
 import com.jeannimi.messenger.domain.common.EventId;
 import com.jeannimi.messenger.domain.event.ProcessedEvent;
 import java.util.Objects;

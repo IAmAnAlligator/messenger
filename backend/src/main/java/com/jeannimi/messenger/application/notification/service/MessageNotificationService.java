@@ -2,8 +2,8 @@ package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
 import com.jeannimi.messenger.application.port.in.MessageNotificationUseCase;
-import com.jeannimi.messenger.application.port.out.NotificationEventRepositoryPort;
-import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.NotificationEventRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.application.presence.service.UserPresenceService;
 import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.notification.NotificationChannel;

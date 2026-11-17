@@ -1,8 +1,8 @@
 package com.jeannimi.messenger.adapter.out.notification;
 
 import com.jeannimi.messenger.application.notification.dto.MessageNotification;
-import com.jeannimi.messenger.application.port.out.EmailNotificationPort;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.port.out.notification.EmailNotificationPort;
+import com.jeannimi.messenger.application.port.out.repository.UserRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatType;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;

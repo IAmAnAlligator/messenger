@@ -1,0 +1,15 @@
+package com.jeannimi.messenger.application.port.out.repository;
+
+import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
+import com.jeannimi.messenger.domain.user.UserId;
+import java.util.List;
+import java.util.Optional;
+
+public interface UserNotificationSettingsRepositoryPort {
+
+  Optional<UserNotificationSettings> findByUserId(UserId userId);
+
+  UserNotificationSettings save(UserNotificationSettings settings);
+
+  List<UserNotificationSettings> findAllByUserIds(List<UserId> userIds);
+}

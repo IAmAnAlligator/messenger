@@ -1,7 +1,7 @@
 package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.repository.NotificationEventJpaRepository;
-import com.jeannimi.messenger.application.port.out.NotificationEventRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.NotificationEventRepositoryPort;
 import com.jeannimi.messenger.domain.common.EventId;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

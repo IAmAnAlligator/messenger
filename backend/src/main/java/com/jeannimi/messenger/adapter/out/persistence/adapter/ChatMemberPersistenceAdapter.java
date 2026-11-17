@@ -2,7 +2,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.mapper.ChatMemberPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.ChatMemberJpaRepository;
-import com.jeannimi.messenger.application.port.out.ChatMemberRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.ChatMemberRepositoryPort;
 import com.jeannimi.messenger.domain.chat.ChatId;
 import com.jeannimi.messenger.domain.chat.ChatMember;
 import com.jeannimi.messenger.domain.message.MessageId;

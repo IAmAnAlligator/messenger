@@ -2,7 +2,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 
 import com.jeannimi.messenger.adapter.out.persistence.mapper.FileAttachmentPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.FileAttachmentJpaRepository;
-import com.jeannimi.messenger.application.port.out.FileAttachmentRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.FileAttachmentRepositoryPort;
 import com.jeannimi.messenger.domain.message.FileAttachment;
 import com.jeannimi.messenger.domain.message.FileAttachmentId;
 import java.util.List;

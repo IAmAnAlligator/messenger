@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 import com.jeannimi.messenger.adapter.out.persistence.entity.UserNotificationSettingsJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.UserNotificationSettingsPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.UserNotificationSettingsJpaRepository;
-import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;

@@ -7,7 +7,7 @@ import com.jeannimi.messenger.application.outbox.OutboxBatchRequest;
 import com.jeannimi.messenger.application.outbox.OutboxCreateData;
 import com.jeannimi.messenger.application.outbox.OutboxEventData;
 import com.jeannimi.messenger.application.outbox.OutboxStatus;
-import com.jeannimi.messenger.application.port.out.OutboxRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.OutboxRepositoryPort;
 import com.jeannimi.messenger.domain.outbox.OutboxEvent;
 import com.jeannimi.messenger.domain.outbox.OutboxEventId;
 import java.time.Instant;

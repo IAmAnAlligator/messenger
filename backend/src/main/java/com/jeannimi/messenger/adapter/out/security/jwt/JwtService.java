@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.security.jwt;
 import static com.jeannimi.messenger.application.auth.AuthTokenConstants.ACCESS_TOKEN_TYPE;
 import static com.jeannimi.messenger.application.auth.AuthTokenConstants.REFRESH_TOKEN_TYPE;
 
-import com.jeannimi.messenger.application.port.out.TokenServicePort;
+import com.jeannimi.messenger.application.port.out.security.TokenServicePort;
 import com.jeannimi.messenger.domain.user.User;
 import com.jeannimi.messenger.domain.user.UserId;
 import io.jsonwebtoken.Claims;

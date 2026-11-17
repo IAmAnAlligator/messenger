@@ -1,6 +1,6 @@
 package com.jeannimi.messenger.application.auth.service;
 
-import com.jeannimi.messenger.application.port.out.RefreshTokenRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.RefreshTokenRepositoryPort;
 import com.jeannimi.messenger.domain.auth.SessionId;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

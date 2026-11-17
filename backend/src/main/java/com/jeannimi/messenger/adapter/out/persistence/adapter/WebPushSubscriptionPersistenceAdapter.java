@@ -3,7 +3,7 @@ package com.jeannimi.messenger.adapter.out.persistence.adapter;
 import com.jeannimi.messenger.adapter.out.persistence.entity.WebPushSubscriptionJpaEntity;
 import com.jeannimi.messenger.adapter.out.persistence.mapper.WebPushSubscriptionPersistenceMapper;
 import com.jeannimi.messenger.adapter.out.persistence.repository.WebPushSubscriptionJpaRepository;
-import com.jeannimi.messenger.application.port.out.WebPushSubscriptionRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.WebPushSubscriptionRepositoryPort;
 import com.jeannimi.messenger.domain.notification.WebPushSubscription;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.List;

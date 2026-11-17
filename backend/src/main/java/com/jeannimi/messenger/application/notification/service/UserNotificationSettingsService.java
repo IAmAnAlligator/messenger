@@ -2,7 +2,7 @@ package com.jeannimi.messenger.application.notification.service;
 
 import com.jeannimi.messenger.application.notification.dto.UserNotificationSettingsResult;
 import com.jeannimi.messenger.application.port.in.UserNotificationSettingsUseCase;
-import com.jeannimi.messenger.application.port.out.UserNotificationSettingsRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserNotificationSettingsRepositoryPort;
 import com.jeannimi.messenger.domain.notification.UserNotificationSettings;
 import com.jeannimi.messenger.domain.user.UserId;
 import java.util.Objects;

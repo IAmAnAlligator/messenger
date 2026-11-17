@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.jeannimi.messenger.application.exception.NotFoundException;
-import com.jeannimi.messenger.application.port.out.UserRepositoryPort;
+import com.jeannimi.messenger.application.port.out.repository.UserRepositoryPort;
 import com.jeannimi.messenger.application.user.dto.UserResult;
 import com.jeannimi.messenger.domain.user.Email;
 import com.jeannimi.messenger.domain.user.Handle;
